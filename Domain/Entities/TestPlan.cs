@@ -22,7 +22,6 @@ namespace Domain.Entities
 
         // el Draft es el estado inicial, luego se puede pasar a InProgress, Completed, etc.
         public TestPlanStatus Status { get; set; } = TestPlanStatus.Draft;
-        public DateTime CreatedAt { get; set; }
         public ModeratorScript ModeratorScript { get; set; }
         public ICollection<TestTask> Tasks { get; set; }
         public ICollection<TestSession> Sessions { get; set; } 

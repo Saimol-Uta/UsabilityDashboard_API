@@ -3,6 +3,7 @@ using Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Text;
 
 namespace Infrastructure.Persistence
@@ -21,8 +22,31 @@ namespace Infrastructure.Persistence
         public async Task<IEnumerable<T>> GetAllAsync()
             => await _dbSet.Where(x => x.IsActive).ToListAsync();
 
+        public async Task<IEnumerable<T>> GetAllWithIncludesAsync(
+            params Expression<Func<T, object>>[] includes)
+        {
+            var query = _dbSet.Where(x => x.IsActive).AsQueryable();
+
+            foreach (var include in includes)
+                query = query.Include(include);
+
+            return await query.ToListAsync();
+        }
+
         public async Task<T?> GetByIdAsync(Guid id)
             => await _dbSet.FirstOrDefaultAsync(x => x.Id == id && x.IsActive);
+
+        public async Task<T?> GetByIdWithIncludesAsync(
+            Guid id,
+            params Expression<Func<T, object>>[] includes)
+        {
+            var query = _dbSet.Where(x => x.Id == id && x.IsActive).AsQueryable();
+
+            foreach (var include in includes)
+                query = query.Include(include);
+
+            return await query.FirstOrDefaultAsync();
+        }
 
         public async Task<T> AddAsync(T entity)
         {
@@ -30,6 +54,7 @@ namespace Infrastructure.Persistence
             await _context.SaveChangesAsync();
             return entity;
         }
+
         public async Task UpdateAsync(T entity)
         {
             _dbSet.Update(entity);
@@ -41,9 +66,7 @@ namespace Infrastructure.Persistence
             var entity = await GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Entity {id} not found");
 
-            // Soft delete — no borra de la BD, solo desactiva
             entity.IsActive = false;
-            entity.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
         }
     }

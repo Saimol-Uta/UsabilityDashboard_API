@@ -16,8 +16,6 @@ namespace Domain.Entities
         public SeverityLevel Severity { get; set; }
         public string ProposedImprovement { get; set; }
 
-        public DateTime CreatedAt { get; set; }
-
         public TestSession TestSession { get; set; }
         public TestTask TestTask { get; set; }
     }

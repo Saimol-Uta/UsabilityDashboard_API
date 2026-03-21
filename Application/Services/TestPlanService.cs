@@ -36,7 +36,14 @@ namespace Application.Services
 
         public async Task<TestPlanDto?> GetByIdAsync(Guid id)
         {
-            var plan = await _repository.GetByIdAsync(id);
+            var plan = await _repository.GetByIdWithIncludesAsync(
+                id,
+                x => x.Tasks,
+                x => x.Findings,
+                x => x.Sessions,
+                x => x.ModeratorScript
+            );
+
             return plan is null ? null : _mapper.Map<TestPlanDto>(plan);
         }
 

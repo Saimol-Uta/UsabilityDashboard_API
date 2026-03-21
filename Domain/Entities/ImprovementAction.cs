@@ -11,8 +11,6 @@ namespace Domain.Entities
         public ActionStatus Status { get; set; } = ActionStatus.Open;
         public PriorityLevel Priority { get; set; }
         public DateTime? ImplementedDate { get; set; }
-        public DateTime CreatedAt { get; set; }
-
         public Finding Finding { get; set; }
     }
 }

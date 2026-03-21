@@ -54,6 +54,14 @@ namespace Application.Mappings
             CreateMap<ModeratorScript, ModeratorScriptDto>();
             CreateMap<CreateModeratorScriptDto, ModeratorScript>();
             CreateMap<UpdateModeratorScriptDto, ModeratorScript>();
+
+            // TestSession
+            CreateMap<TestSession, TestSessionDto>()
+                .ForMember(dest => dest.ParticipantName,
+                    opt => opt.MapFrom(src => src.Participant != null ? src.Participant.Name : string.Empty));
+            CreateMap<CreateTestSessionDto, TestSession>();
+            CreateMap<UpdateTestSessionDto, TestSession>();
+
         }
     }
 }

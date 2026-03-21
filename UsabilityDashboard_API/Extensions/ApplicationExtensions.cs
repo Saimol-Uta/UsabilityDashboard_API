@@ -23,6 +23,7 @@ public static class ApplicationExtensions
         services.AddScoped<IImprovementActionService, ImprovementActionService>();
         services.AddScoped<IModeratorScriptService, ModeratorScriptService>();
         services.AddScoped<IDashboardService, DashboardService>();
+        services.AddScoped<ITestSessionService, TestSessionService>();
 
         return services;
     }

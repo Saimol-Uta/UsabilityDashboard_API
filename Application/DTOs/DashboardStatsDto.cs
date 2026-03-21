@@ -17,7 +17,8 @@ namespace Application.DTOs
      int PendingActions,
      int InProgressActions,
      IEnumerable<ErrorsBySeverityDto> ErrorsBySeverity,
-     IEnumerable<SuccessByTaskDto> SuccessByTask
+     IEnumerable<SuccessByTaskDto> SuccessByTask,
+     IEnumerable<PlatformStatsDto> StatsByPlatform  
  );
 
     public record ErrorsBySeverityDto(string Severity, int Count);
@@ -27,5 +28,11 @@ namespace Application.DTOs
         int Total,
         int Successes,
         double AvgTime
+    );
+    public record PlatformStatsDto(
+        string Platform,
+        int TotalObservations,
+        int Successes,
+        double AvgTimeSeconds
     );
 }

@@ -13,8 +13,6 @@ namespace Domain.Entities
         public string Recommendation { get; set; }
         public string Category { get; set; }
         public string Tool { get; set; } 
-        public DateTime CreatedAt { get; set; }
-
         public TestPlan TestPlan { get; set; }
         public ICollection<ImprovementAction> ImprovementActions { get; set; }
     }
