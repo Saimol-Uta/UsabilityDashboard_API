@@ -1,3 +1,6 @@
 <Solution>
+  <Project Path="../Application/Application.csproj" Id="aa1130ce-8443-423e-a92a-f9e9e32272e5" />
+  <Project Path="../Domain/Domain.csproj" Id="e5ce8b24-9042-4a4b-9f15-daad2d3fd9ce" />
+  <Project Path="../Infrastructure/Infrastructure.csproj" Id="8efc9265-4b61-4866-98b0-c57ed7e69354" />
   <Project Path="UsabilityDashboard_API.csproj" />
 </Solution>
