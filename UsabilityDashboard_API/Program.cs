@@ -1,4 +1,7 @@
 
+using UsabilityDashboard_API.Extensions;
+using UsabilityDashboard_API.Middlewares;
+
 namespace UsabilityDashboard_API
 {
     public class Program
@@ -12,6 +15,9 @@ namespace UsabilityDashboard_API
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
+            builder.Services.AddInfrastructure(builder.Configuration);
+            builder.Services.AddApplication();
+            builder.Services.AddSwaggerDocs();
 
             var app = builder.Build();
 
@@ -20,6 +26,10 @@ namespace UsabilityDashboard_API
             {
                 app.MapOpenApi();
             }
+
+            app.UseMiddleware<ExceptionMiddleware>();
+            app.UseSwaggerDocs();
+            app.UseHttpsRedirection();
 
             app.UseHttpsRedirection();
 
