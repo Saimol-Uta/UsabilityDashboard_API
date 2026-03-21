@@ -19,7 +19,9 @@ namespace Domain.Entities
         public string EstimatedDuration { get; set; }
 
         public string Scope { get; set; }
-        public string Status { get; set; }
+
+        // el Draft es el estado inicial, luego se puede pasar a InProgress, Completed, etc.
+        public TestPlanStatus Status { get; set; } = TestPlanStatus.Draft;
         public DateTime CreatedAt { get; set; }
         public ModeratorScript ModeratorScript { get; set; }
         public ICollection<TestTask> Tasks { get; set; }

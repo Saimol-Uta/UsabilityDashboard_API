@@ -13,7 +13,7 @@ namespace Domain.Entities
         public string Comments { get; set; }
 
         public string DetectedProblem { get; set; }
-        public string Severity { get; set; }
+        public SeverityLevel Severity { get; set; }
         public string ProposedImprovement { get; set; }
 
         public DateTime CreatedAt { get; set; }
