@@ -17,6 +17,11 @@ namespace UsabilityDashboard_API.Extensions
             services.AddScoped<IParticipantService, ParticipantService>();
             services.AddScoped<IFindingService, FindingService>();
 
+            services.AddScoped<IObservationLogService, ObservationLogService>();
+            services.AddScoped<IImprovementActionService, ImprovementActionService>();
+            services.AddScoped<IModeratorScriptService, ModeratorScriptService>();
+            services.AddScoped<IDashboardService, DashboardService>();
+
             return services;
         }
     }

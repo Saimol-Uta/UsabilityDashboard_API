@@ -9,8 +9,7 @@ using System.Text;
 
 namespace Application.Services
 {
-    internal class ParticipantService
-    {
+
         public class ParticipantService : IParticipantService
         {
             private readonly IRepository<Participant> _repository;
@@ -60,5 +59,5 @@ namespace Application.Services
                 await _repository.DeleteAsync(participant.Id);
             }
         }
-    }
+    
 }
