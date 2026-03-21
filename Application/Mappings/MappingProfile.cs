@@ -35,6 +35,24 @@ namespace Application.Mappings
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
             CreateMap<CreateFindingDto, Finding>();
             CreateMap<UpdateFindingDto, Finding>();
+
+            // ObservationLog
+            CreateMap<ObservationLog, ObservationLogDto>()
+                .ForMember(dest => dest.Severity, opt => opt.MapFrom(src => src.Severity.ToString()));
+            CreateMap<CreateObservationLogDto, ObservationLog>();
+            CreateMap<UpdateObservationLogDto, ObservationLog>();
+
+            // ImprovementAction
+            CreateMap<ImprovementAction, ImprovementActionDto>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.Priority, opt => opt.MapFrom(src => src.Priority.ToString()));
+            CreateMap<CreateImprovementActionDto, ImprovementAction>();
+            CreateMap<UpdateImprovementActionDto, ImprovementAction>();
+
+            // ModeratorScript
+            CreateMap<ModeratorScript, ModeratorScriptDto>();
+            CreateMap<CreateModeratorScriptDto, ModeratorScript>();
+            CreateMap<UpdateModeratorScriptDto, ModeratorScript>();
         }
     }
 }
