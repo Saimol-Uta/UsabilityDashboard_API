@@ -15,4 +15,9 @@
     <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Middlewares\" />
+    <Folder Include="Extensions\" />
+  </ItemGroup>
+
 </Project>
