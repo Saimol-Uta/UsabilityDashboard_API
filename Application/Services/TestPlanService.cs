@@ -4,6 +4,7 @@ using AutoMapper;
 using Domain.Common;
 using Domain.Entities;
 using Domain.Interfaces;
+using FluentValidation;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -14,12 +15,18 @@ namespace Application.Services
     {
         private readonly IRepository<TestPlan> _repository;
         private readonly IMapper _mapper;
+        private readonly IValidator<CreateTestPlanDto> _validator;
 
-        public TestPlanService(IRepository<TestPlan> repository, IMapper mapper)
+        public TestPlanService(
+            IRepository<TestPlan> repository,
+            IMapper mapper,
+            IValidator<CreateTestPlanDto> validator)
         {
             _repository = repository;
             _mapper = mapper;
+            _validator = validator;
         }
+
 
         public async Task<IEnumerable<TestPlanDto>> GetAllAsync()
         {
@@ -35,6 +42,10 @@ namespace Application.Services
 
         public async Task<TestPlanDto> CreateAsync(CreateTestPlanDto dto)
         {
+            var result = await _validator.ValidateAsync(dto);
+            if (!result.IsValid)
+                throw new ValidationException(result.Errors);
+
             var plan = _mapper.Map<TestPlan>(dto);
             var created = await _repository.AddAsync(plan);
             return _mapper.Map<TestPlanDto>(created);

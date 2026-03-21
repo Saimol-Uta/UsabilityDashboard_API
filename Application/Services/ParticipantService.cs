@@ -3,25 +3,30 @@ using Application.Interfaces;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Interfaces;
+using FluentValidation;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Application.Services
 {
+    public class ParticipantService : IParticipantService
+    {
+        private readonly IRepository<Participant> _repository;
+        private readonly IMapper _mapper;
+        private readonly IValidator<CreateParticipantDto> _validator;
 
-        public class ParticipantService : IParticipantService
+        public ParticipantService(
+            IRepository<Participant> repository,
+            IMapper mapper,
+            IValidator<CreateParticipantDto> validator)
         {
-            private readonly IRepository<Participant> _repository;
-            private readonly IMapper _mapper;
+            _repository = repository;
+            _mapper = mapper;
+            _validator = validator;
+        }
 
-            public ParticipantService(IRepository<Participant> repository, IMapper mapper)
-            {
-                _repository = repository;
-                _mapper = mapper;
-            }
-
-            public async Task<IEnumerable<ParticipantDto>> GetAllAsync()
+        public async Task<IEnumerable<ParticipantDto>> GetAllAsync()
             {
                 var participants = await _repository.GetAllAsync();
                 return _mapper.Map<IEnumerable<ParticipantDto>>(participants);

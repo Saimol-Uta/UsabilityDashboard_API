@@ -30,7 +30,6 @@ namespace Infrastructure.Persistence
             await _context.SaveChangesAsync();
             return entity;
         }
-
         public async Task UpdateAsync(T entity)
         {
             _dbSet.Update(entity);

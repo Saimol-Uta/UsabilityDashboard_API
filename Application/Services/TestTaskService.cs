@@ -3,6 +3,7 @@ using Application.Interfaces;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Interfaces;
+using FluentValidation;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -13,11 +14,16 @@ namespace Application.Services
     {
         private readonly IRepository<TestTask> _repository;
         private readonly IMapper _mapper;
+        private readonly IValidator<CreateTestTaskDto> _validator;
 
-        public TestTaskService(IRepository<TestTask> repository, IMapper mapper)
+        public TestTaskService(
+            IRepository<TestTask> repository,
+            IMapper mapper,
+            IValidator<CreateTestTaskDto> validator)
         {
             _repository = repository;
             _mapper = mapper;
+            _validator = validator;
         }
 
         public async Task<IEnumerable<TestTaskDto>> GetByPlanIdAsync(Guid testPlanId)

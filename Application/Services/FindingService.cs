@@ -4,6 +4,7 @@ using AutoMapper;
 using Domain.Common;
 using Domain.Entities;
 using Domain.Interfaces;
+using FluentValidation;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -14,11 +15,16 @@ namespace Application.Services
     {
         private readonly IRepository<Finding> _repository;
         private readonly IMapper _mapper;
+        private readonly IValidator<CreateFindingDto> _validator;
 
-        public FindingService(IRepository<Finding> repository, IMapper mapper)
+        public FindingService(
+            IRepository<Finding> repository,
+            IMapper mapper,
+            IValidator<CreateFindingDto> validator)
         {
             _repository = repository;
             _mapper = mapper;
+            _validator = validator;
         }
 
         public async Task<IEnumerable<FindingDto>> GetByPlanIdAsync(Guid testPlanId)

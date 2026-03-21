@@ -13,10 +13,11 @@ namespace Application.Mappings
         {
             // TestPlan
             CreateMap<TestPlan, TestPlanDto>()
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
-            CreateMap<CreateTestPlanDto, TestPlan>();
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt));
+            CreateMap<CreateTestPlanDto, TestPlan>();  
             CreateMap<UpdateTestPlanDto, TestPlan>()
-                .ForMember(dest => dest.Status, opt => opt.Ignore()); 
+                .ForMember(dest => dest.Status, opt => opt.Ignore());
 
             // TestTask
             CreateMap<TestTask, TestTaskDto>();

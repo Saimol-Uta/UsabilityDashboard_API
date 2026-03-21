@@ -18,7 +18,7 @@ namespace UsabilityDashboard_API
             builder.Services.AddInfrastructure(builder.Configuration);
             builder.Services.AddApplication();
             builder.Services.AddSwaggerDocs();
-
+            builder.Services.AddCorsPolicy();
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -26,7 +26,7 @@ namespace UsabilityDashboard_API
             {
                 app.MapOpenApi();
             }
-
+            app.UseCors("DashboardPolicy");
             app.UseMiddleware<ExceptionMiddleware>();
             app.UseSwaggerDocs();
             app.UseHttpsRedirection();

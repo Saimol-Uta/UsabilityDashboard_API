@@ -4,6 +4,7 @@ using AutoMapper;
 using Domain.Common;
 using Domain.Entities;
 using Domain.Interfaces;
+using FluentValidation;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -14,6 +15,18 @@ namespace Application.Services
     {
         private readonly IRepository<ObservationLog> _repository;
         private readonly IMapper _mapper;
+        private readonly IValidator<CreateObservationLogDto> _validator;
+
+        public ObservationLogService(
+            IRepository<ObservationLog> repository,
+            IMapper mapper,
+            IValidator<CreateObservationLogDto> validator)
+        {
+            _repository = repository;
+            _mapper = mapper;
+            _validator = validator;
+        }
+
 
         public ObservationLogService(IRepository<ObservationLog> repository, IMapper mapper)
         {

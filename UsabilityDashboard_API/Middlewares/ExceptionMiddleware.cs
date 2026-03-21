@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using FluentValidation;
+using System.Net;
 using System.Text.Json;
 
 namespace UsabilityDashboard_API.Middlewares
@@ -20,6 +21,17 @@ namespace UsabilityDashboard_API.Middlewares
             {
                 await _next(context);
             }
+            catch (ValidationException ex)
+            {
+                _logger.LogWarning(ex, "Validation error");
+                var errors = ex.Errors
+                    .GroupBy(e => e.PropertyName)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Select(e => e.ErrorMessage).ToArray()
+                    );
+                await WriteErrorAsync(context, HttpStatusCode.BadRequest, "Validation failed", errors);
+            }
             catch (KeyNotFoundException ex)
             {
                 _logger.LogWarning(ex, "Resource not found");
@@ -39,12 +51,21 @@ namespace UsabilityDashboard_API.Middlewares
         }
 
         private static async Task WriteErrorAsync(
-            HttpContext context, HttpStatusCode statusCode, string message)
+            HttpContext context,
+            HttpStatusCode statusCode,
+            string message,
+            object? errors = null)
         {
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = (int)statusCode;
 
-            var response = new { statusCode = (int)statusCode, message };
+            var response = new
+            {
+                statusCode = (int)statusCode,
+                message,
+                errors
+            };
+
             await context.Response.WriteAsync(JsonSerializer.Serialize(response));
         }
     }
