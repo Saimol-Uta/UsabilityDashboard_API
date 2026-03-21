@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Domain.Common;
 
 namespace Domain.Entities
 {
-    public class ObservationLog
+    public class ObservationLog : BaseEntity
     {
-        public int Id { get; set; }
-        public int TestSessionId { get; set; } 
-        public int TestTaskId { get; set; }
+        public Guid TestSessionId { get; set; } 
+        public Guid TestTaskId { get; set; }
 
         public bool TaskSuccess { get; set; }
         public int TimeSeconds { get; set; }

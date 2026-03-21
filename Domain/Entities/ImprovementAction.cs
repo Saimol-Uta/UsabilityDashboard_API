@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿
+using Domain.Common;
 
 namespace Domain.Entities
 {
-    public class ImprovementAction
+    public class ImprovementAction : BaseEntity
     {
-        public int Id { get; set; }
-        public int FindingId { get; set; }
+        public Guid FindingId { get; set; }
 
         public string Description { get; set; }
         public string Status { get; set; }

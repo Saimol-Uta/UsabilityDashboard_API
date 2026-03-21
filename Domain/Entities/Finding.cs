@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Domain.Common;
 
 namespace Domain.Entities
 {
-    public class Finding
+    public class Finding : BaseEntity
     {
-        public int Id { get; set; }
-        public int TestPlanId { get; set; }
+        public Guid TestPlanId { get; set; }
         public string Description { get; set; }
         public string Frequency { get; set; }
         public string Severity { get; set; }

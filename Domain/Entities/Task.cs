@@ -1,13 +1,13 @@
-﻿using System;
+﻿using Domain.Common;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Domain.Entities
 {
-    public class TestTask
+    public class TestTask : BaseEntity
     {
-        public int Id { get; set; }
-        public int TestPlanId { get; set; }
+        public Guid TestPlanId { get; set; }
         public int TaskNumber { get; set; }
 
         public string Scenario { get; set; }

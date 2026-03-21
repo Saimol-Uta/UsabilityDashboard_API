@@ -1,14 +1,14 @@
-﻿using System;
+﻿using Domain.Common;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Domain.Entities
 {
-    public class TestSession
+    public class TestSession : BaseEntity
     {
-        public int Id { get; set; }
-        public int TestPlanId { get; set; }
-        public int ParticipantId { get; set; }
+        public Guid TestPlanId { get; set; }
+        public Guid ParticipantId { get; set; }
 
         public DateTime Date { get; set; }
         public string PlatformTested { get; set; } 
