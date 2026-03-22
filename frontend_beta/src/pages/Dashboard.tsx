@@ -118,6 +118,24 @@ export default function Dashboard() {
                     iconBg="bg-blue-50"
                     valueColor="text-blue-700"
                 />
+                {stats.successByTask.map(task => {
+                    const rate = task.total > 0 ? Math.round((task.successes / task.total) * 100) : 0
+                    return (
+                        <div key={task.taskId} className="flex items-center gap-3">
+                            <div className="text-[12px] text-slate-500 w-14 font-mono">T{String(task.taskId).slice(0, 4)}</div>
+                            <div className="flex-1">
+                                <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                                    <div
+                                        className={`h-full rounded-full transition-all ${rate >= 70 ? 'bg-emerald-500' : rate >= 40 ? 'bg-amber-400' : 'bg-red-400'}`}
+                                        style={{ width: `${rate}%` }}
+                                    />
+                                </div>
+                            </div>
+                            <div className="text-[12px] font-semibold w-12 text-right">{rate}%</div>
+                            <div className="text-[11px] text-slate-400 w-16 text-right">{Math.round(task.avgTime)}s avg</div>
+                        </div>
+                    )
+                })}
                 <KPICard
                     icon={<CheckCircle2 size={18} className="text-emerald-500" />}
                     value={`${stats.successRate}%`}
