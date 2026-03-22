@@ -107,7 +107,8 @@ export default function Findings() {
                     <h2 className="text-[20px] font-semibold text-slate-900">Síntesis de Hallazgos</h2>
                     <p className="text-[13px] text-slate-500 mt-1">Problemas de usabilidad detectados con frecuencia, severidad y recomendaciones</p>
                 </div>
-                <button onClick={() => { setEditId(null); setForm(emptyForm); setShowForm(true) }} className="btn btn-primary">
+                <button onClick={() => { setEditId(null); setForm(emptyForm); setShowForm(true) }}
+                    className="btn btn-primary shadow-md hover:shadow-lg transition-shadow flex items-center gap-2">
                     <Plus size={16} aria-hidden="true" /> Nuevo Hallazgo
                 </button>
             </div>
@@ -127,8 +128,8 @@ export default function Findings() {
 
             {/* Form Modal */}
             {showForm && (
-                <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) resetForm() }} role="dialog" aria-modal="true" aria-label="Formulario de hallazgo">
-                    <div className="modal-content">
+                <div className="modal-overlay animate-fade-in" onClick={e => { if (e.target === e.currentTarget) resetForm() }} role="dialog" aria-modal="true" aria-label="Formulario de hallazgo">
+                    <div className="modal-content rounded-2xl shadow-lg border border-slate-200 overflow-hidden animate-rise">
                         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                             <h3 className="text-[16px] font-semibold text-slate-900">{editId ? 'Editar Hallazgo' : 'Nuevo Hallazgo'}</h3>
                             <button onClick={resetForm} className="text-slate-400 hover:text-slate-600" aria-label="Cerrar"><X size={20} /></button>
