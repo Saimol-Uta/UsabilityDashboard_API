@@ -122,7 +122,7 @@ export default function ImprovementActions() {
                     <h2 className="text-[20px] font-semibold text-slate-900">Acciones de Mejora</h2>
                     <p className="text-[13px] text-slate-500 mt-1">Seguimiento de las acciones correctivas derivadas de los hallazgos</p>
                 </div>
-                <button onClick={() => { setEditId(null); setForm(emptyForm); setShowForm(true) }} className="btn btn-primary">
+                <button onClick={() => { setEditId(null); setForm({ ...emptyForm, findingId: findingsList[0]?.id ?? '' }); setShowForm(true) }} className="btn btn-primary">
                     <Plus size={16} aria-hidden="true" /> Nueva Acción
                 </button>
             </div>
@@ -165,7 +165,7 @@ export default function ImprovementActions() {
                             <div>
                                 <label htmlFor="findingId" className="form-label">Hallazgo asociado</label>
                                 <select id="findingId" value={form.findingId} onChange={e => setForm(f => ({ ...f, findingId: e.target.value }))} className="form-input">
-                                    {findingsList.map((f: any) => <option key={f.id} value={f.id}>#{f.id} — {f.description.substring(0, 50)}...</option>)}
+                                    {findingsList.map((f: any) => <option key={f.id} value={f.id}>{f.description.length > 80 ? f.description.substring(0, 80) + '...' : f.description}</option>)}
                                 </select>
                             </div>
                             <div>
@@ -228,7 +228,7 @@ export default function ImprovementActions() {
                                         </div>
                                         <p className="text-[13px] font-medium text-slate-900 mt-1.5">{action.description}</p>
                                         <p className="text-[11px] text-slate-400 mt-1 italic">
-                                            Hallazgo ID: {String(action.findingId).slice(0, 8)}
+                                            Hallazgo: {findingsList.find((f: any) => f.id === action.findingId)?.description || 'Desconocido'}
                                         </p>
                                         {action.implementedDate && (
                                             <p className="text-[11px] text-emerald-600 mt-1">
