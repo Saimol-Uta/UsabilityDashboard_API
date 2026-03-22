@@ -119,7 +119,7 @@ export default function Findings() {
                 <span className="text-[12px] text-slate-400 font-semibold">Severidad:</span>
                 {['', 'Critical', 'High', 'Medium', 'Low'].map(s => (
                     <button key={s} onClick={() => setFilter(s)}
-                        className={`text-[12px] px-3 py-1.5 rounded-full border transition-all ${filter === s ? 'bg-blue-50 border-blue-300 text-blue-700 font-semibold' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}>
+                        className={`text-[12px] px-3 py-1.5 rounded-full border transition-all duration-200 ${filter === s ? 'bg-gradient-to-r from-blue-200 to-blue-100 border-blue-300 text-blue-700 font-semibold shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}>
                         {s === '' ? 'Todas' : s === 'Critical' ? 'Crítica' : s === 'High' ? 'Alta' : s === 'Medium' ? 'Media' : 'Baja'}
                     </button>
                 ))}
@@ -137,12 +137,12 @@ export default function Findings() {
                         <form onSubmit={handleSubmit} className="p-5 space-y-4">
                             <div>
                                 <label htmlFor="description" className="form-label">Descripción *</label>
-                                <textarea id="description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="form-input" rows={3} required />
+                                <textarea id="description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" rows={3} required />
                             </div>
                             <div className="grid grid-cols-3 gap-4">
                                 <div>
                                     <label htmlFor="severity" className="form-label">Severidad</label>
-                                    <select id="severity" value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value }))} className="form-input">
+                                    <select id="severity" value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500">
                                         <option value="Critical">Crítica</option>
                                         <option value="High">Alta</option>
                                         <option value="Medium">Media</option>
@@ -151,7 +151,7 @@ export default function Findings() {
                                 </div>
                                 <div>
                                     <label htmlFor="priority" className="form-label">Prioridad</label>
-                                    <select id="priority" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="form-input">
+                                    <select id="priority" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500">
                                         <option value="High">Alta</option>
                                         <option value="Medium">Media</option>
                                         <option value="Low">Baja</option>
@@ -159,17 +159,17 @@ export default function Findings() {
                                 </div>
                                 <div>
                                     <label htmlFor="frequency" className="form-label">Frecuencia</label>
-                                    <input id="frequency" value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))} className="form-input" placeholder="Ej: 2/3" />
+                                    <input id="frequency" value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" placeholder="Ej: 2/3" />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label htmlFor="category" className="form-label">Categoría</label>
-                                    <input id="category" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className="form-input" placeholder="Ej: Formularios" />
+                                    <input id="category" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" placeholder="Ej: Formularios" />
                                 </div>
                                 <div>
                                     <label htmlFor="tool" className="form-label">Herramienta</label>
-                                    <select id="tool" value={form.tool} onChange={e => setForm(f => ({ ...f, tool: e.target.value }))} className="form-input">
+                                    <select id="tool" value={form.tool} onChange={e => setForm(f => ({ ...f, tool: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500">
                                         <option value="WAVE">WAVE</option>
                                         <option value="Lighthouse">Lighthouse</option>
                                         <option value="Stark">Stark</option>
@@ -180,10 +180,10 @@ export default function Findings() {
                             </div>
                             <div>
                                 <label htmlFor="recommendation" className="form-label">Recomendación</label>
-                                <textarea id="recommendation" value={form.recommendation} onChange={e => setForm(f => ({ ...f, recommendation: e.target.value }))} className="form-input" rows={3} />
+                                <textarea id="recommendation" value={form.recommendation} onChange={e => setForm(f => ({ ...f, recommendation: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" rows={3} />
                             </div>
                             <div className="flex gap-3 pt-2">
-                                <button type="submit" className="btn btn-primary"><Save size={16} /> {editId ? 'Actualizar' : 'Guardar'}</button>
+                                <button type="submit" className="btn btn-primary flex items-center gap-2"><Save size={16} /> {editId ? 'Actualizar' : 'Guardar'}</button>
                                 <button type="button" onClick={resetForm} className="btn btn-secondary">Cancelar</button>
                             </div>
                         </form>
@@ -202,7 +202,7 @@ export default function Findings() {
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {filtered.map((finding: any) => (
-                        <div key={finding.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-rise hover:shadow-md transition-shadow">
+                        <div key={finding.id} className="bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden animate-rise hover:shadow-lg transition-shadow duration-200">
                             <div className={`h-1.5 w-full ${finding.severity === 'Critical' || finding.severity === 'High' ? 'bg-gradient-to-r from-red-500 to-red-400' : finding.severity === 'Medium' ? 'bg-gradient-to-r from-blue-500 to-blue-400' : 'bg-gradient-to-r from-emerald-500 to-emerald-400'}`} />
                             <div className="p-4">
                                 <div className="flex items-start justify-between gap-2">
@@ -233,8 +233,8 @@ export default function Findings() {
                                         )}
                                     </div>
                                     <div className="flex gap-1">
-                                        <button onClick={() => handleEdit(finding)} className="btn btn-secondary text-[10px] py-1 px-2">Editar</button>
-                                        <button onClick={() => handleDelete(finding.id)} className="btn btn-danger text-[10px] py-1 px-2"><Trash2 size={11} /></button>
+                                        <button onClick={() => handleEdit(finding)} className="btn btn-secondary text-[10px] py-1 px-2 shadow-sm hover:shadow-md">Editar</button>
+                                        <button onClick={() => handleDelete(finding.id)} className="btn btn-danger text-[10px] py-1 px-2 shadow-sm hover:shadow-md"><Trash2 size={11} /></button>
                                     </div>
                                 </div>
                             </div>
