@@ -29,8 +29,8 @@ interface KPICardProps {
 
 function KPICard({ icon, value, label, iconBg, valueColor = 'text-gray-900', delay = '' }: KPICardProps) {
     return (
-        <div className={`kpi-card p-4 flex items-center gap-4 min-w-0 animate-rise ${delay}`}>
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${iconBg}`}>
+        <div className={`kpi-card p-5 flex items-center gap-4 min-w-0 rounded-xl shadow-sm animate-rise ${delay}`}>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-blue-50 to-blue-100 ${iconBg}`}>
                 {icon}
             </div>
             <div className="min-w-0">
@@ -118,24 +118,6 @@ export default function Dashboard() {
                     iconBg="bg-blue-50"
                     valueColor="text-blue-700"
                 />
-                {stats.successByTask.map(task => {
-                    const rate = task.total > 0 ? Math.round((task.successes / task.total) * 100) : 0
-                    return (
-                        <div key={task.taskId} className="flex items-center gap-3">
-                            <div className="text-[12px] text-slate-500 w-14 font-mono">T{String(task.taskId).slice(0, 4)}</div>
-                            <div className="flex-1">
-                                <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
-                                    <div
-                                        className={`h-full rounded-full transition-all ${rate >= 70 ? 'bg-emerald-500' : rate >= 40 ? 'bg-amber-400' : 'bg-red-400'}`}
-                                        style={{ width: `${rate}%` }}
-                                    />
-                                </div>
-                            </div>
-                            <div className="text-[12px] font-semibold w-12 text-right">{rate}%</div>
-                            <div className="text-[11px] text-slate-400 w-16 text-right">{Math.round(task.avgTime)}s avg</div>
-                        </div>
-                    )
-                })}
                 <KPICard
                     icon={<CheckCircle2 size={18} className="text-emerald-500" />}
                     value={`${stats.successRate}%`}
@@ -211,15 +193,15 @@ export default function Dashboard() {
                                 <div key={task.taskId} className="flex items-center gap-3">
                                     <div className="text-[12px] text-slate-500 w-14 font-mono">T{String(task.taskId).slice(0, 4)}</div>
                                     <div className="flex-1">
-                                        <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                                        <div className="h-3 rounded-full bg-slate-100 overflow-hidden">
                                             <div
-                                                className={`h-full rounded-full transition-all ${rate >= 70 ? 'bg-emerald-500' : rate >= 40 ? 'bg-amber-400' : 'bg-red-400'}`}
+                                                className={`h-full rounded-full transition-all duration-500 ease-in-out ${rate >= 70 ? 'bg-emerald-500' : rate >= 40 ? 'bg-amber-400' : 'bg-red-400'}`}
                                                 style={{ width: `${rate}%` }}
                                             />
                                         </div>
                                     </div>
                                     <div className="text-[12px] font-semibold w-12 text-right">{rate}%</div>
-                                    <div className="text-[11px] text-slate-400 w-16 text-right">{Math.round(task.avgTime)}s avg</div>
+                                    <div className="text-[11px] text-slate-400 w-16 text-right">{Math.round(task.avgTime)}s promedio</div>
                                 </div>
                             )
                         })}
@@ -232,12 +214,12 @@ export default function Dashboard() {
                         <h3 className="text-[14px] font-semibold text-gray-800">Hallazgos Recientes</h3>
                         <span className="text-[11px] text-gray-400">{findings.length} total</span>
                     </div>
-                    <div className="p-3 space-y-2 max-h-[280px] overflow-y-auto soft-scrollbar">
+                    <div className="p-3 space-y-2 max-h-[280px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
                         {findings.slice(0, 5).map((f: any) => (
-                            <div key={f.id} className={`rounded-lg border p-3 ${f.severity === 'Alta' ? 'border-l-[3px] border-l-red-300 border-slate-100' : 'border-l-[3px] border-l-blue-300 border-slate-100'}`}>
+                            <div key={f.id} className={`rounded-lg border p-3 shadow-sm hover:shadow-md transition-shadow duration-200 ${f.severity === 'Alta' ? 'border-l-[4px] border-red-400' : 'border-l-[4px] border-blue-400'}`}>
                                 <div className="flex items-start justify-between gap-2">
                                     <p className="text-[12px] text-gray-700 leading-snug flex-1">{f.description}</p>
-                                    <span className={`badge ${f.severity === 'Alta' ? 'badge-alta' : 'badge-media'}`}>{f.severity}</span>
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${f.severity === 'Alta' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>{f.severity}</span>
                                 </div>
                                 <div className="mt-1.5 flex items-center gap-2 text-[10px] text-slate-400">
                                     <span>{f.category}</span>
