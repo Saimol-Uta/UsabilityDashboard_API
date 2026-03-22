@@ -119,27 +119,27 @@ export default function ImprovementActions() {
         <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
-                    <h2 className="text-[20px] font-semibold text-slate-900">Acciones de Mejora</h2>
+                    <h2 className="text-[22px] font-bold text-slate-900">Acciones de Mejora</h2>
                     <p className="text-[13px] text-slate-500 mt-1">Seguimiento de las acciones correctivas derivadas de los hallazgos</p>
                 </div>
-                <button onClick={() => { setEditId(null); setForm(emptyForm); setShowForm(true) }} className="btn btn-primary">
-                    <Plus size={16} aria-hidden="true" /> Nueva Acción
+                <button className="btn btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold shadow-xl hover:scale-105 hover:shadow-2xl transform transition-all flex items-center gap-2" onClick={() => { setEditId(null); setForm(emptyForm); setShowForm(true) }}>
+                    <Plus size={18} /> Nueva Acción
                 </button>
             </div>
 
             {/* Status Summary */}
             <div className="grid grid-cols-3 gap-4">
-                <div className="kpi-card p-4 text-center animate-rise">
-                    <div className="text-2xl font-bold text-emerald-600">{completedCount}</div>
-                    <div className="text-[11px] text-slate-400 mt-1">Completadas</div>
+                <div className="kpi-card p-6 text-center rounded-3xl shadow-lg bg-emerald-50 border-2 border-emerald-300 transform hover:scale-105 transition-transform animate-pop">
+                    <div className="text-3xl font-extrabold text-emerald-700">{completedCount}</div>
+                    <div className="text-sm text-emerald-600 mt-1 uppercase tracking-wider">Completadas</div>
                 </div>
-                <div className="kpi-card p-4 text-center animate-rise delay-1">
-                    <div className="text-2xl font-bold text-amber-500">{inProgressCount}</div>
-                    <div className="text-[11px] text-slate-400 mt-1">En Progreso</div>
+                <div className="kpi-card p-6 text-center rounded-3xl shadow-lg bg-amber-50 border-2 border-amber-300 transform hover:scale-105 transition-transform animate-pop delay-1">
+                    <div className="text-3xl font-extrabold text-amber-700">{inProgressCount}</div>
+                    <div className="text-sm text-amber-600 mt-1 uppercase tracking-wider">En Progreso</div>
                 </div>
-                <div className="kpi-card p-4 text-center animate-rise delay-2">
-                    <div className="text-2xl font-bold text-slate-400">{pendingCount}</div>
-                    <div className="text-[11px] text-slate-400 mt-1">Pendientes</div>
+                <div className="kpi-card p-6 text-center rounded-3xl shadow-lg bg-slate-100 border-2 border-slate-300 transform hover:scale-105 transition-transform animate-pop delay-2">
+                    <div className="text-3xl font-extrabold text-slate-700">{pendingCount}</div>
+                    <div className="text-sm text-slate-500 mt-1 uppercase tracking-wider">Pendientes</div>
                 </div>
             </div>
 
@@ -156,7 +156,7 @@ export default function ImprovementActions() {
             {/* Form Modal */}
             {showForm && (
                 <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) resetForm() }} role="dialog" aria-modal="true" aria-label="Formulario de acción de mejora">
-                    <div className="modal-content">
+                    <div className="modal-content rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
                         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                             <h3 className="text-[16px] font-semibold text-slate-900">{editId ? 'Editar Acción' : 'Nueva Acción'}</h3>
                             <button onClick={resetForm} className="text-slate-400 hover:text-slate-600" aria-label="Cerrar"><X size={20} /></button>
@@ -192,7 +192,7 @@ export default function ImprovementActions() {
                                 </div>
                             </div>
                             <div className="flex gap-3 pt-2">
-                                <button type="submit" className="btn btn-primary"><Save size={16} /> {editId ? 'Actualizar' : 'Guardar'}</button>
+                                <button type="submit" className="btn btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold shadow-md hover:shadow-lg flex items-center gap-2"><Save size={16} /> {editId ? 'Actualizar' : 'Guardar'}</button>
                                 <button type="button" onClick={resetForm} className="btn btn-secondary">Cancelar</button>
                             </div>
                         </form>
@@ -204,36 +204,35 @@ export default function ImprovementActions() {
             {loading ? (
                 <div className="flex justify-center py-12"><div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" /></div>
             ) : filtered.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center">
+                <div className="bg-white rounded-2xl border-2 border-dashed border-slate-300 p-12 text-center">
                     <Lightbulb size={40} className="text-slate-300 mx-auto" />
                     <h3 className="mt-3 text-[15px] font-semibold text-slate-600">Sin acciones de mejora</h3>
                 </div>
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                     {filtered.map((action: any) => {
-                        const config = statusConfig[action.status] || statusConfig.Pendiente
+                        const config = statusConfig[action.status] || statusConfig.Open
                         const Icon = config.icon
                         return (
-                            <div key={action.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 animate-rise hover:shadow-md transition-shadow">
+                            <div key={action.id} className="bg-white rounded-3xl border-2 border-blue-100 shadow-2xl p-5 transform hover:scale-105 hover:shadow-3xl transition-all animate-pop">
                                 <div className="flex items-start gap-4">
-                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${action.status === 'Resolved' || action.status === 'Closed' ? 'bg-emerald-50 border border-emerald-100' : action.status === 'InProgress' ? 'bg-amber-50 border border-amber-100' : 'bg-slate-50 border border-slate-100'}`}>
-                                        <Icon size={18} className={action.status === 'Resolved' || action.status === 'Closed' ? 'text-emerald-500' : action.status === 'InProgress' ? 'text-amber-500' : 'text-slate-400'} />
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0
+                                        ${action.status === 'Resolved' || action.status === 'Closed' ? 'bg-emerald-100 border-2 border-emerald-400 text-emerald-700' :
+                                        action.status === 'InProgress' ? 'bg-amber-100 border-2 border-amber-400 text-amber-700' :
+                                        'bg-slate-200 border-2 border-slate-400 text-slate-600'}`}>
+                                        <Icon size={20} />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 flex-wrap">
-                                            <span className={`badge ${config.badge}`}>{config.label}</span>
-                                            <span className={`badge ${action.priority === 'High' ? 'badge-alta' : action.priority === 'Medium' ? 'badge-media' : 'badge-baja'}`}>
+                                            <span className={`badge ${config.badge} font-bold`}>{config.label}</span>
+                                            <span className={`badge ${action.priority === 'High' ? 'badge-alta' : action.priority === 'Medium' ? 'badge-media' : 'badge-baja'} font-semibold`}>
                                                 Prioridad: {action.priority === 'High' ? 'Alta' : action.priority === 'Medium' ? 'Media' : 'Baja'}
                                             </span>
                                         </div>
-                                        <p className="text-[13px] font-medium text-slate-900 mt-1.5">{action.description}</p>
-                                        <p className="text-[11px] text-slate-400 mt-1 italic">
-                                            Hallazgo ID: {String(action.findingId).slice(0, 8)}
-                                        </p>
+                                        <p className="text-[14px] font-semibold text-slate-900 mt-2">{action.description}</p>
+                                        <p className="text-[11px] text-slate-400 mt-1 italic">Hallazgo ID: {String(action.findingId).slice(0, 8)}</p>
                                         {action.implementedDate && (
-                                            <p className="text-[11px] text-emerald-600 mt-1">
-                                                ✓ Implementado: {new Date(action.implementedDate).toLocaleDateString()}
-                                            </p>
+                                            <p className="text-[11px] text-emerald-600 mt-1">✓ Implementado: {new Date(action.implementedDate).toLocaleDateString()}</p>
                                         )}
                                     </div>
                                     <div className="flex flex-col gap-1.5">
