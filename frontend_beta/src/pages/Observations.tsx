@@ -151,19 +151,19 @@ export default function Observations() {
                     <h2 className="text-[20px] font-semibold text-slate-900">Registro de Observación</h2>
                     <p className="text-[13px] text-slate-500 mt-1">Registra resultados por sesión y tarea: éxito, tiempo, errores y severidad</p>
                 </div>
-                <button onClick={() => { setEditId(null); resetForm(); setShowForm(true) }} className="btn btn-primary">
-                    <Plus size={16} aria-hidden="true" /> Nuevo Registro
+                <button onClick={() => { setEditId(null); resetForm(); setShowForm(true) }} className="btn btn-primary shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600">
+                    <Plus size={18} aria-hidden="true" /> Nuevo Registro
                 </button>
             </div>
 
             {showForm && (
                 <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) resetForm() }} role="dialog" aria-modal="true" aria-label="Formulario de observación">
-                    <div className="modal-content">
-                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                            <h3 className="text-[16px] font-semibold text-slate-900">{editId ? 'Editar Registro' : 'Nuevo Registro'}</h3>
-                            <button onClick={resetForm} className="text-slate-400 hover:text-slate-600" aria-label="Cerrar"><X size={20} /></button>
+                    <div className="modal-content rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-rise bg-white">
+                        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
+                            <h3 className="text-[18px] font-semibold text-slate-900">{editId ? 'Editar Registro' : 'Nuevo Registro'}</h3>
+                            <button onClick={resetForm} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-full transition-colors" aria-label="Cerrar"><X size={22} /></button>
                         </div>
-                        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+                        <form onSubmit={handleSubmit} className="p-6 space-y-5">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label htmlFor="testSessionId" className="form-label">Sesión *</label>
@@ -222,9 +222,9 @@ export default function Observations() {
                                 <textarea id="comments" value={form.comments} onChange={e => setForm(f => ({ ...f, comments: e.target.value }))} className="form-input" rows={3} placeholder="Notas del moderador" />
                             </div>
 
-                            <div className="flex gap-3 pt-2">
-                                <button type="submit" className="btn btn-primary"><Save size={16} /> {editId ? 'Actualizar' : 'Guardar'}</button>
-                                <button type="button" onClick={resetForm} className="btn btn-secondary">Cancelar</button>
+                            <div className="flex gap-4 pt-3">
+                                <button type="submit" className="btn btn-primary flex items-center gap-2 flex-1 justify-center py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 font-semibold"><Save size={18} /> {editId ? 'Actualizar' : 'Guardar'}</button>
+                                <button type="button" onClick={resetForm} className="btn btn-secondary flex-1 py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 font-medium">Cancelar</button>
                             </div>
                         </form>
                     </div>
@@ -234,45 +234,59 @@ export default function Observations() {
             {loading ? (
                 <div className="flex justify-center py-12"><div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" /></div>
             ) : logs.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center">
-                    <Eye size={40} className="text-slate-300 mx-auto" />
-                    <h3 className="mt-3 text-[15px] font-semibold text-slate-600">Sin registros</h3>
-                    <p className="text-[13px] text-slate-400 mt-1">Comienza a registrar observaciones de las sesiones</p>
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl border-2 border-dashed border-slate-300 p-12 text-center shadow-inner">
+                    <Eye size={48} className="text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-[18px] font-semibold text-slate-700 mb-2">Sin registros de observación</h3>
+                    <p className="text-[14px] text-slate-500">Comienza a registrar observaciones de las sesiones de prueba.</p>
                 </div>
             ) : (
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-rise">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden animate-rise">
                     <div className="overflow-x-auto soft-scrollbar">
                         <table className="w-full text-[13px]">
                             <thead>
-                                <tr className="bg-slate-50 border-b border-slate-100">
-                                    <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-400 uppercase">Sesión</th>
-                                    <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-400 uppercase">Tarea</th>
-                                    <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-400 uppercase">Éxito</th>
-                                    <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-400 uppercase">Tiempo</th>
-                                    <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-400 uppercase">Errores</th>
-                                    <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-400 uppercase">Severidad</th>
-                                    <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-400 uppercase">Acciones</th>
+                                <tr className="bg-gradient-to-r from-slate-100 to-slate-50 border-b border-slate-200">
+                                    <th className="px-5 py-3 text-left text-[12px] font-bold text-slate-600 uppercase tracking-wide">Sesión</th>
+                                    <th className="px-5 py-3 text-left text-[12px] font-bold text-slate-600 uppercase tracking-wide">Tarea</th>
+                                    <th className="px-5 py-3 text-left text-[12px] font-bold text-slate-600 uppercase tracking-wide">Éxito</th>
+                                    <th className="px-5 py-3 text-left text-[12px] font-bold text-slate-600 uppercase tracking-wide">Tiempo</th>
+                                    <th className="px-5 py-3 text-left text-[12px] font-bold text-slate-600 uppercase tracking-wide">Errores</th>
+                                    <th className="px-5 py-3 text-left text-[12px] font-bold text-slate-600 uppercase tracking-wide">Severidad</th>
+                                    <th className="px-5 py-3 text-left text-[12px] font-bold text-slate-600 uppercase tracking-wide">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {logs.map((log: any, i: number) => (
-                                    <tr key={log.id} className={`border-b border-slate-100 hover:bg-blue-50/40 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'}`}>
-                                        <td className="px-4 py-3">
-                                            <div className="font-medium text-slate-700">{getSessionName(log.testSessionId)}</div>
+                                    <tr key={log.id} className={`border-b border-slate-100 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                                        <td className="px-5 py-4">
+                                            <div className="font-semibold text-slate-800">{getSessionName(log.testSessionId)}</div>
                                         </td>
-                                        <td className="px-4 py-3 text-slate-500">{getTaskLabel(log.testTaskId)}</td>
-                                        <td className="px-4 py-3">
+                                        <td className="px-5 py-4">
+                                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-[12px] font-medium">{getTaskLabel(log.testTaskId)}</span>
+                                        </td>
+                                        <td className="px-5 py-4">
                                             {log.taskSuccess
-                                                ? <CheckCircle2 size={16} className="text-emerald-500" aria-label="Éxito" />
-                                                : <XCircle size={16} className="text-red-400" aria-label="Fallo" />}
+                                                ? <CheckCircle2 size={18} className="text-emerald-600" aria-label="Éxito" />
+                                                : <XCircle size={18} className="text-red-500" aria-label="Fallo" />}
                                         </td>
-                                        <td className="px-4 py-3 font-mono text-slate-600">{log.timeSeconds}s</td>
-                                        <td className="px-4 py-3 font-mono text-slate-600">{log.errorCount}</td>
-                                        <td className="px-4 py-3"><span className={`badge ${log.severity === 'Critical' || log.severity === 'High' ? 'badge-alta' : log.severity === 'Medium' ? 'badge-media' : 'badge-baja'}`}>{log.severity === 'Critical' ? 'Crítica' : log.severity === 'High' ? 'Alta' : log.severity === 'Medium' ? 'Media' : 'Baja'}</span></td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex gap-1">
-                                                <button onClick={() => handleEdit(log)} className="btn btn-secondary text-[11px] py-1 px-2" aria-label="Editar">Editar</button>
-                                                <button onClick={() => handleDelete(log.id)} className="btn btn-danger text-[11px] py-1 px-2" aria-label="Eliminar"><Trash2 size={12} /></button>
+                                        <td className="px-5 py-4">
+                                            <span className="font-mono text-slate-700 bg-slate-100 px-2 py-1 rounded-md text-[13px]">{log.timeSeconds}s</span>
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <span className="font-mono text-slate-700 bg-slate-100 px-2 py-1 rounded-md text-[13px]">{log.errorCount}</span>
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-[12px] font-semibold shadow-sm ${log.severity === 'Critical' ? 'bg-red-100 text-red-800 border border-red-300' : log.severity === 'High' ? 'bg-orange-100 text-orange-800 border border-orange-300' : log.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' : 'bg-green-100 text-green-800 border border-green-300'}`}>
+                                                {log.severity === 'Critical' ? 'Crítica' : log.severity === 'High' ? 'Alta' : log.severity === 'Medium' ? 'Media' : 'Baja'}
+                                            </span>
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <div className="flex gap-2">
+                                                <button onClick={() => handleEdit(log)} className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-[12px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-blue-200">
+                                                    Editar
+                                                </button>
+                                                <button onClick={() => handleDelete(log.id)} className="bg-red-50 hover:bg-red-100 text-red-700 text-[12px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-red-200">
+                                                    <Trash2 size={14} />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>

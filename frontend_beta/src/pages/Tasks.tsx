@@ -88,20 +88,20 @@ export default function Tasks() {
                     <h2 className="text-[20px] font-semibold text-slate-900">Gestión de Tareas</h2>
                     <p className="text-[13px] text-slate-500 mt-1">Define los escenarios de prueba que realizarán los participantes</p>
                 </div>
-                <button onClick={() => { setForm(f => ({ ...f, testPlanId: activePlanId, taskNumber: tasks.length + 1 })); setEditId(null); setShowForm(true) }} className="btn btn-primary">
-                    <Plus size={16} aria-hidden="true" /> Nueva Tarea
+                <button onClick={() => { setForm(f => ({ ...f, testPlanId: activePlanId, taskNumber: tasks.length + 1 })); setEditId(null); setShowForm(true) }} className="btn btn-primary shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600">
+                    <Plus size={18} aria-hidden="true" /> Nueva Tarea
                 </button>
             </div>
 
             {/* Form Modal */}
             {showForm && (
                 <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) resetForm() }} role="dialog" aria-modal="true" aria-label="Formulario de tarea">
-                    <div className="modal-content">
-                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                            <h3 className="text-[16px] font-semibold text-slate-900">{editId ? 'Editar Tarea' : 'Nueva Tarea'}</h3>
-                            <button onClick={resetForm} className="text-slate-400 hover:text-slate-600" aria-label="Cerrar formulario"><X size={20} /></button>
+                    <div className="modal-content rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-rise bg-white">
+                        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
+                            <h3 className="text-[18px] font-semibold text-slate-900">{editId ? 'Editar Tarea' : 'Nueva Tarea'}</h3>
+                            <button onClick={resetForm} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-full transition-colors" aria-label="Cerrar formulario"><X size={22} /></button>
                         </div>
-                        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+                        <form onSubmit={handleSubmit} className="p-6 space-y-5">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label htmlFor="taskNumber" className="form-label">Número de Tarea</label>
@@ -128,9 +128,9 @@ export default function Tasks() {
                                 <label htmlFor="successCriteria" className="form-label">Criterio de Éxito</label>
                                 <textarea id="successCriteria" value={form.successCriteria} onChange={e => setForm(f => ({ ...f, successCriteria: e.target.value }))} className="form-input" rows={2} placeholder="¿Cómo se mide el éxito?" />
                             </div>
-                            <div className="flex gap-3 pt-2">
-                                <button type="submit" className="btn btn-primary"><Save size={16} /> {editId ? 'Actualizar' : 'Crear'}</button>
-                                <button type="button" onClick={resetForm} className="btn btn-secondary">Cancelar</button>
+                            <div className="flex gap-4 pt-3">
+                                <button type="submit" className="btn btn-primary flex items-center gap-2 flex-1 justify-center py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 font-semibold"><Save size={18} /> {editId ? 'Actualizar' : 'Crear'}</button>
+                                <button type="button" onClick={resetForm} className="btn btn-secondary flex-1 py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 font-medium">Cancelar</button>
                             </div>
                         </form>
                     </div>
@@ -141,35 +141,40 @@ export default function Tasks() {
             {loading ? (
                 <div className="flex justify-center py-12"><div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" /></div>
             ) : tasks.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center">
-                    <ListChecks size={40} className="text-slate-300 mx-auto" />
-                    <h3 className="mt-3 text-[15px] font-semibold text-slate-600">Sin tareas definidas</h3>
-                    <p className="text-[13px] text-slate-400 mt-1">Define las tareas para tu plan de prueba</p>
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl border-2 border-dashed border-slate-300 p-12 text-center shadow-inner">
+                    <ListChecks size={48} className="text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-[18px] font-semibold text-slate-700 mb-2">Sin tareas definidas</h3>
+                    <p className="text-[14px] text-slate-500">Define las tareas para tu plan de prueba.</p>
                 </div>
             ) : (
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {tasks.map((task: any) => (
-                        <div key={task.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 animate-rise hover:shadow-md transition-shadow">
-                            <div className="flex items-start gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0 text-[14px] font-bold text-blue-700">
-                                    T{task.taskNumber}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="text-[14px] font-semibold text-slate-900">{task.scenario}</h3>
-                                    {task.expectedResult && <p className="text-[12px] text-slate-500 mt-1"><strong>Resultado esperado:</strong> {task.expectedResult}</p>}
-                                    {task.mainMetric && <p className="text-[12px] text-slate-500 mt-0.5"><strong>Métrica principal:</strong> {task.mainMetric}</p>}
-                                    {task.successCriteria && <p className="text-[12px] text-slate-500 mt-0.5"><strong>Criterio de éxito:</strong> {task.successCriteria}</p>}
-                                    <div className="mt-2 flex items-center gap-2 text-[11px]">
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-50 text-slate-500 border border-slate-100">
-                                            <Clock size={10} aria-hidden="true" /> {task.maxTimeSeconds}s máx.
-                                        </span>
+                        <div key={task.id} className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.02] group">
+                            <div className="h-2 w-full bg-gradient-to-r from-indigo-500 to-blue-500" />
+                            <div className="p-5">
+                                <div className="flex items-start gap-4 mb-3">
+                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 border-2 border-blue-200 flex items-center justify-center flex-shrink-0 text-[16px] font-bold text-blue-700 shadow-md group-hover:shadow-lg transition-shadow">
+                                        T{task.taskNumber}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="text-[16px] font-semibold text-slate-900 leading-snug">{task.scenario}</h3>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <button onClick={() => handleEdit(task)} className="btn btn-secondary text-[11px] py-1.5 px-2.5" aria-label={`Editar tarea ${task.taskNumber}`}>Editar</button>
-                                    <button onClick={() => handleDelete(task.id)} className="btn btn-danger text-[11px] py-1.5 px-2.5" aria-label={`Eliminar tarea ${task.taskNumber}`}>
-                                        <Trash2 size={12} />
-                                    </button>
+                                <div className="space-y-2 mb-4">
+                                    {task.expectedResult && <p className="text-[13px] text-slate-700"><span className="font-semibold text-slate-800">Resultado esperado:</span> {task.expectedResult}</p>}
+                                    {task.mainMetric && <p className="text-[13px] text-slate-700"><span className="font-semibold text-slate-800">Métrica principal:</span> {task.mainMetric}</p>}
+                                    {task.successCriteria && <p className="text-[13px] text-slate-700"><span className="font-semibold text-slate-800">Criterio de éxito:</span> {task.successCriteria}</p>}
+                                </div>
+                                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                                    <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-medium text-[12px] shadow-sm">
+                                        <Clock size={14} aria-hidden="true" /> {task.maxTimeSeconds}s máx.
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={() => handleEdit(task)} className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-[12px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-blue-200" aria-label={`Editar tarea ${task.taskNumber}`}>Editar</button>
+                                        <button onClick={() => handleDelete(task.id)} className="bg-red-50 hover:bg-red-100 text-red-700 text-[12px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-red-200" aria-label={`Eliminar tarea ${task.taskNumber}`}>
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
