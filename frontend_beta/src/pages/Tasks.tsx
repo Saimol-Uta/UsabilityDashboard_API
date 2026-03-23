@@ -128,9 +128,13 @@ export default function Tasks() {
                                 <label htmlFor="successCriteria" className="form-label">Criterio de Éxito</label>
                                 <textarea id="successCriteria" value={form.successCriteria} onChange={e => setForm(f => ({ ...f, successCriteria: e.target.value }))} className="form-input" rows={2} placeholder="¿Cómo se mide el éxito?" />
                             </div>
-                            <div className="flex gap-4 pt-3">
-                                <button type="submit" className="btn btn-primary flex items-center gap-2 flex-1 justify-center py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 font-semibold"><Save size={18} /> {editId ? 'Actualizar' : 'Crear'}</button>
-                                <button type="button" onClick={resetForm} className="btn btn-secondary flex-1 py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 font-medium">Cancelar</button>
+                            <div className="flex items-center gap-3 pt-3">
+                                <button type="submit" className="btn btn-primary flex items-center justify-center gap-2">
+                                    <Save size={16} /> {editId ? 'Actualizar' : 'Crear'}
+                                </button>
+                                <button type="button" onClick={resetForm} className="btn btn-secondary text-center">
+                                    Cancelar
+                                </button>
                             </div>
                         </form>
                     </div>

@@ -101,9 +101,13 @@ export default function Participants() {
                                 <label htmlFor="profile" className="form-label">Perfil demográfico</label>
                                 <textarea id="profile" value={form.profile} onChange={e => setForm(f => ({ ...f, profile: e.target.value }))} className="form-input" rows={3} placeholder="Ej: Estudiante de ingeniería, usuario frecuente de apps móviles..." />
                             </div>
-                            <div className="flex gap-3 pt-2">
-                                <button type="submit" className="btn btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold shadow-md hover:shadow-lg flex items-center gap-2"><Save size={16} /> {editId ? 'Actualizar' : 'Guardar'}</button>
-                                <button type="button" onClick={resetForm} className="btn btn-secondary">Cancelar</button>
+                            <div className="flex items-center gap-3 pt-3">
+                                <button type="submit" className="btn btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                                    <Save size={16} /> {editId ? 'Actualizar' : 'Guardar'}
+                                </button>
+                                <button type="button" onClick={resetForm} className="btn btn-secondary text-center">
+                                    Cancelar
+                                </button>
                             </div>
                         </form>
                     </div>

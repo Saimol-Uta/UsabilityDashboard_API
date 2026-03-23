@@ -191,9 +191,13 @@ export default function ImprovementActions() {
                                     </select>
                                 </div>
                             </div>
-                            <div className="flex gap-3 pt-2">
-                                <button type="submit" className="btn btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold shadow-md hover:shadow-lg flex items-center gap-2"><Save size={16} /> {editId ? 'Actualizar' : 'Guardar'}</button>
-                                <button type="button" onClick={resetForm} className="btn btn-secondary">Cancelar</button>
+                            <div className="flex items-center gap-3 pt-3">
+                                <button type="submit" className="btn btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                                    <Save size={16} /> {editId ? 'Actualizar' : 'Guardar'}
+                                </button>
+                                <button type="button" onClick={resetForm} className="btn btn-secondary text-center">
+                                    Cancelar
+                                </button>
                             </div>
                         </form>
                     </div>

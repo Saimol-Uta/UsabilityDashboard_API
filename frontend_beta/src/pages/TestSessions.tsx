@@ -126,11 +126,13 @@ export default function TestSessions() {
                                 <label htmlFor="platformTested" className="form-label">Plataforma a evaluar</label>
                                 <input id="platformTested" type="text" value={form.platformTested} onChange={e => setForm(f => ({ ...f, platformTested: e.target.value }))} className="form-input" placeholder="Ej: iOS App, Android, Desktop Web..." />
                             </div>
-                            <div className="flex gap-3 pt-2">
-                                <button type="submit" className="btn btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold shadow-md hover:shadow-lg flex items-center gap-2" disabled={participants.length === 0}>
-                                    <Save size={16} /> {editId ? 'Actualizar' : 'Agendar Sesión'}
+                            <div className="flex items-center gap-3 pt-3">
+                                <button type="submit" className="btn btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold shadow-md hover:shadow-lg flex items-center justify-center gap-2" disabled={participants.length === 0}>
+                                    <Save size={16} /> {editId ? 'Actualizar' : 'Guardar'}
                                 </button>
-                                <button type="button" onClick={resetForm} className="btn btn-secondary">Cancelar</button>
+                                <button type="button" onClick={resetForm} className="btn btn-secondary text-center">
+                                    Cancelar
+                                </button>
                             </div>
                         </form>
                     </div>
