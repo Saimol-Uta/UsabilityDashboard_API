@@ -5,6 +5,7 @@ import { Plus, Save, Trash2, Search, X, AlertCircle, AlertTriangle, ArrowRight, 
 
 export default function Findings() {
     const [findings, setFindings] = useState<any[]>([])
+    const [plans, setPlans] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [activePlanId, setActivePlanId] = useState<string>('')
     const [filter, setFilter] = useState('')
@@ -26,7 +27,9 @@ export default function Findings() {
 
     useEffect(() => {
         testPlansApi.getAll().then(res => {
-            const planId = res.data?.[0]?.id ?? ''
+            const allPlans = res.data ?? []
+            setPlans(allPlans)
+            const planId = allPlans[0]?.id ?? ''
             setActivePlanId(planId)
             if (planId) {
                 setForm(f => ({ ...f, testPlanId: planId }))
@@ -55,6 +58,7 @@ export default function Findings() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (!form.testPlanId) { addToast('Selecciona un plan de prueba', 'error'); return }
         if (!form.description.trim()) { addToast('La descripción es requerida', 'error'); return }
         try {
             if (editId) {
@@ -71,7 +75,7 @@ export default function Findings() {
                 addToast('Hallazgo actualizado', 'success')
             } else {
                 await findingsApi.create({
-                    testPlanId: activePlanId,
+                    testPlanId: form.testPlanId,
                     description: form.description,
                     frequency: form.frequency,
                     severity: form.severity,
@@ -82,8 +86,11 @@ export default function Findings() {
                 })
                 addToast('Hallazgo creado', 'success')
             }
+            if (activePlanId !== form.testPlanId) {
+                setActivePlanId(form.testPlanId)
+            }
             resetForm();
-            if (activePlanId) fetchFindings(activePlanId)
+            if (form.testPlanId) fetchFindings(form.testPlanId)
         } catch { addToast('Error al guardar', 'error') }
     }
 
@@ -110,7 +117,7 @@ export default function Findings() {
                     <h2 className="text-[20px] font-semibold text-slate-900">Síntesis de Hallazgos</h2>
                     <p className="text-[13px] text-slate-500 mt-1">Problemas de usabilidad detectados con frecuencia, severidad y recomendaciones</p>
                 </div>
-                <button onClick={() => { setEditId(null); setForm(emptyForm); setShowForm(true) }}
+                <button onClick={() => { setEditId(null); setForm({ ...emptyForm, testPlanId: activePlanId }); setShowForm(true) }}
                     className="btn btn-primary shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600">
                     <Plus size={18} aria-hidden="true" /> Nuevo Hallazgo
                 </button>
@@ -138,6 +145,22 @@ export default function Findings() {
                             <button onClick={resetForm} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-full transition-colors" aria-label="Cerrar"><X size={22} /></button>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                            <div>
+                                <label htmlFor="findingPlanId" className="form-label">Plan asignado <span className="text-red-500">*</span></label>
+                                <select
+                                    id="findingPlanId"
+                                    value={form.testPlanId}
+                                    onChange={e => setForm(f => ({ ...f, testPlanId: e.target.value }))}
+                                    className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500"
+                                    disabled={Boolean(editId)}
+                                    required
+                                >
+                                    <option value="">Selecciona un plan</option>
+                                    {plans.map((plan: any) => (
+                                        <option key={plan.id} value={plan.id}>{plan.projectName}</option>
+                                    ))}
+                                </select>
+                            </div>
                             <div>
                                 <label htmlFor="description" className="form-label">Descripción <span className="text-red-500">*</span></label>
                                 <textarea id="description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" rows={3} required />

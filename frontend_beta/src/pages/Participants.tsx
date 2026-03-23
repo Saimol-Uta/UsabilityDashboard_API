@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { participantsApi } from '../api'
 import { useToast } from '../App'
-import { Plus, Save, Trash2, Users, X, User } from 'lucide-react'
+import { Plus, Save, Users, X, User } from 'lucide-react'
 
 export default function Participants() {
     const [participants, setParticipants] = useState<any[]>([])
@@ -9,6 +9,7 @@ export default function Participants() {
     const [filter, setFilter] = useState('')
     const [showForm, setShowForm] = useState(false)
     const [editId, setEditId] = useState<string | null>(null)
+    const [participantToDelete, setParticipantToDelete] = useState<any | null>(null)
     const { addToast } = useToast()
 
     const emptyForm = { name: '', age: '', profile: '' }
@@ -54,13 +55,16 @@ export default function Participants() {
         } catch { addToast('Error al guardar participante', 'error') }
     }
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('¿Eliminar participante?')) return
+    const confirmDelete = async (id: string) => {
         try {
             await participantsApi.delete(id)
             addToast('Participante eliminado', 'success')
             fetchParticipants()
-        } catch { addToast('Error al eliminar', 'error') }
+        } catch {
+            addToast('Error al eliminar', 'error')
+        } finally {
+            setParticipantToDelete(null)
+        }
     }
 
     const filtered = participants.filter(p => p.name.toLowerCase().includes(filter.toLowerCase()) || p.profile.toLowerCase().includes(filter.toLowerCase()))
@@ -142,10 +146,30 @@ export default function Participants() {
                             </div>
                             <div className="flex items-center gap-2 mt-auto pt-2 border-t border-slate-100">
                                 <button onClick={() => handleEdit(participant)} className="btn btn-secondary text-[11px] py-1.5 px-3 flex-1 justify-center">Editar</button>
-                                <button onClick={() => handleDelete(participant.id)} className="btn btn-danger text-[11px] py-1.5 px-3 flex-1 justify-center">Eliminar</button>
+                                <button onClick={() => setParticipantToDelete(participant)} className="btn btn-danger text-[11px] py-1.5 px-3 flex-1 justify-center">Eliminar</button>
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {participantToDelete && (
+                <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setParticipantToDelete(null) }} role="dialog" aria-modal="true" aria-label="Confirmar eliminación de participante">
+                    <div className="modal-content max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-rise bg-white">
+                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                            <h3 className="text-[16px] font-semibold text-slate-900">Eliminar Participante</h3>
+                            <button onClick={() => setParticipantToDelete(null)} className="text-slate-400 hover:text-slate-600" aria-label="Cerrar"><X size={20} /></button>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <p className="text-[14px] text-slate-600">
+                                ¿Estás seguro de que deseas eliminar al participante <strong>{participantToDelete.name}</strong>? Esta acción no se puede deshacer.
+                            </p>
+                            <div className="flex justify-end gap-3">
+                                <button type="button" onClick={() => setParticipantToDelete(null)} className="btn btn-secondary">Cancelar</button>
+                                <button type="button" onClick={() => confirmDelete(participantToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
