@@ -9,6 +9,8 @@ import ModeratorScript from './pages/ModeratorScript'
 import Observations from './pages/Observations'
 import Findings from './pages/Findings'
 import ImprovementActions from './pages/ImprovementActions'
+import Participants from './pages/Participants'
+import TestSessions from './pages/TestSessions'
 
 interface Toast {
   id: number
@@ -54,6 +56,8 @@ export default function App() {
           <Route path="tareas" element={<Tasks />} />
           <Route path="guion" element={<ModeratorScript />} />
           <Route path="observaciones" element={<Observations />} />
+          <Route path="participantes" element={<Participants />} />
+          <Route path="sesiones" element={<TestSessions />} />
           <Route path="hallazgos" element={<Findings />} />
           <Route path="mejoras" element={<ImprovementActions />} />
           <Route path="*" element={<Navigate to="/" replace />} />

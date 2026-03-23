@@ -60,8 +60,32 @@ export default function TestPlanForm() {
             addToast('El nombre del proyecto es requerido', 'error')
             return
         }
+
+        if (new Date(form.endDate) < new Date(form.startDate)) {
+            addToast('La fecha de fin no puede ser anterior a la de inicio', 'error')
+            return
+        }
+
+        if (!form.product.trim() || !form.objective.trim() || !form.evaluatedModule.trim()) {
+            addToast('El Producto, Objetivo y Módulo Evaluado son obligatorios', 'error')
+            return
+        }
         setSaving(true)
         try {
+            // Check for duplicate name
+            const existingPlansRes = await testPlansApi.getAll()
+            const existingPlans = existingPlansRes.data ?? []
+            const nameTrimmed = form.projectName.trim().toLowerCase()
+            const duplicate = existingPlans.find((p: any) => 
+                p.projectName?.trim().toLowerCase() === nameTrimmed && String(p.id) !== String(id)
+            )
+
+            if (duplicate) {
+                addToast('Ya existe un plan de prueba con ese nombre', 'error')
+                setSaving(false)
+                return
+            }
+
             const data = {
                 ...form,
             }
@@ -109,27 +133,27 @@ export default function TestPlanForm() {
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-5">
                     <div>
-                        <label htmlFor="projectName" className="form-label">Nombre del Proyecto *</label>
+                        <label htmlFor="projectName" className="form-label">Nombre del Proyecto <span className="text-red-500">*</span></label>
                         <input id="projectName" name="projectName" value={form.projectName} onChange={handleChange}
                             className="form-input" placeholder="Ej: Auditoría de Usabilidad: freeCodeCamp vs Coursera" required />
                     </div>
 
                     <div>
-                        <label htmlFor="objective" className="form-label">Objetivo</label>
+                        <label htmlFor="objective" className="form-label">Objetivo <span className="text-red-500">*</span></label>
                         <textarea id="objective" name="objective" value={form.objective} onChange={handleChange}
-                            className="form-input" rows={3} placeholder="Describe el objetivo principal del plan de prueba" />
+                            className="form-input" rows={3} placeholder="Describe el objetivo principal del plan de prueba" required />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label htmlFor="product" className="form-label">Producto</label>
+                            <label htmlFor="product" className="form-label">Producto <span className="text-red-500">*</span></label>
                             <input id="product" name="product" value={form.product} onChange={handleChange}
-                                className="form-input" placeholder="Ej: Plataforma e-learning" />
+                                className="form-input" placeholder="Ej: Plataforma e-learning" required />
                         </div>
                         <div>
-                            <label htmlFor="evaluatedModule" className="form-label">Módulo evaluado</label>
+                            <label htmlFor="evaluatedModule" className="form-label">Módulo evaluado <span className="text-red-500">*</span></label>
                             <input id="evaluatedModule" name="evaluatedModule" value={form.evaluatedModule} onChange={handleChange}
-                                className="form-input" placeholder="Ej: Registro y pago" />
+                                className="form-input" placeholder="Ej: Registro y pago" required />
                         </div>
                     </div>
 
@@ -152,12 +176,12 @@ export default function TestPlanForm() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label htmlFor="startDate" className="form-label">Fecha de Inicio</label>
+                            <label htmlFor="startDate" className="form-label">Fecha de Inicio <span className="text-red-500">*</span></label>
                             <input id="startDate" name="startDate" type="date" value={form.startDate} onChange={handleChange} className="form-input" required />
                         </div>
                         <div>
-                            <label htmlFor="endDate" className="form-label">Fecha de Fin</label>
-                            <input id="endDate" name="endDate" type="date" value={form.endDate} onChange={handleChange} className="form-input" required />
+                            <label htmlFor="endDate" className="form-label">Fecha de Fin <span className="text-red-500">*</span></label>
+                            <input id="endDate" name="endDate" type="date" min={form.startDate} value={form.endDate} onChange={handleChange} className="form-input" required />
                         </div>
                     </div>
 
@@ -180,9 +204,9 @@ export default function TestPlanForm() {
                                 className="form-input" placeholder="Ej: Laboratorio 2 / Remoto" />
                         </div>
                         <div>
-                            <label htmlFor="estimatedDuration" className="form-label">Duración estimada</label>
-                            <input id="estimatedDuration" name="estimatedDuration" value={form.estimatedDuration} onChange={handleChange}
-                                className="form-input" placeholder="Ej: 45 minutos" />
+                            <label htmlFor="estimatedDuration" className="form-label">Duración estimada (minutos) <span className="text-red-500">*</span></label>
+                            <input id="estimatedDuration" name="estimatedDuration" type="number" min="1" value={form.estimatedDuration} onChange={handleChange}
+                                className="form-input" placeholder="Ej: 45" required />
                         </div>
                     </div>
 

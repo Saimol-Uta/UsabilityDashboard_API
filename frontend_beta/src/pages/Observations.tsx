@@ -11,6 +11,7 @@ export default function Observations() {
     const [showForm, setShowForm] = useState(false)
     const [editId, setEditId] = useState<string | null>(null)
     const [activePlanId, setActivePlanId] = useState('')
+    const [logToDelete, setLogToDelete] = useState<any | null>(null)
     const { addToast } = useToast()
 
     const emptyForm = {
@@ -100,6 +101,22 @@ export default function Observations() {
             return
         }
 
+        if (form.timeSeconds <= 0) { addToast('El tiempo debe ser mayor a 0', 'error'); return }
+        if (form.errorCount < 0) { addToast('Los errores no pueden ser negativos', 'error'); return }
+
+        if ((!form.taskSuccess || form.errorCount > 0) && !form.detectedProblem.trim()) {
+            addToast('El problema detectado es obligatorio cuando hay errores o la tarea no tuvo éxito', 'error')
+            return
+        }
+
+        if (form.timeSeconds <= 0) { addToast('El tiempo debe ser mayor a 0', 'error'); return }
+        if (form.errorCount < 0) { addToast('Los errores no pueden ser negativos', 'error'); return }
+
+        if ((!form.taskSuccess || form.errorCount > 0) && !form.detectedProblem.trim()) {
+            addToast('El problema detectado es obligatorio cuando hay errores o la tarea no tuvo éxito', 'error')
+            return
+        }
+
         try {
             if (editId) {
                 await observationLogsApi.update(editId, {
@@ -123,14 +140,15 @@ export default function Observations() {
         }
     }
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('¿Eliminar este registro?')) return
+    const confirmDelete = async (id: string) => {
         try {
             await observationLogsApi.delete(id)
             addToast('Registro eliminado', 'success')
             if (activePlanId) fetchData(activePlanId)
         } catch {
             addToast('Error al eliminar', 'error')
+        } finally {
+            setLogToDelete(null)
         }
     }
 
@@ -188,12 +206,12 @@ export default function Observations() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label htmlFor="timeSeconds" className="form-label">Tiempo (seg)</label>
-                                    <input id="timeSeconds" type="number" value={form.timeSeconds} onChange={e => setForm(f => ({ ...f, timeSeconds: Number(e.target.value) }))} className="form-input" min={0} />
+                                    <label htmlFor="timeSeconds" className="form-label">Tiempo (seg) <span className="text-red-500">*</span></label>
+                                    <input id="timeSeconds" type="number" value={form.timeSeconds} onChange={e => setForm(f => ({ ...f, timeSeconds: Number(e.target.value) }))} className="form-input" min={1} required />
                                 </div>
                                 <div>
-                                    <label htmlFor="errorCount" className="form-label">Errores</label>
-                                    <input id="errorCount" type="number" value={form.errorCount} onChange={e => setForm(f => ({ ...f, errorCount: Number(e.target.value) }))} className="form-input" min={0} />
+                                    <label htmlFor="errorCount" className="form-label">Errores <span className="text-red-500">*</span></label>
+                                    <input id="errorCount" type="number" value={form.errorCount} onChange={e => setForm(f => ({ ...f, errorCount: Number(e.target.value) }))} className="form-input" min={0} required />
                                 </div>
                             </div>
 
@@ -208,8 +226,8 @@ export default function Observations() {
                             </div>
 
                             <div>
-                                <label htmlFor="detectedProblem" className="form-label">Problema detectado</label>
-                                <textarea id="detectedProblem" value={form.detectedProblem} onChange={e => setForm(f => ({ ...f, detectedProblem: e.target.value }))} className="form-input" rows={2} placeholder="Describe el problema observado" />
+                                <label htmlFor="detectedProblem" className="form-label">Problema detectado {(!form.taskSuccess || form.errorCount > 0) && <span className="text-red-500">*</span>}</label>
+                                <textarea id="detectedProblem" value={form.detectedProblem} onChange={e => setForm(f => ({ ...f, detectedProblem: e.target.value }))} className={`form-input ${(!form.taskSuccess || form.errorCount > 0) && !form.detectedProblem.trim() ? 'border-red-500 focus:border-red-500 focus:ring-red-50' : ''}`} rows={2} placeholder="Describe el problema observado" required={!form.taskSuccess || form.errorCount > 0} />
                             </div>
 
                             <div>
@@ -217,14 +235,20 @@ export default function Observations() {
                                 <textarea id="proposedImprovement" value={form.proposedImprovement} onChange={e => setForm(f => ({ ...f, proposedImprovement: e.target.value }))} className="form-input" rows={2} placeholder="Propuesta de mejora" />
                             </div>
 
+
+
                             <div>
                                 <label htmlFor="comments" className="form-label">Comentarios</label>
                                 <textarea id="comments" value={form.comments} onChange={e => setForm(f => ({ ...f, comments: e.target.value }))} className="form-input" rows={3} placeholder="Notas del moderador" />
                             </div>
 
-                            <div className="flex gap-4 pt-3">
-                                <button type="submit" className="btn btn-primary flex items-center gap-2 flex-1 justify-center py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 font-semibold"><Save size={18} /> {editId ? 'Actualizar' : 'Guardar'}</button>
-                                <button type="button" onClick={resetForm} className="btn btn-secondary flex-1 py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 font-medium">Cancelar</button>
+                            <div className="flex items-center gap-3 pt-3">
+                                <button type="submit" className="btn btn-primary flex items-center justify-center gap-2">
+                                    <Save size={16} /> {editId ? 'Actualizar' : 'Guardar'}
+                                </button>
+                                <button type="button" onClick={resetForm} className="btn btn-secondary text-center">
+                                    Cancelar
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -284,7 +308,7 @@ export default function Observations() {
                                                 <button onClick={() => handleEdit(log)} className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-[12px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-blue-200">
                                                     Editar
                                                 </button>
-                                                <button onClick={() => handleDelete(log.id)} className="bg-red-50 hover:bg-red-100 text-red-700 text-[12px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-red-200">
+                                                <button onClick={() => setLogToDelete(log)} className="bg-red-50 hover:bg-red-100 text-red-700 text-[12px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-red-200">
                                                     <Trash2 size={14} />
                                                 </button>
                                             </div>
@@ -293,6 +317,26 @@ export default function Observations() {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            )}
+
+            {logToDelete && (
+                <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setLogToDelete(null) }} role="dialog" aria-modal="true" aria-label="Confirmar eliminación">
+                    <div className="modal-content max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                            <h3 className="text-[16px] font-semibold text-slate-900">Eliminar Observación</h3>
+                            <button onClick={() => setLogToDelete(null)} className="text-slate-400 hover:text-slate-600" aria-label="Cerrar"><X size={20} /></button>
+                        </div>
+                        <div className="p-5">
+                            <p className="text-[14px] text-slate-600 mb-5">
+                                ¿Estás seguro de que deseas eliminar la observación de la sesión <strong>{getSessionName(logToDelete.testSessionId)}</strong> (Tarea {getTaskLabel(logToDelete.testTaskId)})? Esta acción no se puede deshacer.
+                            </p>
+                            <div className="flex justify-end gap-3">
+                                <button type="button" onClick={() => setLogToDelete(null)} className="btn btn-secondary">Cancelar</button>
+                                <button type="button" onClick={() => confirmDelete(logToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

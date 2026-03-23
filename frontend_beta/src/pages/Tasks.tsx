@@ -51,6 +51,8 @@ export default function Tasks() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!form.scenario.trim()) { addToast('El escenario es requerido', 'error'); return }
+        if (!form.mainMetric.trim()) { addToast('La métrica principal es requerida', 'error'); return }
+        if (form.maxTimeSeconds <= 0) { addToast('El tiempo máximo debe ser mayor a 0', 'error'); return }
         try {
             if (editId) {
                 await testTasksApi.update(editId, {
@@ -106,12 +108,12 @@ export default function Tasks() {
                                     <input id="taskNumber" type="number" value={form.taskNumber} onChange={e => setForm(f => ({ ...f, taskNumber: Number(e.target.value) }))} className="form-input" min={1} />
                                 </div>
                                 <div>
-                                    <label htmlFor="maxTimeSeconds" className="form-label">Tiempo Máximo (seg)</label>
-                                    <input id="maxTimeSeconds" type="number" value={form.maxTimeSeconds} onChange={e => setForm(f => ({ ...f, maxTimeSeconds: Number(e.target.value) }))} className="form-input" min={10} />
+                                    <label htmlFor="maxTimeSeconds" className="form-label">Tiempo Máximo (seg) <span className="text-red-500">*</span></label>
+                                    <input id="maxTimeSeconds" type="number" value={form.maxTimeSeconds} onChange={e => setForm(f => ({ ...f, maxTimeSeconds: Number(e.target.value) }))} className="form-input" min={1} required />
                                 </div>
                             </div>
                             <div>
-                                <label htmlFor="scenario" className="form-label">Escenario *</label>
+                                <label htmlFor="scenario" className="form-label">Escenario <span className="text-red-500">*</span></label>
                                 <textarea id="scenario" value={form.scenario} onChange={e => setForm(f => ({ ...f, scenario: e.target.value }))} className="form-input" rows={3} placeholder="Describe la tarea que realizará el participante" required />
                             </div>
                             <div>
@@ -119,16 +121,20 @@ export default function Tasks() {
                                 <textarea id="expectedResult" value={form.expectedResult} onChange={e => setForm(f => ({ ...f, expectedResult: e.target.value }))} className="form-input" rows={2} placeholder="¿Qué se espera que logre?" />
                             </div>
                             <div>
-                                <label htmlFor="mainMetric" className="form-label">Métrica Principal</label>
-                                <input id="mainMetric" value={form.mainMetric} onChange={e => setForm(f => ({ ...f, mainMetric: e.target.value }))} className="form-input" placeholder="Ej: Tasa de éxito" />
+                                <label htmlFor="mainMetric" className="form-label">Métrica Principal <span className="text-red-500">*</span></label>
+                                <input id="mainMetric" value={form.mainMetric} onChange={e => setForm(f => ({ ...f, mainMetric: e.target.value }))} className="form-input" placeholder="Ej: Tasa de éxito" required />
                             </div>
                             <div>
                                 <label htmlFor="successCriteria" className="form-label">Criterio de Éxito</label>
                                 <textarea id="successCriteria" value={form.successCriteria} onChange={e => setForm(f => ({ ...f, successCriteria: e.target.value }))} className="form-input" rows={2} placeholder="¿Cómo se mide el éxito?" />
                             </div>
-                            <div className="flex gap-4 pt-3">
-                                <button type="submit" className="btn btn-primary flex items-center gap-2 flex-1 justify-center py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 font-semibold"><Save size={18} /> {editId ? 'Actualizar' : 'Crear'}</button>
-                                <button type="button" onClick={resetForm} className="btn btn-secondary flex-1 py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 font-medium">Cancelar</button>
+                            <div className="flex items-center gap-3 pt-3">
+                                <button type="submit" className="btn btn-primary flex items-center justify-center gap-2">
+                                    <Save size={16} /> {editId ? 'Actualizar' : 'Crear'}
+                                </button>
+                                <button type="button" onClick={resetForm} className="btn btn-secondary text-center">
+                                    Cancelar
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -147,7 +153,7 @@ export default function Tasks() {
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {tasks.map((task: any) => (
-                        <div key={task.id} className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.02] group">
+                        <div key={task.id} className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group">
                             <div className="h-2 w-full bg-gradient-to-r from-indigo-500 to-blue-500" />
                             <div className="p-5">
                                 <div className="flex items-start gap-4 mb-3">
