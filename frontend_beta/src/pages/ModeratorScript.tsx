@@ -16,7 +16,6 @@ export default function ModeratorScript() {
             const planId = plansRes.data?.[0]?.id ?? ''
             setActivePlanId(planId)
             if (!planId) return
-
             try {
                 const res = await moderatorScriptsApi.getByPlan(planId)
                 const s = res.data
@@ -24,14 +23,9 @@ export default function ModeratorScript() {
                     setScript(s)
                     setForm({ introduction: s.introduction, followUpQuestions: s.followUpQuestions, closingInstructions: s.closingInstructions })
                 }
-            } catch {
-                // Si no existe guion para el plan, dejamos el formulario vacío para crear uno.
-            } finally {
-                setLoading(false)
-            }
-        }).finally(() => {
-            setLoading(false)
-        })
+            } catch {} 
+            finally { setLoading(false) }
+        }).finally(() => { setLoading(false) })
     }, [])
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -51,60 +45,56 @@ export default function ModeratorScript() {
     }
 
     if (loading) {
-        return <div className="flex justify-center py-20"><div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" /></div>
+        return <div className="flex justify-center py-20"><div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" /></div>
     }
 
     return (
-        <div className="max-w-3xl mx-auto flex flex-col gap-6">
+        <div className="max-w-3xl mx-auto flex flex-col gap-8">
             <div>
-                <h2 className="text-[20px] font-semibold text-slate-900">Guión del Moderador</h2>
+                <h2 className="text-[24px] font-extrabold text-slate-900">Guión del Moderador</h2>
                 <p className="text-[13px] text-slate-500 mt-1">Define las instrucciones para guiar la sesión de prueba de usabilidad</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Introduction */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-rise">
-                    <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/70 flex items-center gap-2">
-                        <MessageSquareText size={14} className="text-blue-500" aria-hidden="true" />
-                        <h3 className="text-[14px] font-semibold text-gray-800">Introducción</h3>
-                    </div>
-                    <div className="p-5">
-                        <label htmlFor="introduction" className="form-label">Texto de bienvenida para el participante</label>
-                        <textarea id="introduction" value={form.introduction} onChange={e => setForm(f => ({ ...f, introduction: e.target.value }))}
-                            className="form-input" rows={5} placeholder="Ej: Bienvenido/a a esta sesión de prueba de usabilidad. Vamos a evaluar..." />
-                    </div>
-                </div>
+            <form onSubmit={handleSubmit} className="space-y-8">
+                {['Introducción', 'Preguntas de Seguimiento', 'Instrucciones de Cierre'].map((section, i) => {
+                    const key = section.replace(/\s/g, '')
+                    const colors = ['from-blue-200 to-white', 'from-amber-200 to-white', 'from-emerald-200 to-white']
+                    const iconColor = i === 0 ? 'text-blue-600 drop-shadow-lg' : i === 1 ? 'text-amber-600 drop-shadow-lg' : 'text-emerald-600 drop-shadow-lg'
+                    const placeholder = i === 0
+                        ? "Ej: Bienvenido/a a esta sesión de prueba de usabilidad. Vamos a evaluar..."
+                        : i === 1
+                            ? "- ¿Qué esperabas que sucediera?\n- ¿Fue fácil o difícil?"
+                            : "Ej: Gracias por participar en esta sesión..."
+                    const value = i === 0 ? form.introduction : i === 1 ? form.followUpQuestions : form.closingInstructions
+                    const onChange = (e: any) => {
+                        const val = e.target.value
+                        if (i === 0) setForm(f => ({ ...f, introduction: val }))
+                        else if (i === 1) setForm(f => ({ ...f, followUpQuestions: val }))
+                        else setForm(f => ({ ...f, closingInstructions: val }))
+                    }
 
-                {/* Follow-up Questions */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-rise delay-1">
-                    <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/70 flex items-center gap-2">
-                        <MessageSquareText size={14} className="text-amber-500" aria-hidden="true" />
-                        <h3 className="text-[14px] font-semibold text-gray-800">Preguntas de Seguimiento</h3>
-                    </div>
-                    <div className="p-5">
-                        <label htmlFor="followUpQuestions" className="form-label">Preguntas durante la prueba (una por línea)</label>
-                        <textarea id="followUpQuestions" value={form.followUpQuestions} onChange={e => setForm(f => ({ ...f, followUpQuestions: e.target.value }))}
-                            className="form-input" rows={5} placeholder="- ¿Qué esperabas que sucediera?&#10;- ¿Fue fácil o difícil?" />
-                    </div>
-                </div>
+                    return (
+                        <div key={key} className={`bg-white rounded-2xl border-2 border-slate-300 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 overflow-hidden animate-rise duration-700`}>
+                            <div className={`px-5 py-3 border-b border-slate-200 bg-gradient-to-r ${colors[i]} flex items-center gap-3`}>
+                                <MessageSquareText size={20} className={iconColor} aria-hidden="true" />
+                                <h3 className="text-[16px] font-bold text-gray-900">{section}</h3>
+                            </div>
+                            <div className="p-6">
+                                <textarea
+                                    value={value}
+                                    onChange={onChange}
+                                    className="form-input resize-none border-2 border-slate-300 focus:border-blue-400 focus:ring focus:ring-blue-200 rounded-xl p-4 w-full text-sm font-medium transition-all duration-300 hover:shadow-inner"
+                                    rows={i === 2 ? 3 : 5}
+                                    placeholder={placeholder}
+                                />
+                            </div>
+                        </div>
+                    )
+                })}
 
-                {/* Closing */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-rise delay-2">
-                    <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/70 flex items-center gap-2">
-                        <MessageSquareText size={14} className="text-emerald-500" aria-hidden="true" />
-                        <h3 className="text-[14px] font-semibold text-gray-800">Instrucciones de Cierre</h3>
-                    </div>
-                    <div className="p-5">
-                        <label htmlFor="closingInstructions" className="form-label">Cierre de la sesión</label>
-                        <textarea id="closingInstructions" value={form.closingInstructions} onChange={e => setForm(f => ({ ...f, closingInstructions: e.target.value }))}
-                            className="form-input" rows={3} placeholder="Ej: Gracias por participar en esta sesión..." />
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <button type="submit" className="btn btn-primary" disabled={saving}>
-                        <Save size={16} aria-hidden="true" />
-                        {saving ? 'Guardando...' : script ? 'Actualizar Guión' : 'Crear Guión'}
+                <div className="flex items-center gap-4">
+                    <button type="submit" className="btn btn-primary flex items-center gap-2 px-6 py-3 text-base" disabled={saving}>
+                        <Save size={18} /> {saving ? 'Guardando...' : script ? 'Actualizar Guión' : 'Crear Guión'}
                     </button>
                 </div>
             </form>
