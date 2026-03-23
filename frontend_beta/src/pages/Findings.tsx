@@ -10,6 +10,7 @@ export default function Findings() {
     const [filter, setFilter] = useState('')
     const [showForm, setShowForm] = useState(false)
     const [editId, setEditId] = useState<string | null>(null)
+    const [findingToDelete, setFindingToDelete] = useState<any | null>(null)
     const { addToast } = useToast()
 
     const emptyForm = {
@@ -86,14 +87,16 @@ export default function Findings() {
         } catch { addToast('Error al guardar', 'error') }
     }
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('¿Eliminar este hallazgo?')) return
+    const confirmDelete = async (id: string) => {
         try {
             await findingsApi.delete(id)
             addToast('Hallazgo eliminado', 'success')
             if (activePlanId) fetchFindings(activePlanId)
+        } catch {
+            addToast('Error al eliminar', 'error')
+        } finally {
+            setFindingToDelete(null)
         }
-        catch { addToast('Error al eliminar', 'error') }
     }
 
     const filtered = findings.filter(f =>
@@ -136,13 +139,13 @@ export default function Findings() {
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-5">
                             <div>
-                                <label htmlFor="description" className="form-label">Descripción *</label>
+                                <label htmlFor="description" className="form-label">Descripción <span className="text-red-500">*</span></label>
                                 <textarea id="description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" rows={3} required />
                             </div>
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid grid-cols-4 gap-4">
                                 <div>
-                                    <label htmlFor="severity" className="form-label">Severidad</label>
-                                    <select id="severity" value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500">
+                                    <label htmlFor="severity" className="form-label">Severidad <span className="text-red-500">*</span></label>
+                                    <select id="severity" value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" required>
                                         <option value="Critical">Crítica</option>
                                         <option value="High">Alta</option>
                                         <option value="Medium">Media</option>
@@ -150,11 +153,19 @@ export default function Findings() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label htmlFor="priority" className="form-label">Prioridad</label>
-                                    <select id="priority" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500">
+                                    <label htmlFor="priority" className="form-label">Prioridad <span className="text-red-500">*</span></label>
+                                    <select id="priority" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" required>
                                         <option value="High">Alta</option>
                                         <option value="Medium">Media</option>
                                         <option value="Low">Baja</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label htmlFor="status" className="form-label">Estado <span className="text-red-500">*</span></label>
+                                    <select id="status" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" required>
+                                        <option value="Open">Abierta</option>
+                                        <option value="Resolved">Resuelta</option>
+                                        <option value="Closed">Cerrada</option>
                                     </select>
                                 </div>
                                 <div>
@@ -236,7 +247,7 @@ export default function Findings() {
                                         <button onClick={() => handleEdit(finding)} className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-blue-200">
                                             Editar
                                         </button>
-                                        <button onClick={() => handleDelete(finding.id)} className="bg-red-50 hover:bg-red-100 text-red-700 text-[11px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-red-200">
+                                        <button onClick={() => setFindingToDelete(finding)} className="bg-red-50 hover:bg-red-100 text-red-700 text-[11px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-red-200">
                                             <Trash2 size={12} />
                                         </button>
                                     </div>
@@ -244,6 +255,26 @@ export default function Findings() {
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {findingToDelete && (
+                <div className="modal-overlay animate-fade-in" onClick={e => { if (e.target === e.currentTarget) setFindingToDelete(null) }} role="dialog" aria-modal="true" aria-label="Confirmar eliminación">
+                    <div className="modal-content max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-rise bg-white">
+                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                            <h3 className="text-[16px] font-semibold text-slate-900">Eliminar Hallazgo</h3>
+                            <button onClick={() => setFindingToDelete(null)} className="text-slate-400 hover:text-slate-600" aria-label="Cerrar"><X size={20} /></button>
+                        </div>
+                        <div className="p-5">
+                            <p className="text-[14px] text-slate-600 mb-5">
+                                ¿Estás seguro de que deseas eliminar este hallazgo? Esta acción no se puede deshacer.
+                            </p>
+                            <div className="flex justify-end gap-3">
+                                <button type="button" onClick={() => setFindingToDelete(null)} className="btn btn-secondary">Cancelar</button>
+                                <button type="button" onClick={() => confirmDelete(findingToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
