@@ -100,6 +100,14 @@ export default function Observations() {
             return
         }
 
+        if (form.timeSeconds <= 0) { addToast('El tiempo debe ser mayor a 0', 'error'); return }
+        if (form.errorCount < 0) { addToast('Los errores no pueden ser negativos', 'error'); return }
+
+        if ((!form.taskSuccess || form.errorCount > 0) && !form.detectedProblem.trim()) {
+            addToast('El problema detectado es obligatorio cuando hay errores o la tarea no tuvo éxito', 'error')
+            return
+        }
+
         try {
             if (editId) {
                 await observationLogsApi.update(editId, {
@@ -188,12 +196,12 @@ export default function Observations() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label htmlFor="timeSeconds" className="form-label">Tiempo (seg)</label>
-                                    <input id="timeSeconds" type="number" value={form.timeSeconds} onChange={e => setForm(f => ({ ...f, timeSeconds: Number(e.target.value) }))} className="form-input" min={0} />
+                                    <label htmlFor="timeSeconds" className="form-label">Tiempo (seg) <span className="text-red-500">*</span></label>
+                                    <input id="timeSeconds" type="number" value={form.timeSeconds} onChange={e => setForm(f => ({ ...f, timeSeconds: Number(e.target.value) }))} className="form-input" min={1} required />
                                 </div>
                                 <div>
-                                    <label htmlFor="errorCount" className="form-label">Errores</label>
-                                    <input id="errorCount" type="number" value={form.errorCount} onChange={e => setForm(f => ({ ...f, errorCount: Number(e.target.value) }))} className="form-input" min={0} />
+                                    <label htmlFor="errorCount" className="form-label">Errores <span className="text-red-500">*</span></label>
+                                    <input id="errorCount" type="number" value={form.errorCount} onChange={e => setForm(f => ({ ...f, errorCount: Number(e.target.value) }))} className="form-input" min={0} required />
                                 </div>
                             </div>
 
@@ -208,8 +216,8 @@ export default function Observations() {
                             </div>
 
                             <div>
-                                <label htmlFor="detectedProblem" className="form-label">Problema detectado</label>
-                                <textarea id="detectedProblem" value={form.detectedProblem} onChange={e => setForm(f => ({ ...f, detectedProblem: e.target.value }))} className="form-input" rows={2} placeholder="Describe el problema observado" />
+                                <label htmlFor="detectedProblem" className="form-label">Problema detectado {(!form.taskSuccess || form.errorCount > 0) && <span className="text-red-500">*</span>}</label>
+                                <textarea id="detectedProblem" value={form.detectedProblem} onChange={e => setForm(f => ({ ...f, detectedProblem: e.target.value }))} className={`form-input ${(!form.taskSuccess || form.errorCount > 0) && !form.detectedProblem.trim() ? 'border-red-500 focus:border-red-500 focus:ring-red-50' : ''}`} rows={2} placeholder="Describe el problema observado" required={!form.taskSuccess || form.errorCount > 0} />
                             </div>
 
                             <div>
