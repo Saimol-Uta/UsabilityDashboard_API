@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, ListChecks, MessageSquareText,
-  Eye, Search, Lightbulb, ChevronRight, FolderKanban, ShieldCheck, Sparkles
+  Eye, Search, Lightbulb, ChevronRight, FolderKanban, ShieldCheck, Sparkles, Users, CalendarRange
 } from 'lucide-react'
 
 const navItems = [
@@ -9,7 +9,9 @@ const navItems = [
   { to: '/planes', icon: FileText, label: 'Plan de Prueba', detail: 'Gestión de planes de test' },
   { to: '/tareas', icon: ListChecks, label: 'Gestión de Tareas', detail: 'Escenarios y criterios' },
   { to: '/guion', icon: MessageSquareText, label: 'Guión del Moderador', detail: 'Instrucciones del moderador' },
-  { to: '/observaciones', icon: Eye, label: 'Observaciones', detail: 'Registro de participantes' },
+  { to: '/participantes', icon: Users, label: 'Participantes', detail: 'Directorio de usuarios' },
+  { to: '/sesiones', icon: CalendarRange, label: 'Sesiones de Prueba', detail: 'Agenda de trabajo de campo' },
+  { to: '/observaciones', icon: Eye, label: 'Observaciones', detail: 'Registro de resultados' },
   { to: '/hallazgos', icon: Search, label: 'Hallazgos', detail: 'Síntesis de problemas' },
   { to: '/mejoras', icon: Lightbulb, label: 'Acciones de Mejora', detail: 'Plan de mejoras' },
 ]
