@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { testPlansApi } from '../api'
 import { useToast } from '../App'
-import { Plus, Edit3, Trash2, Calendar, Target } from 'lucide-react'
+import { Plus, Edit3, Trash2, Calendar, Target, X } from 'lucide-react'
 
 export default function TestPlans() {
     const [plans, setPlans] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
+    const [planToDelete, setPlanToDelete] = useState<{ id: string, name: string } | null>(null)
     const { addToast } = useToast()
 
     const fetchPlans = () => {
@@ -16,13 +17,13 @@ export default function TestPlans() {
 
     useEffect(() => { fetchPlans() }, [])
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('¿Eliminar este plan de prueba?')) return
+    const confirmDelete = async (id: string) => {
         try {
             await testPlansApi.delete(id)
             addToast('Plan eliminado correctamente', 'success')
             fetchPlans()
         } catch { addToast('Error al eliminar el plan', 'error') }
+        finally { setPlanToDelete(null) }
     }
 
     if (loading) {
@@ -88,13 +89,33 @@ export default function TestPlans() {
                                     <Link to={`/planes/${plan.id}/editar`} className="btn btn-secondary text-[12px] py-2 px-3">
                                         <Edit3 size={14} aria-hidden="true" /> Editar
                                     </Link>
-                                    <button onClick={() => handleDelete(plan.id)} className="btn btn-danger text-[12px] py-2 px-3" aria-label={`Eliminar plan ${plan.projectName}`}>
+                                    <button onClick={() => setPlanToDelete({ id: plan.id, name: plan.projectName })} className="btn btn-danger text-[12px] py-2 px-3" aria-label={`Eliminar plan ${plan.projectName}`}>
                                         <Trash2 size={14} aria-hidden="true" /> Eliminar
                                     </button>
                                 </div>
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {planToDelete && (
+                <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setPlanToDelete(null) }} role="dialog" aria-modal="true">
+                    <div className="modal-content max-w-md">
+                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                            <h3 className="text-[16px] font-semibold text-slate-900">Eliminar Plan</h3>
+                            <button onClick={() => setPlanToDelete(null)} className="text-slate-400 hover:text-slate-600" aria-label="Cerrar"><X size={20} /></button>
+                        </div>
+                        <div className="p-5">
+                            <p className="text-[14px] text-slate-600 mb-5">
+                                ¿Estás seguro de que deseas eliminar el plan <strong>{planToDelete.name}</strong>? Esta acción no se puede deshacer.
+                            </p>
+                            <div className="flex justify-end gap-3">
+                                <button type="button" onClick={() => setPlanToDelete(null)} className="btn btn-secondary">Cancelar</button>
+                                <button type="button" onClick={() => confirmDelete(planToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
