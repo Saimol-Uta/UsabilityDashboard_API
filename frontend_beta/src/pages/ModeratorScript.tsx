@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { moderatorScriptsApi, testPlansApi } from '../api'
 import { useToast } from '../App'
-import { Save, MessageSquareText } from 'lucide-react'
+import { Save, MessageSquareText, Plus, Edit3, Trash2, X } from 'lucide-react'
 
 export default function ModeratorScript() {
     const [script, setScript] = useState<any>(null)
@@ -9,10 +9,13 @@ export default function ModeratorScript() {
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [activePlanId, setActivePlanId] = useState('')
-    const [form, setForm] = useState({ introduction: '', followUpQuestions: '', closingInstructions: '' })
+    const [showForm, setShowForm] = useState(false)
+    const [editId, setEditId] = useState<string | null>(null)
+    const [scriptToDelete, setScriptToDelete] = useState<any | null>(null)
+    const [form, setForm] = useState({ testPlanId: '', introduction: '', followUpQuestions: '', closingInstructions: '' })
     const { addToast } = useToast()
 
-    const emptyForm = { introduction: '', followUpQuestions: '', closingInstructions: '' }
+    const emptyForm = { testPlanId: '', introduction: '', followUpQuestions: '', closingInstructions: '' }
 
     const loadScriptByPlan = async (planId: string) => {
         if (!planId) {
@@ -26,7 +29,7 @@ export default function ModeratorScript() {
             const s = res.data
             if (s) {
                 setScript(s)
-                setForm({ introduction: s.introduction, followUpQuestions: s.followUpQuestions, closingInstructions: s.closingInstructions })
+                setForm({ testPlanId: s.testPlanId, introduction: s.introduction, followUpQuestions: s.followUpQuestions, closingInstructions: s.closingInstructions })
             } else {
                 setScript(null)
                 setForm(emptyForm)
@@ -61,24 +64,83 @@ export default function ModeratorScript() {
         return plans.find((p: any) => p.id === planId)?.projectName || 'Sin plan seleccionado'
     }
 
+    const resetForm = () => {
+        setForm({ ...emptyForm, testPlanId: activePlanId })
+        setEditId(null)
+        setShowForm(false)
+    }
+
+    const openCreateModal = () => {
+        setEditId(null)
+        setForm({ ...emptyForm, testPlanId: activePlanId })
+        setShowForm(true)
+    }
+
+    const openEditModal = () => {
+        if (!script) return
+        setEditId(script.id)
+        setForm({
+            testPlanId: script.testPlanId,
+            introduction: script.introduction || '',
+            followUpQuestions: script.followUpQuestions || '',
+            closingInstructions: script.closingInstructions || '',
+        })
+        setShowForm(true)
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!activePlanId) {
+        if (!form.testPlanId) {
             addToast('Selecciona un plan de prueba', 'error')
+            return
+        }
+        if (!form.introduction.trim()) {
+            addToast('La introducción es obligatoria', 'error')
+            return
+        }
+        if (!form.followUpQuestions.trim()) {
+            addToast('Las preguntas de seguimiento son obligatorias', 'error')
+            return
+        }
+        if (!form.closingInstructions.trim()) {
+            addToast('Las instrucciones de cierre son obligatorias', 'error')
             return
         }
         setSaving(true)
         try {
-            if (script) {
-                await moderatorScriptsApi.update(script.id, { ...form })
+            if (editId) {
+                await moderatorScriptsApi.update(editId, {
+                    introduction: form.introduction,
+                    followUpQuestions: form.followUpQuestions,
+                    closingInstructions: form.closingInstructions,
+                })
                 addToast('Guión actualizado correctamente', 'success')
             } else {
-                const res = await moderatorScriptsApi.create({ testPlanId: activePlanId, ...form })
-                setScript(res.data)
+                await moderatorScriptsApi.create({
+                    testPlanId: form.testPlanId,
+                    introduction: form.introduction,
+                    followUpQuestions: form.followUpQuestions,
+                    closingInstructions: form.closingInstructions,
+                })
                 addToast('Guión creado correctamente', 'success')
             }
+            setActivePlanId(form.testPlanId)
+            await loadScriptByPlan(form.testPlanId)
+            resetForm()
         } catch { addToast('Error al guardar el guión', 'error') }
         finally { setSaving(false) }
+    }
+
+    const confirmDelete = async (id: string) => {
+        try {
+            await moderatorScriptsApi.delete(id)
+            addToast('Guión eliminado correctamente', 'success')
+            await loadScriptByPlan(activePlanId)
+        } catch {
+            addToast('Error al eliminar el guión', 'error')
+        } finally {
+            setScriptToDelete(null)
+        }
     }
 
     if (loading) {
@@ -108,59 +170,144 @@ export default function ModeratorScript() {
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-rise">
-                    <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/70">
-                        <label className="form-label mb-0">Plan asignado</label>
-                    </div>
-                    <div className="p-5">
-                        <div className="form-input bg-slate-50 text-slate-700">{getPlanName(activePlanId)}</div>
-                    </div>
-                </div>
-
-                {['Introducción', 'Preguntas de Seguimiento', 'Instrucciones de Cierre'].map((section, i) => {
-                    const key = section.replace(/\s/g, '')
-                    const colors = ['from-blue-100 to-white', 'from-amber-100 to-white', 'from-emerald-100 to-white']
-                    const iconColor = i === 0 ? 'text-blue-600' : i === 1 ? 'text-amber-600' : 'text-emerald-600'
-                    const placeholder = i === 0
-                        ? "Ej: Bienvenido/a a esta sesión de prueba de usabilidad. Vamos a evaluar..."
-                        : i === 1
-                            ? "- ¿Qué esperabas que sucediera?\n- ¿Fue fácil o difícil?"
-                            : "Ej: Gracias por participar en esta sesión..."
-                    const value = i === 0 ? form.introduction : i === 1 ? form.followUpQuestions : form.closingInstructions
-                    const onChange = (e: any) => {
-                        const val = e.target.value
-                        if (i === 0) setForm(f => ({ ...f, introduction: val }))
-                        else if (i === 1) setForm(f => ({ ...f, followUpQuestions: val }))
-                        else setForm(f => ({ ...f, closingInstructions: val }))
-                    }
-
-                    return (
-                        <div key={key} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-rise">
-                            <div className="h-1.5 w-full bg-gradient-to-r from-slate-800 to-blue-600" />
-                            <div className={`px-5 py-3 border-b border-slate-200 bg-gradient-to-r ${colors[i]} flex items-center gap-3`}>
-                                <MessageSquareText size={18} className={iconColor} aria-hidden="true" />
-                                <h3 className="text-[16px] font-semibold text-slate-900">{section}</h3>
-                            </div>
-                            <div className="p-6">
-                                <textarea
-                                    value={value}
-                                    onChange={onChange}
-                                    className="form-input resize-none"
-                                    rows={i === 2 ? 3 : 5}
-                                    placeholder={placeholder}
-                                />
-                            </div>
-                        </div>
-                    )
-                })}
-
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex items-center gap-4">
-                    <button type="submit" className="btn btn-primary flex items-center gap-2 px-6 py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed" disabled={saving || !activePlanId}>
-                        <Save size={18} /> {saving ? 'Guardando...' : script ? 'Actualizar Guión' : 'Crear Guión'}
+            {!script ? (
+                <div className="bg-white rounded-2xl border-2 border-dashed border-slate-300 p-12 text-center animate-rise">
+                    <MessageSquareText size={40} className="text-slate-300 mx-auto" />
+                    <h3 className="mt-3 text-[15px] font-semibold text-slate-600">Sin guión para este plan</h3>
+                    <p className="text-[13px] text-slate-400 mt-1">Crea el guión del moderador para iniciar las sesiones.</p>
+                    <button type="button" onClick={openCreateModal} className="btn btn-primary mt-4" disabled={!activePlanId}>
+                        <Plus size={16} aria-hidden="true" /> Nuevo Guión
                     </button>
                 </div>
-            </form>
+            ) : (
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-rise">
+                    <div className="h-1.5 w-full bg-gradient-to-r from-slate-800 to-blue-600" />
+                    <div className="p-5">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                                <h3 className="text-[16px] font-semibold text-slate-900">{getPlanName(activePlanId)}</h3>
+                                <p className="text-[12px] text-slate-500 mt-1">Guión del moderador activo</p>
+                            </div>
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+                                <h4 className="text-[12px] font-semibold text-blue-900 mb-1">Introducción</h4>
+                                <p className="text-[12px] text-slate-700 line-clamp-4">{script.introduction}</p>
+                            </div>
+                            <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+                                <h4 className="text-[12px] font-semibold text-amber-900 mb-1">Preguntas</h4>
+                                <p className="text-[12px] text-slate-700 line-clamp-4 whitespace-pre-line">{script.followUpQuestions}</p>
+                            </div>
+                            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
+                                <h4 className="text-[12px] font-semibold text-emerald-900 mb-1">Cierre</h4>
+                                <p className="text-[12px] text-slate-700 line-clamp-4">{script.closingInstructions}</p>
+                            </div>
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
+                            <button type="button" onClick={openEditModal} className="btn btn-secondary text-[12px] py-2 px-3">
+                                <Edit3 size={14} aria-hidden="true" /> Editar
+                            </button>
+                            <button type="button" onClick={() => setScriptToDelete(script)} className="btn btn-danger text-[12px] py-2 px-3">
+                                <Trash2 size={14} aria-hidden="true" /> Eliminar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showForm && (
+                <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) resetForm() }} role="dialog" aria-modal="true" aria-label="Formulario de guión del moderador">
+                    <div className="modal-content rounded-2xl shadow-2xl border border-slate-200 overflow-hidden bg-white">
+                        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+                            <h3 className="text-[18px] font-semibold text-slate-900">{editId ? 'Editar Guión del Moderador' : 'Nuevo Guión del Moderador'}</h3>
+                            <button onClick={resetForm} className="text-slate-400 hover:text-slate-600" aria-label="Cerrar"><X size={20} /></button>
+                        </div>
+                        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                            <div>
+                                <label htmlFor="moderatorScriptPlanId" className="form-label">Plan asignado <span className="text-red-500">*</span></label>
+                                <select
+                                    id="moderatorScriptPlanId"
+                                    value={form.testPlanId}
+                                    onChange={e => setForm(f => ({ ...f, testPlanId: e.target.value }))}
+                                    className="form-input"
+                                    disabled={Boolean(editId)}
+                                    required
+                                >
+                                    <option value="">Selecciona un plan</option>
+                                    {plans.map((plan: any) => (
+                                        <option key={plan.id} value={plan.id}>{plan.projectName}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label htmlFor="introduction" className="form-label">Introducción <span className="text-red-500">*</span></label>
+                                <textarea
+                                    id="introduction"
+                                    value={form.introduction}
+                                    onChange={e => setForm(f => ({ ...f, introduction: e.target.value }))}
+                                    className="form-input"
+                                    rows={4}
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="followUpQuestions" className="form-label">Preguntas de Seguimiento <span className="text-red-500">*</span></label>
+                                <textarea
+                                    id="followUpQuestions"
+                                    value={form.followUpQuestions}
+                                    onChange={e => setForm(f => ({ ...f, followUpQuestions: e.target.value }))}
+                                    className="form-input"
+                                    rows={4}
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="closingInstructions" className="form-label">Instrucciones de Cierre <span className="text-red-500">*</span></label>
+                                <textarea
+                                    id="closingInstructions"
+                                    value={form.closingInstructions}
+                                    onChange={e => setForm(f => ({ ...f, closingInstructions: e.target.value }))}
+                                    className="form-input"
+                                    rows={4}
+                                    required
+                                />
+                            </div>
+
+                            <div className="pt-3 flex items-center gap-3">
+                                <button type="submit" className="btn btn-primary flex items-center gap-2" disabled={saving}>
+                                    <Save size={16} aria-hidden="true" /> {saving ? 'Guardando...' : editId ? 'Actualizar Guión' : 'Crear Guión'}
+                                </button>
+                                <button type="button" onClick={resetForm} className="btn btn-secondary">Cancelar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {scriptToDelete && (
+                <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setScriptToDelete(null) }} role="dialog" aria-modal="true" aria-label="Confirmar eliminación de guión">
+                    <div className="modal-content max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-rise bg-white">
+                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                            <h3 className="text-[16px] font-semibold text-slate-900">Eliminar Guión</h3>
+                            <button onClick={() => setScriptToDelete(null)} className="text-slate-400 hover:text-slate-600" aria-label="Cerrar"><X size={20} /></button>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <p className="text-[14px] text-slate-600">
+                                ¿Estás seguro de que deseas eliminar el guión del plan <strong>{getPlanName(activePlanId)}</strong>? Esta acción no se puede deshacer.
+                            </p>
+                            <div className="flex justify-end gap-3">
+                                <button type="button" onClick={() => setScriptToDelete(null)} className="btn btn-secondary">Cancelar</button>
+                                <button type="button" onClick={() => confirmDelete(scriptToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
