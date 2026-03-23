@@ -11,6 +11,7 @@ export default function TestSessions() {
     const [activePlanId, setActivePlanId] = useState('')
     const [showForm, setShowForm] = useState(false)
     const [editId, setEditId] = useState<string | null>(null)
+    const [sessionToDelete, setSessionToDelete] = useState<any | null>(null)
     const { addToast } = useToast()
 
     const emptyForm = { testPlanId: '', participantId: '', date: new Date().toISOString().split('T')[0], platformTested: '' }
@@ -98,13 +99,16 @@ export default function TestSessions() {
         } catch { addToast('Error al programar sesión', 'error') }
     }
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('¿Eliminar esta sesión?')) return
+    const confirmDelete = async (id: string) => {
         try {
             await testSessionsApi.delete(id)
             addToast('Sesión eliminada', 'success')
             if (activePlanId) fetchData(activePlanId)
-        } catch { addToast('Error al eliminar', 'error') }
+        } catch {
+            addToast('Error al eliminar', 'error')
+        } finally {
+            setSessionToDelete(null)
+        }
     }
 
     const getParticipantName = (id: string) => {
@@ -205,10 +209,30 @@ export default function TestSessions() {
                             </div>
                             <div className="flex items-center gap-2 mt-auto pt-3">
                                 <button onClick={() => handleEdit(session)} className="btn btn-secondary text-[11px] py-1 px-3">Modificar</button>
-                                <button onClick={() => handleDelete(session.id)} className="btn btn-danger text-[11px] py-1 px-3">Cancelar</button>
+                                <button onClick={() => setSessionToDelete(session)} className="btn btn-danger text-[11px] py-1 px-3">Eliminar</button>
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {sessionToDelete && (
+                <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setSessionToDelete(null) }} role="dialog" aria-modal="true" aria-label="Confirmar eliminación de sesión">
+                    <div className="modal-content max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-rise bg-white">
+                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                            <h3 className="text-[16px] font-semibold text-slate-900">Eliminar Sesión</h3>
+                            <button onClick={() => setSessionToDelete(null)} className="text-slate-400 hover:text-slate-600" aria-label="Cerrar"><X size={20} /></button>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <p className="text-[14px] text-slate-600">
+                                ¿Estás seguro de que deseas eliminar la sesión del participante <strong>{getParticipantName(sessionToDelete.participantId)}</strong>? Esta acción no se puede deshacer.
+                            </p>
+                            <div className="flex justify-end gap-3">
+                                <button type="button" onClick={() => setSessionToDelete(null)} className="btn btn-secondary">Cancelar</button>
+                                <button type="button" onClick={() => confirmDelete(sessionToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
