@@ -5,6 +5,7 @@ import { Plus, Save, Trash2, ListChecks, X, Clock } from 'lucide-react'
 
 export default function Tasks() {
     const [tasks, setTasks] = useState<any[]>([])
+    const [plans, setPlans] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [activePlanId, setActivePlanId] = useState('')
     const [showForm, setShowForm] = useState(false)
@@ -20,18 +21,35 @@ export default function Tasks() {
         testTasksApi.getByPlan(planId).then(res => setTasks(res.data)).finally(() => setLoading(false))
     }
 
+    const getPlanName = (planId: string) => {
+        return plans.find((p: any) => p.id === planId)?.projectName || 'Sin plan seleccionado'
+    }
+
     useEffect(() => {
         testPlansApi.getAll().then(res => {
-            const planId = res.data?.[0]?.id ?? ''
+            const allPlans = res.data ?? []
+            setPlans(allPlans)
+            const planId = allPlans[0]?.id ?? ''
             setActivePlanId(planId)
             setForm(f => ({ ...f, testPlanId: planId, taskNumber: 1 }))
             if (planId) {
                 fetchTasks(planId)
             } else {
+                setTasks([])
                 setLoading(false)
             }
         })
     }, [])
+
+    const handlePlanChange = (planId: string) => {
+        setActivePlanId(planId)
+        setForm(f => ({ ...f, testPlanId: planId, taskNumber: tasks.length + 1 }))
+        if (planId) {
+            fetchTasks(planId)
+        } else {
+            setTasks([])
+        }
+    }
 
     const resetForm = () => {
         setForm({ testPlanId: activePlanId, taskNumber: tasks.length + 1, scenario: '', expectedResult: '', mainMetric: '', successCriteria: '', maxTimeSeconds: 120 })
@@ -92,9 +110,22 @@ export default function Tasks() {
                     <h2 className="text-[20px] font-semibold text-slate-900">Gestión de Tareas</h2>
                     <p className="text-[13px] text-slate-500 mt-1">Define los escenarios de prueba que realizarán los participantes</p>
                 </div>
-                <button onClick={() => { setForm(f => ({ ...f, testPlanId: activePlanId, taskNumber: tasks.length + 1 })); setEditId(null); setShowForm(true) }} className="btn btn-primary shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600">
+                <button onClick={() => { setForm(f => ({ ...f, testPlanId: activePlanId, taskNumber: tasks.length + 1 })); setEditId(null); setShowForm(true) }} disabled={!activePlanId} className="btn btn-primary shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed">
                     <Plus size={18} aria-hidden="true" /> Nueva Tarea
                 </button>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-end gap-4">
+                <div className="min-w-0 md:w-[420px]">
+                    <label htmlFor="taskPlanSelector" className="form-label">Plan de prueba activo</label>
+                    <select id="taskPlanSelector" value={activePlanId} onChange={e => handlePlanChange(e.target.value)} className="form-input">
+                        <option value="">Selecciona un plan</option>
+                        {plans.map((plan: any) => (
+                            <option key={plan.id} value={plan.id}>{plan.projectName}</option>
+                        ))}
+                    </select>
+                </div>
+                <p className="text-[13px] text-slate-500 md:mb-2">Las tareas nuevas se asignarán a este plan.</p>
             </div>
 
             {/* Form Modal */}
@@ -106,6 +137,10 @@ export default function Tasks() {
                             <button onClick={resetForm} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-full transition-colors" aria-label="Cerrar formulario"><X size={22} /></button>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                            <div>
+                                <label className="form-label">Plan asignado</label>
+                                <div className="form-input bg-slate-50 text-slate-700">{getPlanName(form.testPlanId)}</div>
+                            </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label htmlFor="taskNumber" className="form-label">Número de Tarea</label>
