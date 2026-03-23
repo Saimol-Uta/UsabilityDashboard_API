@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { participantsApi } from '../api'
 import { useToast } from '../App'
-import { Plus, Save, Trash2, Users, X, User } from 'lucide-react'
+import { Plus, Save, Users, X, User } from 'lucide-react'
 
 export default function Participants() {
     const [participants, setParticipants] = useState<any[]>([])
