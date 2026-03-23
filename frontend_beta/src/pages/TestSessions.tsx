@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { testSessionsApi, participantsApi, testPlansApi } from '../api'
 import { useToast } from '../App'
-import { Plus, Save, Trash2, CalendarRange, X, MonitorPlay, Calendar } from 'lucide-react'
+import { Plus, Save, CalendarRange, X, MonitorPlay, Calendar } from 'lucide-react'
 
 export default function TestSessions() {
     const [sessions, setSessions] = useState<any[]>([])
