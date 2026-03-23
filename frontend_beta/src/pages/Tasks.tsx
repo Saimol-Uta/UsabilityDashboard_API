@@ -21,10 +21,6 @@ export default function Tasks() {
         testTasksApi.getByPlan(planId).then(res => setTasks(res.data)).finally(() => setLoading(false))
     }
 
-    const getPlanName = (planId: string) => {
-        return plans.find((p: any) => p.id === planId)?.projectName || 'Sin plan seleccionado'
-    }
-
     useEffect(() => {
         testPlansApi.getAll().then(res => {
             const allPlans = res.data ?? []
@@ -69,6 +65,7 @@ export default function Tasks() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (!form.testPlanId) { addToast('Selecciona un plan de prueba', 'error'); return }
         if (!form.scenario.trim()) { addToast('El escenario es requerido', 'error'); return }
         if (!form.mainMetric.trim()) { addToast('La métrica principal es requerida', 'error'); return }
         if (form.maxTimeSeconds <= 0) { addToast('El tiempo máximo debe ser mayor a 0', 'error'); return }
@@ -86,8 +83,11 @@ export default function Tasks() {
                 await testTasksApi.create(form)
                 addToast('Tarea creada', 'success')
             }
+            if (activePlanId !== form.testPlanId) {
+                setActivePlanId(form.testPlanId)
+            }
             resetForm()
-            if (activePlanId) fetchTasks(activePlanId)
+            if (form.testPlanId) fetchTasks(form.testPlanId)
         } catch { addToast('Error al guardar', 'error') }
     }
 
@@ -138,8 +138,20 @@ export default function Tasks() {
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-5">
                             <div>
-                                <label className="form-label">Plan asignado</label>
-                                <div className="form-input bg-slate-50 text-slate-700">{getPlanName(form.testPlanId)}</div>
+                                <label htmlFor="taskFormPlanId" className="form-label">Plan asignado <span className="text-red-500">*</span></label>
+                                <select
+                                    id="taskFormPlanId"
+                                    value={form.testPlanId}
+                                    onChange={e => setForm(f => ({ ...f, testPlanId: e.target.value }))}
+                                    className="form-input"
+                                    disabled={Boolean(editId)}
+                                    required
+                                >
+                                    <option value="">Selecciona un plan</option>
+                                    {plans.map((plan: any) => (
+                                        <option key={plan.id} value={plan.id}>{plan.projectName}</option>
+                                    ))}
+                                </select>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>

@@ -2,13 +2,34 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { testPlansApi } from '../api'
 import { useToast } from '../App'
-import { Plus, Edit3, Trash2, Calendar, Target, X } from 'lucide-react'
+import { Plus, Edit3, Trash2, Calendar, Target, X, Save } from 'lucide-react'
 
 export default function TestPlans() {
     const [plans, setPlans] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [planToDelete, setPlanToDelete] = useState<{ id: string, name: string } | null>(null)
+    const [planToEdit, setPlanToEdit] = useState<any | null>(null)
+    const [savingEdit, setSavingEdit] = useState(false)
+    const [editForm, setEditForm] = useState({
+        projectName: '',
+        product: '',
+        evaluatedModule: '',
+        objective: '',
+        userProfile: '',
+        methodology: '',
+        startDate: '',
+        endDate: '',
+        location: '',
+        estimatedDuration: '',
+        scope: '',
+        status: 'Draft',
+    })
     const { addToast } = useToast()
+
+    const toInputDate = (value: string | null | undefined) => {
+        if (!value) return ''
+        return new Date(value).toISOString().split('T')[0]
+    }
 
     const fetchPlans = () => {
         setLoading(true)
@@ -16,6 +37,69 @@ export default function TestPlans() {
     }
 
     useEffect(() => { fetchPlans() }, [])
+
+    const openEditModal = (plan: any) => {
+        setPlanToEdit(plan)
+        setEditForm({
+            projectName: plan.projectName || '',
+            product: plan.product || '',
+            evaluatedModule: plan.evaluatedModule || '',
+            objective: plan.objective || '',
+            userProfile: plan.userProfile || '',
+            methodology: plan.methodology || '',
+            startDate: toInputDate(plan.startDate),
+            endDate: toInputDate(plan.endDate),
+            location: plan.location || '',
+            estimatedDuration: plan.estimatedDuration || '',
+            scope: plan.scope || '',
+            status: plan.status || 'Draft',
+        })
+    }
+
+    const closeEditModal = () => {
+        setPlanToEdit(null)
+        setSavingEdit(false)
+    }
+
+    const submitEdit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!planToEdit) return
+
+        if (!editForm.projectName.trim()) { addToast('El nombre del proyecto es obligatorio', 'error'); return }
+        if (!editForm.product.trim()) { addToast('El producto es obligatorio', 'error'); return }
+        if (!editForm.evaluatedModule.trim()) { addToast('El módulo evaluado es obligatorio', 'error'); return }
+        if (!editForm.objective.trim()) { addToast('El objetivo es obligatorio', 'error'); return }
+        if (!editForm.userProfile.trim()) { addToast('El perfil de usuario es obligatorio', 'error'); return }
+        if (!editForm.methodology.trim()) { addToast('La metodología es obligatoria', 'error'); return }
+        if (!editForm.startDate || !editForm.endDate) { addToast('Las fechas son obligatorias', 'error'); return }
+        if (new Date(editForm.endDate) <= new Date(editForm.startDate)) { addToast('La fecha de fin debe ser posterior a la fecha de inicio', 'error'); return }
+
+        setSavingEdit(true)
+        try {
+            await testPlansApi.update(planToEdit.id, {
+                projectName: editForm.projectName,
+                product: editForm.product,
+                evaluatedModule: editForm.evaluatedModule,
+                objective: editForm.objective,
+                userProfile: editForm.userProfile,
+                methodology: editForm.methodology,
+                startDate: editForm.startDate,
+                endDate: editForm.endDate,
+                location: editForm.location,
+                estimatedDuration: editForm.estimatedDuration,
+                scope: editForm.scope,
+                status: editForm.status,
+            })
+
+            addToast('Plan actualizado correctamente', 'success')
+            closeEditModal()
+            fetchPlans()
+        } catch {
+            addToast('Error al actualizar el plan', 'error')
+        } finally {
+            setSavingEdit(false)
+        }
+    }
 
     const confirmDelete = async (id: string) => {
         try {
@@ -86,9 +170,9 @@ export default function TestPlans() {
                                 </div>
 
                                 <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
-                                    <Link to={`/planes/${plan.id}/editar`} className="btn btn-secondary text-[12px] py-2 px-3">
+                                    <button onClick={() => openEditModal(plan)} className="btn btn-secondary text-[12px] py-2 px-3">
                                         <Edit3 size={14} aria-hidden="true" /> Editar
-                                    </Link>
+                                    </button>
                                     <button onClick={() => setPlanToDelete({ id: plan.id, name: plan.projectName })} className="btn btn-danger text-[12px] py-2 px-3" aria-label={`Eliminar plan ${plan.projectName}`}>
                                         <Trash2 size={14} aria-hidden="true" /> Eliminar
                                     </button>
@@ -115,6 +199,95 @@ export default function TestPlans() {
                                 <button type="button" onClick={() => confirmDelete(planToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {planToEdit && (
+                <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) closeEditModal() }} role="dialog" aria-modal="true" aria-label="Editar plan">
+                    <div className="modal-content rounded-2xl shadow-2xl border border-slate-200 overflow-hidden bg-white">
+                        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+                            <h3 className="text-[18px] font-semibold text-slate-900">Editar Plan de Prueba</h3>
+                            <button onClick={closeEditModal} className="text-slate-400 hover:text-slate-600" aria-label="Cerrar"><X size={20} /></button>
+                        </div>
+
+                        <form onSubmit={submitEdit} className="p-6 space-y-5">
+                            <div>
+                                <label htmlFor="editProjectName" className="form-label">Nombre del Proyecto <span className="text-red-500">*</span></label>
+                                <input id="editProjectName" value={editForm.projectName} onChange={e => setEditForm(f => ({ ...f, projectName: e.target.value }))} className="form-input" required />
+                            </div>
+
+                            <div>
+                                <label htmlFor="editObjective" className="form-label">Objetivo <span className="text-red-500">*</span></label>
+                                <textarea id="editObjective" value={editForm.objective} onChange={e => setEditForm(f => ({ ...f, objective: e.target.value }))} className="form-input" rows={3} required />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label htmlFor="editProduct" className="form-label">Producto <span className="text-red-500">*</span></label>
+                                    <input id="editProduct" value={editForm.product} onChange={e => setEditForm(f => ({ ...f, product: e.target.value }))} className="form-input" required />
+                                </div>
+                                <div>
+                                    <label htmlFor="editEvaluatedModule" className="form-label">Módulo evaluado <span className="text-red-500">*</span></label>
+                                    <input id="editEvaluatedModule" value={editForm.evaluatedModule} onChange={e => setEditForm(f => ({ ...f, evaluatedModule: e.target.value }))} className="form-input" required />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label htmlFor="editMethodology" className="form-label">Metodología <span className="text-red-500">*</span></label>
+                                    <input id="editMethodology" value={editForm.methodology} onChange={e => setEditForm(f => ({ ...f, methodology: e.target.value }))} className="form-input" required />
+                                </div>
+                                <div>
+                                    <label htmlFor="editStatus" className="form-label">Estado</label>
+                                    <select id="editStatus" value={editForm.status} onChange={e => setEditForm(f => ({ ...f, status: e.target.value }))} className="form-input">
+                                        <option value="Draft">Borrador</option>
+                                        <option value="InProgress">En Progreso</option>
+                                        <option value="Completed">Completado</option>
+                                        <option value="Cancelled">Cancelado</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label htmlFor="editStartDate" className="form-label">Fecha de Inicio <span className="text-red-500">*</span></label>
+                                    <input id="editStartDate" type="date" value={editForm.startDate} onChange={e => setEditForm(f => ({ ...f, startDate: e.target.value }))} className="form-input" required />
+                                </div>
+                                <div>
+                                    <label htmlFor="editEndDate" className="form-label">Fecha de Fin <span className="text-red-500">*</span></label>
+                                    <input id="editEndDate" type="date" min={editForm.startDate} value={editForm.endDate} onChange={e => setEditForm(f => ({ ...f, endDate: e.target.value }))} className="form-input" required />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label htmlFor="editUserProfile" className="form-label">Perfil de Usuario <span className="text-red-500">*</span></label>
+                                <textarea id="editUserProfile" value={editForm.userProfile} onChange={e => setEditForm(f => ({ ...f, userProfile: e.target.value }))} className="form-input" rows={2} required />
+                            </div>
+
+                            <div>
+                                <label htmlFor="editScope" className="form-label">Alcance</label>
+                                <textarea id="editScope" value={editForm.scope} onChange={e => setEditForm(f => ({ ...f, scope: e.target.value }))} className="form-input" rows={2} />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label htmlFor="editLocation" className="form-label">Ubicación</label>
+                                    <input id="editLocation" value={editForm.location} onChange={e => setEditForm(f => ({ ...f, location: e.target.value }))} className="form-input" />
+                                </div>
+                                <div>
+                                    <label htmlFor="editEstimatedDuration" className="form-label">Duración estimada</label>
+                                    <input id="editEstimatedDuration" value={editForm.estimatedDuration} onChange={e => setEditForm(f => ({ ...f, estimatedDuration: e.target.value }))} className="form-input" />
+                                </div>
+                            </div>
+
+                            <div className="pt-3 flex items-center gap-3">
+                                <button type="submit" className="btn btn-primary flex items-center gap-2" disabled={savingEdit}>
+                                    <Save size={16} aria-hidden="true" /> {savingEdit ? 'Guardando...' : 'Actualizar Plan'}
+                                </button>
+                                <button type="button" onClick={closeEditModal} className="btn btn-secondary">Cancelar</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
