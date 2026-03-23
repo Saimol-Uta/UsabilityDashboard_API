@@ -51,6 +51,8 @@ export default function Tasks() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!form.scenario.trim()) { addToast('El escenario es requerido', 'error'); return }
+        if (!form.mainMetric.trim()) { addToast('La métrica principal es requerida', 'error'); return }
+        if (form.maxTimeSeconds <= 0) { addToast('El tiempo máximo debe ser mayor a 0', 'error'); return }
         try {
             if (editId) {
                 await testTasksApi.update(editId, {
@@ -106,12 +108,12 @@ export default function Tasks() {
                                     <input id="taskNumber" type="number" value={form.taskNumber} onChange={e => setForm(f => ({ ...f, taskNumber: Number(e.target.value) }))} className="form-input" min={1} />
                                 </div>
                                 <div>
-                                    <label htmlFor="maxTimeSeconds" className="form-label">Tiempo Máximo (seg)</label>
-                                    <input id="maxTimeSeconds" type="number" value={form.maxTimeSeconds} onChange={e => setForm(f => ({ ...f, maxTimeSeconds: Number(e.target.value) }))} className="form-input" min={10} />
+                                    <label htmlFor="maxTimeSeconds" className="form-label">Tiempo Máximo (seg) <span className="text-red-500">*</span></label>
+                                    <input id="maxTimeSeconds" type="number" value={form.maxTimeSeconds} onChange={e => setForm(f => ({ ...f, maxTimeSeconds: Number(e.target.value) }))} className="form-input" min={1} required />
                                 </div>
                             </div>
                             <div>
-                                <label htmlFor="scenario" className="form-label">Escenario *</label>
+                                <label htmlFor="scenario" className="form-label">Escenario <span className="text-red-500">*</span></label>
                                 <textarea id="scenario" value={form.scenario} onChange={e => setForm(f => ({ ...f, scenario: e.target.value }))} className="form-input" rows={3} placeholder="Describe la tarea que realizará el participante" required />
                             </div>
                             <div>
@@ -119,8 +121,8 @@ export default function Tasks() {
                                 <textarea id="expectedResult" value={form.expectedResult} onChange={e => setForm(f => ({ ...f, expectedResult: e.target.value }))} className="form-input" rows={2} placeholder="¿Qué se espera que logre?" />
                             </div>
                             <div>
-                                <label htmlFor="mainMetric" className="form-label">Métrica Principal</label>
-                                <input id="mainMetric" value={form.mainMetric} onChange={e => setForm(f => ({ ...f, mainMetric: e.target.value }))} className="form-input" placeholder="Ej: Tasa de éxito" />
+                                <label htmlFor="mainMetric" className="form-label">Métrica Principal <span className="text-red-500">*</span></label>
+                                <input id="mainMetric" value={form.mainMetric} onChange={e => setForm(f => ({ ...f, mainMetric: e.target.value }))} className="form-input" placeholder="Ej: Tasa de éxito" required />
                             </div>
                             <div>
                                 <label htmlFor="successCriteria" className="form-label">Criterio de Éxito</label>
