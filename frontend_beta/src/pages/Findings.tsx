@@ -218,7 +218,7 @@ export default function Findings() {
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {filtered.map((finding: any) => (
-                        <div key={finding.id} className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.02] group">
+                        <div key={finding.id} className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group">
                             <div className={`h-2 w-full ${finding.severity === 'Critical' ? 'bg-gradient-to-r from-red-600 to-red-500' : finding.severity === 'High' ? 'bg-gradient-to-r from-orange-500 to-red-400' : finding.severity === 'Medium' ? 'bg-gradient-to-r from-yellow-500 to-orange-400' : 'bg-gradient-to-r from-green-500 to-emerald-400'}`} />
                             <div className="p-5">
                                 <div className="flex items-start justify-between gap-2">

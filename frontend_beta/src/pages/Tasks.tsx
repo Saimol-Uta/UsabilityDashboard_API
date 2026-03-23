@@ -153,7 +153,7 @@ export default function Tasks() {
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {tasks.map((task: any) => (
-                        <div key={task.id} className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.02] group">
+                        <div key={task.id} className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group">
                             <div className="h-2 w-full bg-gradient-to-r from-indigo-500 to-blue-500" />
                             <div className="p-5">
                                 <div className="flex items-start gap-4 mb-3">

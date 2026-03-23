@@ -18,6 +18,7 @@ export default function ImprovementActions() {
     const [filter, setFilter] = useState('')
     const [showForm, setShowForm] = useState(false)
     const [editId, setEditId] = useState<string | null>(null)
+    const [actionToDelete, setActionToDelete] = useState<any | null>(null)
     const { addToast } = useToast()
 
     const emptyForm = { findingId: '', description: '', status: 'Open', priority: 'Medium' }
@@ -100,14 +101,16 @@ export default function ImprovementActions() {
         } catch { addToast('Error al actualizar estado', 'error') }
     }
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('¿Eliminar esta acción?')) return
+    const confirmDelete = async (id: string) => {
         try {
             await improvementActionsApi.delete(id)
             addToast('Acción eliminada', 'success')
             if (activePlanId) fetchData(activePlanId)
+        } catch {
+            addToast('Error al eliminar', 'error')
+        } finally {
+            setActionToDelete(null)
         }
-        catch { addToast('Error al eliminar', 'error') }
     }
 
     const filtered = actions.filter(a => filter === '' || a.status === filter)
@@ -129,15 +132,15 @@ export default function ImprovementActions() {
 
             {/* Status Summary */}
             <div className="grid grid-cols-3 gap-4">
-                <div className="kpi-card p-6 text-center rounded-3xl shadow-lg bg-emerald-50 border-2 border-emerald-300 transform hover:scale-105 transition-transform animate-pop">
+                <div className="kpi-card p-6 text-center rounded-3xl shadow-lg bg-emerald-50 border-2 border-emerald-300 transform hover:-translate-y-1 transition-transform hover:shadow-xl animate-pop">
                     <div className="text-3xl font-extrabold text-emerald-700">{completedCount}</div>
                     <div className="text-sm text-emerald-600 mt-1 uppercase tracking-wider">Completadas</div>
                 </div>
-                <div className="kpi-card p-6 text-center rounded-3xl shadow-lg bg-amber-50 border-2 border-amber-300 transform hover:scale-105 transition-transform animate-pop delay-1">
+                <div className="kpi-card p-6 text-center rounded-3xl shadow-lg bg-amber-50 border-2 border-amber-300 transform hover:-translate-y-1 transition-transform hover:shadow-xl animate-pop delay-1">
                     <div className="text-3xl font-extrabold text-amber-700">{inProgressCount}</div>
                     <div className="text-sm text-amber-600 mt-1 uppercase tracking-wider">En Progreso</div>
                 </div>
-                <div className="kpi-card p-6 text-center rounded-3xl shadow-lg bg-slate-100 border-2 border-slate-300 transform hover:scale-105 transition-transform animate-pop delay-2">
+                <div className="kpi-card p-6 text-center rounded-3xl shadow-lg bg-slate-100 border-2 border-slate-300 transform hover:-translate-y-1 transition-transform hover:shadow-xl animate-pop delay-2">
                     <div className="text-3xl font-extrabold text-slate-700">{pendingCount}</div>
                     <div className="text-sm text-slate-500 mt-1 uppercase tracking-wider">Pendientes</div>
                 </div>
@@ -163,19 +166,19 @@ export default function ImprovementActions() {
                         </div>
                         <form onSubmit={handleSubmit} className="p-5 space-y-4">
                             <div>
-                                <label htmlFor="findingId" className="form-label">Hallazgo asociado</label>
-                                <select id="findingId" value={form.findingId} onChange={e => setForm(f => ({ ...f, findingId: e.target.value }))} className="form-input">
+                                <label htmlFor="findingId" className="form-label">Hallazgo asociado <span className="text-red-500">*</span></label>
+                                <select id="findingId" value={form.findingId} onChange={e => setForm(f => ({ ...f, findingId: e.target.value }))} className="form-input" required>
                                     {findingsList.map((f: any) => <option key={f.id} value={f.id}>{f.description.length > 80 ? f.description.substring(0, 80) + '...' : f.description}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <label htmlFor="description" className="form-label">Descripción *</label>
+                                <label htmlFor="description" className="form-label">Descripción <span className="text-red-500">*</span></label>
                                 <textarea id="description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="form-input" rows={3} required />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label htmlFor="status" className="form-label">Estado</label>
-                                    <select id="status" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="form-input">
+                                    <label htmlFor="status" className="form-label">Estado <span className="text-red-500">*</span></label>
+                                    <select id="status" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="form-input" required>
                                         <option value="Open">Abierta</option>
                                         <option value="InProgress">En Progreso</option>
                                         <option value="Resolved">Resuelta</option>
@@ -183,8 +186,8 @@ export default function ImprovementActions() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label htmlFor="priority" className="form-label">Prioridad</label>
-                                    <select id="priority" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="form-input">
+                                    <label htmlFor="priority" className="form-label">Prioridad <span className="text-red-500">*</span></label>
+                                    <select id="priority" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="form-input" required>
                                         <option value="High">Alta</option>
                                         <option value="Medium">Media</option>
                                         <option value="Low">Baja</option>
@@ -218,7 +221,7 @@ export default function ImprovementActions() {
                         const config = statusConfig[action.status] || statusConfig.Open
                         const Icon = config.icon
                         return (
-                            <div key={action.id} className="bg-white rounded-3xl border-2 border-blue-100 shadow-2xl p-5 transform hover:scale-105 hover:shadow-3xl transition-all animate-pop">
+                            <div key={action.id} className="bg-white rounded-2xl border border-slate-200 shadow-md p-5 transform hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
                                 <div className="flex items-start gap-4">
                                     <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0
                                         ${action.status === 'Resolved' || action.status === 'Closed' ? 'bg-emerald-100 border-2 border-emerald-400 text-emerald-700' :
@@ -241,20 +244,44 @@ export default function ImprovementActions() {
                                             <p className="text-[11px] text-emerald-600 mt-1">✓ Implementado: {new Date(action.implementedDate).toLocaleDateString()}</p>
                                         )}
                                     </div>
-                                    <div className="flex flex-col gap-1.5">
+                                    <div className="flex flex-wrap items-center gap-2 mt-3 sm:mt-0">
                                         {action.status !== 'Closed' && (
                                             <button onClick={() => handleStatusChange(action.id, action.status === 'Open' ? 'InProgress' : action.status === 'InProgress' ? 'Resolved' : 'Closed')}
-                                                className="btn btn-success text-[10px] py-1 px-2">
+                                                className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[11px] py-1.5 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-emerald-200">
                                                 {action.status === 'Open' ? 'Iniciar' : action.status === 'InProgress' ? 'Resolver' : 'Cerrar'}
                                             </button>
                                         )}
-                                        <button onClick={() => handleEdit(action)} className="btn btn-secondary text-[10px] py-1 px-2">Editar</button>
-                                        <button onClick={() => handleDelete(action.id)} className="btn btn-danger text-[10px] py-1 px-2"><Trash2 size={11} /></button>
+                                        <button onClick={() => handleEdit(action)} className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] py-1.5 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-blue-200">
+                                            Editar
+                                        </button>
+                                        <button onClick={() => setActionToDelete(action)} className="bg-red-50 hover:bg-red-100 text-red-700 text-[11px] py-1.5 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-red-200">
+                                            <Trash2 size={12} />
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                         )
                     })}
+                </div>
+            )}
+
+            {actionToDelete && (
+                <div className="modal-overlay animate-fade-in" onClick={e => { if (e.target === e.currentTarget) setActionToDelete(null) }} role="dialog" aria-modal="true" aria-label="Confirmar eliminación">
+                    <div className="modal-content max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-rise bg-white">
+                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                            <h3 className="text-[16px] font-semibold text-slate-900">Eliminar Acción de Mejora</h3>
+                            <button onClick={() => setActionToDelete(null)} className="text-slate-400 hover:text-slate-600" aria-label="Cerrar"><X size={20} /></button>
+                        </div>
+                        <div className="p-5">
+                            <p className="text-[14px] text-slate-600 mb-5">
+                                ¿Estás seguro de que deseas eliminar esta acción de mejora? Esta acción no se puede deshacer.
+                            </p>
+                            <div className="flex justify-end gap-3">
+                                <button type="button" onClick={() => setActionToDelete(null)} className="btn btn-secondary text-center">Cancelar</button>
+                                <button type="button" onClick={() => confirmDelete(actionToDelete.id)} className="btn btn-danger px-4 text-center">Eliminar</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
