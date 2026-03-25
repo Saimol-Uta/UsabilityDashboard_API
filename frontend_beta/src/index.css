@@ -308,3 +308,88 @@ body {
 @media (max-width: 1024px) {
   .glass-panel { border-radius: 12px; }
 }
+
+@media (max-width: 640px) {
+  /* Glass panel */
+  .glass-panel {
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  }
+
+  /* Nav items */
+  .nav-item {
+    padding: 10px 12px;
+    font-size: 13px;
+    border-radius: 10px;
+  }
+  .nav-item:hover {
+    transform: none;
+  }
+
+  /* KPI cards */
+  .kpi-card {
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  }
+  .kpi-card:hover {
+    transform: none;
+  }
+
+  /* Form inputs */
+  .form-input {
+    padding: 10px 12px;
+    font-size: 14px;
+    border-radius: 8px;
+  }
+
+  /* Buttons */
+  .btn {
+    padding: 9px 16px;
+    font-size: 13px;
+    border-radius: 8px;
+  }
+
+  /* Toast */
+  .toast-container {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+  }
+  .toast {
+    font-size: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+  }
+
+  /* Modal */
+  .modal-content {
+    width: calc(100vw - 24px);
+    max-height: 90vh;
+    border-radius: 14px;
+    margin: 12px;
+  }
+
+  /* Badges */
+  .badge {
+    font-size: 10px;
+    padding: 2px 8px;
+  }
+
+  /* Tab pills */
+  .tab-pill {
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+}
+
+/* Safe area support for notched phones */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  html, body, #root {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Prevent horizontal overflow on mobile */
+html, body {
+  overflow-x: hidden;
+}

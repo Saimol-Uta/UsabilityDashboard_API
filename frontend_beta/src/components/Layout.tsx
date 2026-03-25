@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, ListChecks, MessageSquareText,
-  Eye, Search, Lightbulb, ChevronRight, FolderKanban, ShieldCheck, Sparkles, Users, CalendarRange
+  Eye, Search, Lightbulb, ChevronRight, FolderKanban, ShieldCheck, Sparkles, Users, CalendarRange,
+  Menu, X
 } from 'lucide-react'
 
 const navItems = [
@@ -18,6 +20,33 @@ const navItems = [
 
 export default function Layout() {
   const location = useLocation()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // Close sidebar on route change (mobile)
+  useEffect(() => {
+    setSidebarOpen(false)
+  }, [location.pathname])
+
+  // Close sidebar on resize to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(false)
+      }
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // Prevent body scroll when sidebar is open on mobile
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [sidebarOpen])
 
   const activeItem = navItems.find(n =>
     n.to === '/' ? location.pathname === '/' : location.pathname.startsWith(n.to)
@@ -28,26 +57,36 @@ export default function Layout() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="mx-3 mt-3 glass-panel overflow-hidden" role="banner">
-        <div className="px-5 py-4 md:px-6 md:py-5 border-b border-white/70 bg-gradient-to-r from-slate-900 via-slate-800 to-blue-900">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/25 backdrop-blur flex items-center justify-center flex-shrink-0">
-                <FolderKanban size={18} className="text-white" aria-hidden="true" />
+      <header className="mx-2 sm:mx-3 mt-2 sm:mt-3 glass-panel overflow-hidden" role="banner">
+        <div className="px-4 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5 border-b border-white/70 bg-gradient-to-r from-slate-900 via-slate-800 to-blue-900">
+          <div className="flex items-center gap-3">
+            {/* Mobile hamburger */}
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="lg:hidden w-9 h-9 rounded-lg bg-white/10 border border-white/25 flex items-center justify-center flex-shrink-0 text-white hover:bg-white/20 transition-colors"
+              aria-label={sidebarOpen ? 'Cerrar menú' : 'Abrir menú'}
+            >
+              {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
+
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/10 border border-white/25 backdrop-blur flex items-center justify-center flex-shrink-0">
+                <FolderKanban size={16} className="text-white sm:hidden" aria-hidden="true" />
+                <FolderKanban size={18} className="text-white hidden sm:block" aria-hidden="true" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-white text-[16px] md:text-[18px] font-semibold leading-tight tracking-tight">
+                <h1 className="text-white text-[14px] sm:text-[16px] md:text-[18px] font-semibold leading-tight tracking-tight truncate">
                   Usability Test Plan Dashboard
                 </h1>
-                <p className="text-blue-100/85 text-[12px] mt-0.5">
+                <p className="text-blue-100/85 text-[11px] sm:text-[12px] mt-0.5 hidden sm:block">
                   IHC · Evaluación con WAVE + Lighthouse + Stark
                 </p>
               </div>
             </div>
-            <div className="lg:ml-auto flex flex-wrap items-center gap-2 text-[11px]">
+            <div className="hidden sm:flex flex-wrap items-center gap-2 text-[11px] flex-shrink-0">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/25 text-blue-50 bg-white/10">
                 <Sparkles size={12} aria-hidden="true" />
-                Dashboard de Usabilidad
+                <span className="hidden md:inline">Dashboard de Usabilidad</span>
               </span>
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/25 text-blue-50 bg-white/10">
                 <ShieldCheck size={12} aria-hidden="true" />
@@ -58,10 +97,39 @@ export default function Layout() {
         </div>
       </header>
 
-      <div className="p-3 pt-3 pb-5 flex flex-col lg:flex-row gap-3 min-h-[calc(100vh-100px)]">
+      <div className="p-2 sm:p-3 pt-2 sm:pt-3 pb-4 sm:pb-5 flex flex-col lg:flex-row gap-2 sm:gap-3 min-h-[calc(100vh-100px)]">
+        {/* Mobile Sidebar Overlay */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
-        <aside className="glass-panel w-full lg:w-[260px] lg:flex-shrink-0 p-4 flex lg:flex-col gap-4 overflow-auto soft-scrollbar" role="navigation" aria-label="Navegación principal">
-          <div className="min-w-[220px] flex-1">
+        <aside
+          className={`
+            fixed top-0 left-0 z-50 h-full w-[280px] glass-panel p-4 flex flex-col gap-4 overflow-auto soft-scrollbar
+            transform transition-transform duration-300 ease-in-out
+            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+            lg:static lg:translate-x-0 lg:w-[260px] lg:flex-shrink-0 lg:h-auto lg:z-auto
+          `}
+          role="navigation"
+          aria-label="Navegación principal"
+        >
+          {/* Mobile close button inside sidebar */}
+          <div className="flex items-center justify-between lg:hidden mb-2">
+            <span className="text-[14px] font-semibold text-slate-800">Menú</span>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
+              aria-label="Cerrar menú"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="min-w-0 flex-1">
             <div className="text-[10px] uppercase tracking-[0.18em] text-slate-400 font-semibold mb-3">
               Navegación
             </div>
@@ -87,7 +155,7 @@ export default function Layout() {
             </nav>
           </div>
 
-          <div className="min-w-[220px] lg:mt-auto">
+          <div className="min-w-0 mt-auto">
             <div className="rounded-xl border border-slate-200 bg-white p-3">
               <div className="text-[10px] uppercase tracking-[0.14em] text-slate-400 font-semibold mb-2">Stack de evaluación</div>
               <div className="space-y-1.5 text-[11px] text-slate-600">
@@ -102,14 +170,14 @@ export default function Layout() {
 
         {/* Main Content */}
         <main className="glass-panel flex-1 flex flex-col min-h-0 overflow-hidden" role="main">
-          <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-slate-200/80 px-4 py-3 md:px-6">
+          <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-slate-200/80 px-3 py-2.5 sm:px-4 sm:py-3 md:px-6">
             <div className="flex items-center gap-1.5 text-[12px] text-slate-500">
               <span className="text-slate-400">Dashboard</span>
               <ChevronRight size={12} aria-hidden="true" />
               <span className="font-semibold text-slate-700">{breadcrumb}</span>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto soft-scrollbar p-4 md:p-6">
+          <div className="flex-1 overflow-y-auto soft-scrollbar p-3 sm:p-4 md:p-6">
             <Outlet />
           </div>
         </main>

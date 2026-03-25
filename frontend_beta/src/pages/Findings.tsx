@@ -117,7 +117,7 @@ export default function Findings() {
                     <h2 className="text-[20px] font-semibold text-slate-900">Síntesis de Hallazgos</h2>
                     <p className="text-[13px] text-slate-500 mt-1">Problemas de usabilidad detectados con frecuencia, severidad y recomendaciones</p>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                     {plans.length > 0 && (
                         <select 
                             className="form-input bg-white text-sm py-2" 
@@ -181,7 +181,7 @@ export default function Findings() {
                                 <label htmlFor="description" className="form-label">Descripción <span className="text-red-500">*</span></label>
                                 <textarea id="description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" rows={3} required />
                             </div>
-                            <div className="grid grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div>
                                     <label htmlFor="severity" className="form-label">Severidad <span className="text-red-500">*</span></label>
                                     <select id="severity" value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" required>
@@ -212,7 +212,7 @@ export default function Findings() {
                                     <input id="frequency" value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" placeholder="Ej: 2/3" />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label htmlFor="category" className="form-label">Categoría</label>
                                     <input id="category" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" placeholder="Ej: Formularios" />

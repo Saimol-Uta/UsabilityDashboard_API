@@ -128,7 +128,7 @@ export default function ImprovementActions() {
                     <h2 className="text-[22px] font-bold text-slate-900">Acciones de Mejora</h2>
                     <p className="text-[13px] text-slate-500 mt-1">Seguimiento de las acciones correctivas derivadas de los hallazgos</p>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                     {plans.length > 0 && (
                         <select 
                             className="form-input bg-white text-sm py-2" 
@@ -150,7 +150,7 @@ export default function ImprovementActions() {
             </div>
 
             {/* Status Summary */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="kpi-card p-6 text-center rounded-3xl shadow-lg bg-emerald-50 border-2 border-emerald-300 transform hover:-translate-y-1 transition-transform hover:shadow-xl animate-pop">
                     <div className="text-3xl font-extrabold text-emerald-700">{completedCount}</div>
                     <div className="text-sm text-emerald-600 mt-1 uppercase tracking-wider">Completadas</div>
@@ -198,7 +198,7 @@ export default function ImprovementActions() {
                                 <label htmlFor="description" className="form-label">Descripción <span className="text-red-500">*</span></label>
                                 <textarea id="description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="form-input" rows={3} required />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label htmlFor="status" className="form-label">Estado <span className="text-red-500">*</span></label>
                                     <select id="status" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="form-input" required>
@@ -245,7 +245,7 @@ export default function ImprovementActions() {
                         const Icon = config.icon
                         return (
                             <div key={action.id} className="bg-white rounded-2xl border border-slate-200 shadow-md p-5 transform hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
-                                <div className="flex items-start gap-4">
+                                <div className="flex items-start gap-3 sm:gap-4 flex-col sm:flex-row">
                                     <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0
                                         ${action.status === 'Resolved' || action.status === 'Closed' ? 'bg-emerald-100 border-2 border-emerald-400 text-emerald-700' :
                                         action.status === 'InProgress' ? 'bg-amber-100 border-2 border-amber-400 text-amber-700' :

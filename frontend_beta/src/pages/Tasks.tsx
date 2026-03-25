@@ -153,7 +153,7 @@ export default function Tasks() {
                                     ))}
                                 </select>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label htmlFor="taskNumber" className="form-label">Número de Tarea</label>
                                     <input id="taskNumber" type="number" value={form.taskNumber} onChange={e => setForm(f => ({ ...f, taskNumber: Number(e.target.value) }))} className="form-input" min={1} />

@@ -172,7 +172,7 @@ export default function Observations() {
                     <h2 className="text-[20px] font-semibold text-slate-900">Registro de Observación</h2>
                     <p className="text-[13px] text-slate-500 mt-1">Registra resultados por sesión y tarea: éxito, tiempo, errores y severidad</p>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                     {plans.length > 0 && (
                         <select 
                             className="form-input bg-white text-sm py-2" 
@@ -201,7 +201,7 @@ export default function Observations() {
                             <button onClick={resetForm} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-full transition-colors" aria-label="Cerrar"><X size={22} /></button>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label htmlFor="testSessionId" className="form-label">Sesión *</label>
                                     <select id="testSessionId" value={form.testSessionId} onChange={e => setForm(f => ({ ...f, testSessionId: e.target.value }))} className="form-input" required>
@@ -216,7 +216,7 @@ export default function Observations() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div>
                                     <label htmlFor="taskSuccess" className="form-label">¿Éxito?</label>
                                     <select id="taskSuccess" value={form.taskSuccess ? 'true' : 'false'} onChange={e => setForm(f => ({ ...f, taskSuccess: e.target.value === 'true' }))} className="form-input">
