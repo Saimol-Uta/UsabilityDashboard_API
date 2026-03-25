@@ -165,23 +165,24 @@ body {
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 10px 20px;
-  border-radius: 10px;
+  border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 180ms ease;
   border: none;
+  white-space: nowrap;
 }
 .btn-primary {
   background: linear-gradient(135deg, #1e293b 0%, #1d4ed8 100%);
   color: white;
-  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.25);
+  box-shadow: none;
 }
 .btn-primary:hover {
-  box-shadow: 0 6px 20px rgba(29, 78, 216, 0.35);
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, #0f172a 0%, #1e40af 100%);
 }
 .btn-secondary {
   background: white;

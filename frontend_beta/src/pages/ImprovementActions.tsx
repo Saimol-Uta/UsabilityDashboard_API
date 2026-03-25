@@ -11,6 +11,7 @@ const statusConfig: Record<string, { label: string; badge: string; icon: typeof 
 }
 
 export default function ImprovementActions() {
+    const [plans, setPlans] = useState<any[]>([])
     const [actions, setActions] = useState<any[]>([])
     const [findingsList, setFindingsList] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -46,7 +47,9 @@ export default function ImprovementActions() {
 
     useEffect(() => {
         testPlansApi.getAll().then(res => {
-            const planId = res.data?.[0]?.id ?? ''
+            const fetchedPlans = res.data ?? []
+            setPlans(fetchedPlans)
+            const planId = fetchedPlans[0]?.id ?? ''
             setActivePlanId(planId)
             if (planId) {
                 fetchData(planId)
@@ -125,9 +128,25 @@ export default function ImprovementActions() {
                     <h2 className="text-[22px] font-bold text-slate-900">Acciones de Mejora</h2>
                     <p className="text-[13px] text-slate-500 mt-1">Seguimiento de las acciones correctivas derivadas de los hallazgos</p>
                 </div>
-                <button className="btn btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold shadow-xl hover:scale-105 hover:shadow-2xl transform transition-all flex items-center gap-2" onClick={() => { setEditId(null); setForm({ ...emptyForm, findingId: findingsList[0]?.id ?? '' }); setShowForm(true) }}>
-                    <Plus size={18} /> Nueva Acción
-                </button>
+                <div className="flex items-center gap-4">
+                    {plans.length > 0 && (
+                        <select 
+                            className="form-input bg-white text-sm py-2" 
+                            value={activePlanId}
+                            onChange={(e) => {
+                                setActivePlanId(e.target.value)
+                                fetchData(e.target.value)
+                            }}
+                        >
+                            {plans.map((p: any) => (
+                                <option key={p.id} value={p.id}>{p.projectName}</option>
+                            ))}
+                        </select>
+                    )}
+                    <button className="btn btn-primary" onClick={() => { setEditId(null); setForm({ ...emptyForm, findingId: findingsList[0]?.id ?? '' }); setShowForm(true) }}>
+                        <Plus size={14} aria-hidden="true" /> Nueva Acción
+                    </button>
+                </div>
             </div>
 
             {/* Status Summary */}
@@ -166,6 +185,10 @@ export default function ImprovementActions() {
                         </div>
                         <form onSubmit={handleSubmit} className="p-5 space-y-4">
                             <div>
+                                <label className="form-label">Evaluación / Plan asignado</label>
+                                <div className="form-input bg-slate-50 text-slate-700">{plans.find(p => p.id === activePlanId)?.projectName || 'Sin plan'}</div>
+                            </div>
+                            <div>
                                 <label htmlFor="findingId" className="form-label">Hallazgo asociado <span className="text-red-500">*</span></label>
                                 <select id="findingId" value={form.findingId} onChange={e => setForm(f => ({ ...f, findingId: e.target.value }))} className="form-input" required>
                                     {findingsList.map((f: any) => <option key={f.id} value={f.id}>{f.description.length > 80 ? f.description.substring(0, 80) + '...' : f.description}</option>)}
@@ -195,7 +218,7 @@ export default function ImprovementActions() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 pt-3">
-                                <button type="submit" className="btn btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                                <button type="submit" className="btn btn-primary">
                                     <Save size={16} /> {editId ? 'Actualizar' : 'Guardar'}
                                 </button>
                                 <button type="button" onClick={resetForm} className="btn btn-secondary text-center">

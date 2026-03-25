@@ -110,7 +110,7 @@ export default function Tasks() {
                     <h2 className="text-[20px] font-semibold text-slate-900">Gestión de Tareas</h2>
                     <p className="text-[13px] text-slate-500 mt-1">Define los escenarios de prueba que realizarán los participantes</p>
                 </div>
-                <button onClick={() => { setForm(f => ({ ...f, testPlanId: activePlanId, taskNumber: tasks.length + 1 })); setEditId(null); setShowForm(true) }} disabled={!activePlanId} className="btn btn-primary shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                <button onClick={() => { setForm(f => ({ ...f, testPlanId: activePlanId, taskNumber: tasks.length + 1 })); setEditId(null); setShowForm(true) }} disabled={!activePlanId} className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
                     <Plus size={18} aria-hidden="true" /> Nueva Tarea
                 </button>
             </div>
@@ -180,7 +180,7 @@ export default function Tasks() {
                                 <textarea id="successCriteria" value={form.successCriteria} onChange={e => setForm(f => ({ ...f, successCriteria: e.target.value }))} className="form-input" rows={2} placeholder="¿Cómo se mide el éxito?" />
                             </div>
                             <div className="flex items-center gap-3 pt-3">
-                                <button type="submit" className="btn btn-primary flex items-center justify-center gap-2">
+                                <button type="submit" className="btn btn-primary">
                                     <Save size={16} /> {editId ? 'Actualizar' : 'Crear'}
                                 </button>
                                 <button type="button" onClick={resetForm} className="btn btn-secondary text-center">
