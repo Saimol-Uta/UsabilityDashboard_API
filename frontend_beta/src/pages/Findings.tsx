@@ -117,10 +117,26 @@ export default function Findings() {
                     <h2 className="text-[20px] font-semibold text-slate-900">Síntesis de Hallazgos</h2>
                     <p className="text-[13px] text-slate-500 mt-1">Problemas de usabilidad detectados con frecuencia, severidad y recomendaciones</p>
                 </div>
-                <button onClick={() => { setEditId(null); setForm({ ...emptyForm, testPlanId: activePlanId }); setShowForm(true) }}
-                    className="btn btn-primary shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600">
-                    <Plus size={18} aria-hidden="true" /> Nuevo Hallazgo
-                </button>
+                <div className="flex items-center gap-4">
+                    {plans.length > 0 && (
+                        <select 
+                            className="form-input bg-white text-sm py-2" 
+                            value={activePlanId}
+                            onChange={(e) => {
+                                setActivePlanId(e.target.value)
+                                fetchFindings(e.target.value)
+                            }}
+                        >
+                            {plans.map((p: any) => (
+                                <option key={p.id} value={p.id}>{p.projectName}</option>
+                            ))}
+                        </select>
+                    )}
+                    <button onClick={() => { setEditId(null); setForm({ ...emptyForm, testPlanId: activePlanId }); setShowForm(true) }}
+                        className="btn btn-primary">
+                        <Plus size={14} aria-hidden="true" /> Nuevo Hallazgo
+                    </button>
+                </div>
             </div>
 
             {/* Filter */}
@@ -217,7 +233,7 @@ export default function Findings() {
                                 <textarea id="recommendation" value={form.recommendation} onChange={e => setForm(f => ({ ...f, recommendation: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" rows={3} />
                             </div>
                             <div className="flex items-center gap-3 pt-3">
-                                <button type="submit" className="btn btn-primary flex items-center justify-center gap-2">
+                                <button type="submit" className="btn btn-primary">
                                     <Save size={16} /> {editId ? 'Actualizar' : 'Guardar'}
                                 </button>
                                 <button type="button" onClick={resetForm} className="btn btn-secondary text-center">

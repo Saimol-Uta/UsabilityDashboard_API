@@ -122,7 +122,7 @@ export default function TestSessions() {
                     <h2 className="text-[22px] font-bold text-slate-900">Sesiones de Prueba</h2>
                     <p className="text-[13px] text-slate-500 mt-1">Organiza y agenda el trabajo de campo con los usuarios</p>
                 </div>
-                <button className="btn btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold shadow-xl hover:scale-105 hover:shadow-2xl transform transition-all flex items-center gap-2" onClick={() => { setEditId(null); setForm({ ...emptyForm, testPlanId: activePlanId, participantId: participants[0]?.id ?? '' }); setShowForm(true) }}>
+                <button className="btn btn-primary" onClick={() => { setEditId(null); setForm({ ...emptyForm, testPlanId: activePlanId, participantId: participants[0]?.id ?? '' }); setShowForm(true) }}>
                     <Plus size={18} /> Programar Sesión
                 </button>
             </div>
@@ -172,7 +172,7 @@ export default function TestSessions() {
                                 <input id="platformTested" type="text" value={form.platformTested} onChange={e => setForm(f => ({ ...f, platformTested: e.target.value }))} className="form-input" placeholder="Ej: iOS App, Android, Desktop Web..." required />
                             </div>
                             <div className="flex items-center gap-3 pt-3">
-                                <button type="submit" className="btn btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold shadow-md hover:shadow-lg flex items-center justify-center gap-2" disabled={participants.length === 0}>
+                                <button type="submit" className="btn btn-primary" disabled={participants.length === 0}>
                                     <Save size={16} /> {editId ? 'Actualizar' : 'Guardar'}
                                 </button>
                                 <button type="button" onClick={resetForm} className="btn btn-secondary text-center">

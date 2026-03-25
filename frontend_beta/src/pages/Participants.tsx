@@ -76,7 +76,7 @@ export default function Participants() {
                     <h2 className="text-[22px] font-bold text-slate-900">Directorio de Participantes</h2>
                     <p className="text-[13px] text-slate-500 mt-1">Registra y gestiona los participantes de las pruebas</p>
                 </div>
-                <button className="btn btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold shadow-xl hover:scale-105 hover:shadow-2xl transform transition-all flex items-center gap-2" onClick={() => { setEditId(null); setForm(emptyForm); setShowForm(true) }}>
+                <button className="btn btn-primary" onClick={() => { setEditId(null); setForm(emptyForm); setShowForm(true) }}>
                     <Plus size={18} /> Nuevo Participante
                 </button>
             </div>
@@ -106,7 +106,7 @@ export default function Participants() {
                                 <textarea id="profile" value={form.profile} onChange={e => setForm(f => ({ ...f, profile: e.target.value }))} className="form-input" rows={3} placeholder="Ej: Estudiante de ingeniería, usuario frecuente de apps móviles..." />
                             </div>
                             <div className="flex items-center gap-3 pt-3">
-                                <button type="submit" className="btn btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                                <button type="submit" className="btn btn-primary">
                                     <Save size={16} /> {editId ? 'Actualizar' : 'Guardar'}
                                 </button>
                                 <button type="button" onClick={resetForm} className="btn btn-secondary text-center">

@@ -4,6 +4,7 @@ import { useToast } from '../App'
 import { Plus, Save, Trash2, Eye, X, CheckCircle2, XCircle } from 'lucide-react'
 
 export default function Observations() {
+    const [plans, setPlans] = useState<any[]>([])
     const [logs, setLogs] = useState<any[]>([])
     const [sessions, setSessions] = useState<any[]>([])
     const [tasks, setTasks] = useState<any[]>([])
@@ -57,7 +58,9 @@ export default function Observations() {
 
     useEffect(() => {
         testPlansApi.getAll().then(res => {
-            const planId = res.data?.[0]?.id ?? ''
+            const fetchedPlans = res.data ?? []
+            setPlans(fetchedPlans)
+            const planId = fetchedPlans[0]?.id ?? ''
             setActivePlanId(planId)
             if (planId) {
                 fetchData(planId)
@@ -169,9 +172,25 @@ export default function Observations() {
                     <h2 className="text-[20px] font-semibold text-slate-900">Registro de Observación</h2>
                     <p className="text-[13px] text-slate-500 mt-1">Registra resultados por sesión y tarea: éxito, tiempo, errores y severidad</p>
                 </div>
-                <button onClick={() => { setEditId(null); resetForm(); setShowForm(true) }} className="btn btn-primary shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600">
-                    <Plus size={18} aria-hidden="true" /> Nuevo Registro
-                </button>
+                <div className="flex items-center gap-4">
+                    {plans.length > 0 && (
+                        <select 
+                            className="form-input bg-white text-sm py-2" 
+                            value={activePlanId}
+                            onChange={(e) => {
+                                setActivePlanId(e.target.value)
+                                fetchData(e.target.value)
+                            }}
+                        >
+                            {plans.map((p: any) => (
+                                <option key={p.id} value={p.id}>{p.projectName}</option>
+                            ))}
+                        </select>
+                    )}
+                    <button onClick={() => { setEditId(null); resetForm(); setShowForm(true) }} className="btn btn-primary">
+                        <Plus size={14} aria-hidden="true" /> Nuevo Registro
+                    </button>
+                </div>
             </div>
 
             {showForm && (
@@ -243,7 +262,7 @@ export default function Observations() {
                             </div>
 
                             <div className="flex items-center gap-3 pt-3">
-                                <button type="submit" className="btn btn-primary flex items-center justify-center gap-2">
+                                <button type="submit" className="btn btn-primary">
                                     <Save size={16} /> {editId ? 'Actualizar' : 'Guardar'}
                                 </button>
                                 <button type="button" onClick={resetForm} className="btn btn-secondary text-center">

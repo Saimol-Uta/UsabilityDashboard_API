@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { dashboardApi, findingsApi, testPlansApi } from '../api'
-import { BarChart2, CheckCircle2, Clock, AlertCircle, AlertTriangle, Lightbulb, TrendingUp, Flame, PieChart as PieChartIcon } from 'lucide-react'
+import { BarChart2, CheckCircle2, Clock, AlertCircle, AlertTriangle, Lightbulb, TrendingUp, Flame, PieChart as PieChartIcon, Filter } from 'lucide-react'
 import { PieChart } from '../components/PieChart'
 
 interface Stats {
@@ -45,35 +45,42 @@ function KPICard({ icon, value, label, iconBg, valueColor = 'text-gray-900', del
 export default function Dashboard() {
     const [stats, setStats] = useState<Stats | null>(null)
     const [findings, setFindings] = useState<any[]>([])
+    const [plans, setPlans] = useState<any[]>([])
+    const [activePlanId, setActivePlanId] = useState('')
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        const load = async () => {
-            setLoading(true)
-            try {
-                const plansRes = await testPlansApi.getAll()
-                const activePlanId = plansRes.data?.[0]?.id
-
-                if (!activePlanId) {
-                    setStats(null)
-                    setFindings([])
-                    return
-                }
-
-                const [statsRes, findingsRes] = await Promise.all([
-                    dashboardApi.getStats(activePlanId),
-                    findingsApi.getByPlan(activePlanId),
-                ])
-
-                const findingsData = findingsRes.data ?? []
-                setStats(statsRes.data)
-                setFindings(findingsData)
-            } finally {
-                setLoading(false)
+    const fetchDashboardData = async (planId: string, allPlans: any[]) => {
+        setLoading(true)
+        try {
+            const statsRes = await dashboardApi.getStats(planId || undefined)
+            
+            let allFindings: any[] = []
+            if (planId) {
+                const findingsRes = await findingsApi.getByPlan(planId)
+                allFindings = findingsRes.data ?? []
+            } else {
+                const findingsPromises = allPlans.map(p => findingsApi.getByPlan(p.id))
+                const responses = await Promise.all(findingsPromises)
+                allFindings = responses.flatMap(r => r.data ?? [])
             }
-        }
 
-        load()
+            setStats(statsRes.data)
+            setFindings(allFindings)
+        } catch {
+            setStats(null)
+            setFindings([])
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        testPlansApi.getAll().then(res => {
+            const fetchedPlans = res.data ?? []
+            setPlans(fetchedPlans)
+            setActivePlanId('') // Por defecto a "Todos los planes"
+            fetchDashboardData('', fetchedPlans)
+        })
     }, [])
 
     if (loading) {
@@ -112,6 +119,35 @@ export default function Dashboard() {
                     </p>
                 </div>
             </section>
+
+            {/* Filter Section */}
+            {plans.length > 0 && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-white rounded-2xl border border-slate-200 shadow-sm animate-rise transition-all hover:shadow-md">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 border border-blue-100">
+                            <Filter size={18} className="text-blue-600" aria-hidden="true" />
+                        </div>
+                        <div>
+                            <h3 className="text-[15px] font-bold text-slate-900 leading-snug">Filtro de Datos por Evaluación</h3>
+                            <p className="text-[12px] text-slate-500 mt-0.5">Métrica global (Todas las evaluaciones) o específicas por plan.</p>
+                        </div>
+                    </div>
+                    
+                    <select 
+                        className="form-input max-w-md bg-slate-50 border-slate-200 text-slate-700 font-semibold focus:border-blue-500 focus:ring-2 focus:ring-blue-200 py-2.5 shadow-inner" 
+                        value={activePlanId}
+                        onChange={(e) => {
+                            setActivePlanId(e.target.value)
+                            fetchDashboardData(e.target.value, plans)
+                        }}
+                    >
+                        <option value="" className="font-bold text-blue-700">✨ Todas las Evaluaciones (Global)</option>
+                        {plans.map((p: any) => (
+                            <option key={p.id} value={p.id}>{p.projectName}</option>
+                        ))}
+                    </select>
+                </div>
+            )}
 
             {/* KPI Cards - Row 1 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
