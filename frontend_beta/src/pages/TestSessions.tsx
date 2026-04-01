@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { testSessionsApi, participantsApi, testPlansApi } from '../api'
 import { useToast } from '../App'
-import { Plus, Save, CalendarRange, X, MonitorPlay, Calendar } from 'lucide-react'
+import { Plus, Save, CalendarRange, X, MonitorPlay, Calendar, Play } from 'lucide-react'
 
 export default function TestSessions() {
+    const navigate = useNavigate()
     const [sessions, setSessions] = useState<any[]>([])
     const [plans, setPlans] = useState<any[]>([])
     const [participants, setParticipants] = useState<any[]>([])
@@ -208,6 +210,9 @@ export default function TestSessions() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 mt-auto pt-3">
+                                <button onClick={() => navigate(`/sesiones/${session.id}/ejecutar`)} className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-[11px] font-semibold py-1.5 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
+                                    <Play size={12} /> Iniciar Sesión
+                                </button>
                                 <button onClick={() => handleEdit(session)} className="btn btn-secondary text-[11px] py-1 px-3">Modificar</button>
                                 <button onClick={() => setSessionToDelete(session)} className="btn btn-danger text-[11px] py-1 px-3">Eliminar</button>
                             </div>

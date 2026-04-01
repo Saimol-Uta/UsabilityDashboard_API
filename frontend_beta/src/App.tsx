@@ -11,6 +11,7 @@ import Findings from './pages/Findings'
 import ImprovementActions from './pages/ImprovementActions'
 import Participants from './pages/Participants'
 import TestSessions from './pages/TestSessions'
+import SessionRunner from './pages/SessionRunner'
 
 interface Toast {
   id: number
@@ -58,6 +59,7 @@ export default function App() {
           <Route path="observaciones" element={<Observations />} />
           <Route path="participantes" element={<Participants />} />
           <Route path="sesiones" element={<TestSessions />} />
+          <Route path="sesiones/:sessionId/ejecutar" element={<SessionRunner />} />
           <Route path="hallazgos" element={<Findings />} />
           <Route path="mejoras" element={<ImprovementActions />} />
           <Route path="*" element={<Navigate to="/" replace />} />
