@@ -1,19 +1,22 @@
 import { useEffect, useState } from 'react'
-import { observationLogsApi, testPlansApi, testSessionsApi, testTasksApi } from '../api'
+import { observationLogsApi, testSessionsApi, testTasksApi } from '../api'
 import { useToast } from '../App'
-import { Plus, Save, Trash2, Eye, X, CheckCircle2, XCircle } from 'lucide-react'
+import { usePlan } from '../context/PlanContext'
+import { extractErrorMessage } from '../hooks/useApiError'
+import Modal from '../components/Modal'
+import PlanSelector from '../components/PlanSelector'
+import { Plus, Save, Trash2, Eye, X, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react'
 
 export default function Observations() {
-    const [plans, setPlans] = useState<any[]>([])
     const [logs, setLogs] = useState<any[]>([])
     const [sessions, setSessions] = useState<any[]>([])
     const [tasks, setTasks] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [showForm, setShowForm] = useState(false)
     const [editId, setEditId] = useState<string | null>(null)
-    const [activePlanId, setActivePlanId] = useState('')
     const [logToDelete, setLogToDelete] = useState<any | null>(null)
     const { addToast } = useToast()
+    const { activePlanId, activePlan, isReadOnly } = usePlan()
 
     const emptyForm = {
         testSessionId: '',
@@ -27,8 +30,10 @@ export default function Observations() {
         proposedImprovement: '',
     }
     const [form, setForm] = useState(emptyForm)
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const fetchData = async (planId: string) => {
+        if (!planId) { setLogs([]); setSessions([]); setTasks([]); setLoading(false); return }
         setLoading(true)
         try {
             const [sessionsRes, tasksRes, logsRes] = await Promise.all([
@@ -57,18 +62,8 @@ export default function Observations() {
     }
 
     useEffect(() => {
-        testPlansApi.getAll().then(res => {
-            const fetchedPlans = res.data ?? []
-            setPlans(fetchedPlans)
-            const planId = fetchedPlans[0]?.id ?? ''
-            setActivePlanId(planId)
-            if (planId) {
-                fetchData(planId)
-            } else {
-                setLoading(false)
-            }
-        })
-    }, [])
+        fetchData(activePlanId)
+    }, [activePlanId])
 
     const resetForm = () => {
         setForm({
@@ -98,6 +93,7 @@ export default function Observations() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (isSubmitting) return
 
         if (!form.testSessionId || !form.testTaskId) {
             addToast('Debe seleccionar sesión y tarea', 'error')
@@ -112,14 +108,7 @@ export default function Observations() {
             return
         }
 
-        if (form.timeSeconds <= 0) { addToast('El tiempo debe ser mayor a 0', 'error'); return }
-        if (form.errorCount < 0) { addToast('Los errores no pueden ser negativos', 'error'); return }
-
-        if ((!form.taskSuccess || form.errorCount > 0) && !form.detectedProblem.trim()) {
-            addToast('El problema detectado es obligatorio cuando hay errores o la tarea no tuvo éxito', 'error')
-            return
-        }
-
+        setIsSubmitting(true)
         try {
             if (editId) {
                 await observationLogsApi.update(editId, {
@@ -138,8 +127,10 @@ export default function Observations() {
             }
             resetForm()
             if (activePlanId) fetchData(activePlanId)
-        } catch {
-            addToast('Error al guardar', 'error')
+        } catch (err) {
+            addToast(extractErrorMessage(err, 'Error al guardar el registro'), 'error')
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -148,8 +139,8 @@ export default function Observations() {
             await observationLogsApi.delete(id)
             addToast('Registro eliminado', 'success')
             if (activePlanId) fetchData(activePlanId)
-        } catch {
-            addToast('Error al eliminar', 'error')
+        } catch (err) {
+            addToast(extractErrorMessage(err, 'Error al eliminar el registro'), 'error')
         } finally {
             setLogToDelete(null)
         }
@@ -165,6 +156,18 @@ export default function Observations() {
         return task ? `T${task.taskNumber}` : `T${String(taskId).slice(0, 4)}`
     }
 
+    // SEC-04: Handle error count input clearing
+    const handleErrorCountFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+        if (Number(e.target.value) === 0) {
+            setForm(f => ({ ...f, errorCount: '' as any }))
+        }
+    }
+    const handleErrorCountBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+        if (e.target.value === '' || e.target.value === undefined) {
+            setForm(f => ({ ...f, errorCount: 0 }))
+        }
+    }
+
     return (
         <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between flex-wrap gap-3">
@@ -173,106 +176,108 @@ export default function Observations() {
                     <p className="text-[13px] text-slate-500 mt-1">Registra resultados por sesión y tarea: éxito, tiempo, errores y severidad</p>
                 </div>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-                    {plans.length > 0 && (
-                        <select 
-                            className="form-input bg-white text-sm py-2" 
-                            value={activePlanId}
-                            onChange={(e) => {
-                                setActivePlanId(e.target.value)
-                                fetchData(e.target.value)
-                            }}
-                        >
-                            {plans.map((p: any) => (
-                                <option key={p.id} value={p.id}>{p.projectName}</option>
-                            ))}
-                        </select>
-                    )}
-                    <button onClick={() => { setEditId(null); resetForm(); setShowForm(true) }} className="btn btn-primary">
+                    <PlanSelector />
+                    <button
+                        onClick={() => { setEditId(null); resetForm(); setShowForm(true) }}
+                        className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!activePlanId || isReadOnly}
+                        aria-label="Nuevo Registro"
+                    >
                         <Plus size={14} aria-hidden="true" /> Nuevo Registro
                     </button>
                 </div>
             </div>
 
-            {showForm && (
-                <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) resetForm() }} role="dialog" aria-modal="true" aria-label="Formulario de observación">
-                    <div className="modal-content rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-rise bg-white">
-                        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
-                            <h3 className="text-[18px] font-semibold text-slate-900">{editId ? 'Editar Registro' : 'Nuevo Registro'}</h3>
-                            <button onClick={resetForm} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-full transition-colors" aria-label="Cerrar"><X size={22} /></button>
-                        </div>
-                        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="testSessionId" className="form-label">Sesión *</label>
-                                    <select id="testSessionId" value={form.testSessionId} onChange={e => setForm(f => ({ ...f, testSessionId: e.target.value }))} className="form-input" required>
-                                        {sessions.map((s: any) => <option key={s.id} value={s.id}>{s.participantName} · {new Date(s.date).toLocaleDateString()}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label htmlFor="testTaskId" className="form-label">Tarea *</label>
-                                    <select id="testTaskId" value={form.testTaskId} onChange={e => setForm(f => ({ ...f, testTaskId: e.target.value }))} className="form-input" required>
-                                        {tasks.map((t: any) => <option key={t.id} value={t.id}>T{t.taskNumber} — {String(t.scenario).substring(0, 40)}...</option>)}
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div>
-                                    <label htmlFor="taskSuccess" className="form-label">¿Éxito?</label>
-                                    <select id="taskSuccess" value={form.taskSuccess ? 'true' : 'false'} onChange={e => setForm(f => ({ ...f, taskSuccess: e.target.value === 'true' }))} className="form-input">
-                                        <option value="true">Sí</option>
-                                        <option value="false">No</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label htmlFor="timeSeconds" className="form-label">Tiempo (seg) <span className="text-red-500">*</span></label>
-                                    <input id="timeSeconds" type="number" value={form.timeSeconds} onChange={e => setForm(f => ({ ...f, timeSeconds: Number(e.target.value) }))} className="form-input" min={1} required />
-                                </div>
-                                <div>
-                                    <label htmlFor="errorCount" className="form-label">Errores <span className="text-red-500">*</span></label>
-                                    <input id="errorCount" type="number" value={form.errorCount} onChange={e => setForm(f => ({ ...f, errorCount: Number(e.target.value) }))} className="form-input" min={0} required />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label htmlFor="severity" className="form-label">Severidad</label>
-                                <select id="severity" value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value }))} className="form-input">
-                                    <option value="Critical">Crítica</option>
-                                    <option value="High">Alta</option>
-                                    <option value="Medium">Media</option>
-                                    <option value="Low">Baja</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label htmlFor="detectedProblem" className="form-label">Problema detectado {(!form.taskSuccess || form.errorCount > 0) && <span className="text-red-500">*</span>}</label>
-                                <textarea id="detectedProblem" value={form.detectedProblem} onChange={e => setForm(f => ({ ...f, detectedProblem: e.target.value }))} className={`form-input ${(!form.taskSuccess || form.errorCount > 0) && !form.detectedProblem.trim() ? 'border-red-500 focus:border-red-500 focus:ring-red-50' : ''}`} rows={2} placeholder="Describe el problema observado" required={!form.taskSuccess || form.errorCount > 0} />
-                            </div>
-
-                            <div>
-                                <label htmlFor="proposedImprovement" className="form-label">Mejora propuesta</label>
-                                <textarea id="proposedImprovement" value={form.proposedImprovement} onChange={e => setForm(f => ({ ...f, proposedImprovement: e.target.value }))} className="form-input" rows={2} placeholder="Propuesta de mejora" />
-                            </div>
-
-
-
-                            <div>
-                                <label htmlFor="comments" className="form-label">Comentarios</label>
-                                <textarea id="comments" value={form.comments} onChange={e => setForm(f => ({ ...f, comments: e.target.value }))} className="form-input" rows={3} placeholder="Notas del moderador" />
-                            </div>
-
-                            <div className="flex items-center gap-3 pt-3">
-                                <button type="submit" className="btn btn-primary">
-                                    <Save size={16} /> {editId ? 'Actualizar' : 'Guardar'}
-                                </button>
-                                <button type="button" onClick={resetForm} className="btn btn-secondary text-center">
-                                    Cancelar
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+            {/* GLB-04: Read-only banner */}
+            {isReadOnly && activePlan && (
+                <div className="readonly-banner">
+                    <AlertTriangle size={16} className="flex-shrink-0" />
+                    <span>El plan "<strong>{activePlan.projectName}</strong>" está {activePlan.status === 'Completed' ? 'completado' : 'cancelado'}. No se pueden crear ni modificar observaciones.</span>
                 </div>
             )}
+
+            {/* Form Modal */}
+            <Modal isOpen={showForm} onClose={resetForm} title={editId ? 'Editar Registro' : 'Nuevo Registro'}>
+                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label htmlFor="obsTestSessionId" className="form-label">Sesión <span className="text-red-500">*</span></label>
+                            <select id="obsTestSessionId" value={form.testSessionId} onChange={e => setForm(f => ({ ...f, testSessionId: e.target.value }))} className="form-input" required>
+                                {sessions.map((s: any) => <option key={s.id} value={s.id}>{s.participantName} · {new Date(s.date).toLocaleDateString()}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label htmlFor="obsTestTaskId" className="form-label">Tarea <span className="text-red-500">*</span></label>
+                            <select id="obsTestTaskId" value={form.testTaskId} onChange={e => setForm(f => ({ ...f, testTaskId: e.target.value }))} className="form-input" required>
+                                {tasks.map((t: any) => <option key={t.id} value={t.id}>T{t.taskNumber} — {String(t.scenario).substring(0, 40)}...</option>)}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label htmlFor="obsTaskSuccess" className="form-label">¿Éxito?</label>
+                            <select id="obsTaskSuccess" value={form.taskSuccess ? 'true' : 'false'} onChange={e => setForm(f => ({ ...f, taskSuccess: e.target.value === 'true' }))} className="form-input">
+                                <option value="true">Sí</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label htmlFor="obsTimeSeconds" className="form-label">Tiempo (seg) <span className="text-red-500">*</span></label>
+                            <input id="obsTimeSeconds" type="number" value={form.timeSeconds} onChange={e => setForm(f => ({ ...f, timeSeconds: Number(e.target.value) }))} className="form-input" min={1} required />
+                        </div>
+                        <div>
+                            {/* SEC-04: Fixed error input clearing */}
+                            <label htmlFor="obsErrorCount" className="form-label">Errores <span className="text-red-500">*</span></label>
+                            <input
+                                id="obsErrorCount"
+                                type="number"
+                                value={form.errorCount}
+                                onChange={e => setForm(f => ({ ...f, errorCount: e.target.value === '' ? '' as any : Number(e.target.value) }))}
+                                onFocus={handleErrorCountFocus}
+                                onBlur={handleErrorCountBlur}
+                                className="form-input"
+                                min={0}
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label htmlFor="obsSeverity" className="form-label">Severidad</label>
+                        <select id="obsSeverity" value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value }))} className="form-input">
+                            <option value="Critical">Crítica</option>
+                            <option value="High">Alta</option>
+                            <option value="Medium">Media</option>
+                            <option value="Low">Baja</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label htmlFor="obsDetectedProblem" className="form-label">Problema detectado {(!form.taskSuccess || form.errorCount > 0) && <span className="text-red-500">*</span>}</label>
+                        <textarea id="obsDetectedProblem" value={form.detectedProblem} onChange={e => setForm(f => ({ ...f, detectedProblem: e.target.value }))} className={`form-input ${(!form.taskSuccess || form.errorCount > 0) && !form.detectedProblem.trim() ? 'border-red-500 focus:border-red-500 focus:ring-red-50' : ''}`} rows={2} placeholder="Describe el problema observado" required={!form.taskSuccess || form.errorCount > 0} />
+                    </div>
+
+                    <div>
+                        <label htmlFor="obsProposedImprovement" className="form-label">Mejora propuesta</label>
+                        <textarea id="obsProposedImprovement" value={form.proposedImprovement} onChange={e => setForm(f => ({ ...f, proposedImprovement: e.target.value }))} className="form-input" rows={2} placeholder="Propuesta de mejora" />
+                    </div>
+
+                    <div>
+                        <label htmlFor="obsComments" className="form-label">Comentarios</label>
+                        <textarea id="obsComments" value={form.comments} onChange={e => setForm(f => ({ ...f, comments: e.target.value }))} className="form-input" rows={3} placeholder="Notas del moderador" />
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-3">
+                        <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                            <Save size={16} /> {isSubmitting ? 'Guardando...' : (editId ? 'Actualizar' : 'Guardar')}
+                        </button>
+                        <button type="button" onClick={resetForm} className="btn btn-secondary text-center" disabled={isSubmitting}>
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </Modal>
 
             {loading ? (
                 <div className="flex justify-center py-12"><div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" /></div>
@@ -324,10 +329,10 @@ export default function Observations() {
                                         </td>
                                         <td className="px-5 py-4">
                                             <div className="flex gap-2">
-                                                <button onClick={() => handleEdit(log)} className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-[12px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-blue-200">
+                                                <button onClick={() => handleEdit(log)} className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-[12px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-blue-200" aria-label={`Editar observación de ${getSessionName(log.testSessionId)}`} disabled={isReadOnly}>
                                                     Editar
                                                 </button>
-                                                <button onClick={() => setLogToDelete(log)} className="bg-red-50 hover:bg-red-100 text-red-700 text-[12px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-red-200">
+                                                <button onClick={() => setLogToDelete(log)} className="bg-red-50 hover:bg-red-100 text-red-700 text-[12px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-red-200" aria-label={`Eliminar observación de ${getSessionName(log.testSessionId)}`} disabled={isReadOnly}>
                                                     <Trash2 size={14} />
                                                 </button>
                                             </div>
@@ -340,25 +345,18 @@ export default function Observations() {
                 </div>
             )}
 
-            {logToDelete && (
-                <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setLogToDelete(null) }} role="dialog" aria-modal="true" aria-label="Confirmar eliminación">
-                    <div className="modal-content max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
-                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                            <h3 className="text-[16px] font-semibold text-slate-900">Eliminar Observación</h3>
-                            <button onClick={() => setLogToDelete(null)} className="text-slate-400 hover:text-slate-600" aria-label="Cerrar"><X size={20} /></button>
-                        </div>
-                        <div className="p-5">
-                            <p className="text-[14px] text-slate-600 mb-5">
-                                ¿Estás seguro de que deseas eliminar la observación de la sesión <strong>{getSessionName(logToDelete.testSessionId)}</strong> (Tarea {getTaskLabel(logToDelete.testTaskId)})? Esta acción no se puede deshacer.
-                            </p>
-                            <div className="flex justify-end gap-3">
-                                <button type="button" onClick={() => setLogToDelete(null)} className="btn btn-secondary">Cancelar</button>
-                                <button type="button" onClick={() => confirmDelete(logToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
-                            </div>
-                        </div>
+            {/* Delete confirmation */}
+            <Modal isOpen={!!logToDelete} onClose={() => setLogToDelete(null)} title="Eliminar Observación" maxWidth="480px">
+                <div className="p-5">
+                    <p className="text-[14px] text-slate-600 mb-5">
+                        ¿Estás seguro de que deseas eliminar la observación de la sesión <strong>{logToDelete && getSessionName(logToDelete.testSessionId)}</strong> (Tarea {logToDelete && getTaskLabel(logToDelete.testTaskId)})? Esta acción no se puede deshacer.
+                    </p>
+                    <div className="flex justify-end gap-3">
+                        <button type="button" onClick={() => setLogToDelete(null)} className="btn btn-secondary">Cancelar</button>
+                        <button type="button" onClick={() => logToDelete && confirmDelete(logToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
                     </div>
                 </div>
-            )}
+            </Modal>
         </div>
     )
 }

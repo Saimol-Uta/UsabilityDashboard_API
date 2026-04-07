@@ -14,6 +14,7 @@ export default function Participants() {
 
     const emptyForm = { name: '', age: '', profile: '' }
     const [form, setForm] = useState(emptyForm)
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const fetchParticipants = () => {
         setLoading(true)
@@ -38,10 +39,12 @@ export default function Participants() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (isSubmitting) return
         if (!form.name.trim()) { addToast('El nombre es requerido', 'error'); return }
         const ageNum = parseInt(form.age)
         if (isNaN(ageNum) || ageNum <= 0) { addToast('La edad debe ser mayor a 0', 'error'); return }
 
+        setIsSubmitting(true)
         try {
             if (editId) {
                 await participantsApi.update(editId, { ...form, age: ageNum })
@@ -53,6 +56,7 @@ export default function Participants() {
             resetForm()
             fetchParticipants()
         } catch { addToast('Error al guardar participante', 'error') }
+        finally { setIsSubmitting(false) }
     }
 
     const confirmDelete = async (id: string) => {
@@ -106,10 +110,10 @@ export default function Participants() {
                                 <textarea id="profile" value={form.profile} onChange={e => setForm(f => ({ ...f, profile: e.target.value }))} className="form-input" rows={3} placeholder="Ej: Estudiante de ingeniería, usuario frecuente de apps móviles..." />
                             </div>
                             <div className="flex items-center gap-3 pt-3">
-                                <button type="submit" className="btn btn-primary">
-                                    <Save size={16} /> {editId ? 'Actualizar' : 'Guardar'}
+                                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                                    <Save size={16} /> {isSubmitting ? 'Guardando...' : (editId ? 'Actualizar' : 'Guardar')}
                                 </button>
-                                <button type="button" onClick={resetForm} className="btn btn-secondary text-center">
+                                <button type="button" onClick={resetForm} className="btn btn-secondary text-center" disabled={isSubmitting}>
                                     Cancelar
                                 </button>
                             </div>

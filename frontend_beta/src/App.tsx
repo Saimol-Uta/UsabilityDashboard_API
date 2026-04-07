@@ -1,9 +1,9 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useState, createContext, useContext, useCallback } from 'react'
+import { PlanProvider } from './context/PlanContext'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import TestPlans from './pages/TestPlans'
-import TestPlanForm from './pages/TestPlanForm'
 import Tasks from './pages/Tasks'
 import ModeratorScript from './pages/ModeratorScript'
 import Observations from './pages/Observations'
@@ -38,33 +38,33 @@ export default function App() {
   }, [])
 
   return (
-    <ToastContext.Provider value={{ addToast }}>
-      <div className="toast-container" role="status" aria-live="polite">
-        {toasts.map(t => (
-          <div key={t.id} className={`toast toast-${t.type}`}>
-            <span>{t.type === 'success' ? '✓' : '✗'}</span>
-            <span>{t.message}</span>
-          </div>
-        ))}
-      </div>
+    <PlanProvider>
+      <ToastContext.Provider value={{ addToast }}>
+        <div className="toast-container" role="status" aria-live="polite">
+          {toasts.map(t => (
+            <div key={t.id} className={`toast toast-${t.type}`}>
+              <span>{t.type === 'success' ? '✓' : '✗'}</span>
+              <span>{t.message}</span>
+            </div>
+          ))}
+        </div>
 
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="planes" element={<TestPlans />} />
-          <Route path="planes/nuevo" element={<TestPlanForm />} />
-          <Route path="planes/:id/editar" element={<TestPlanForm />} />
-          <Route path="tareas" element={<Tasks />} />
-          <Route path="guion" element={<ModeratorScript />} />
-          <Route path="observaciones" element={<Observations />} />
-          <Route path="participantes" element={<Participants />} />
-          <Route path="sesiones" element={<TestSessions />} />
-          <Route path="sesiones/:sessionId/ejecutar" element={<SessionRunner />} />
-          <Route path="hallazgos" element={<Findings />} />
-          <Route path="mejoras" element={<ImprovementActions />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
-    </ToastContext.Provider>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="planes" element={<TestPlans />} />
+            <Route path="tareas" element={<Tasks />} />
+            <Route path="guion" element={<ModeratorScript />} />
+            <Route path="observaciones" element={<Observations />} />
+            <Route path="participantes" element={<Participants />} />
+            <Route path="sesiones" element={<TestSessions />} />
+            <Route path="sesiones/:sessionId/ejecutar" element={<SessionRunner />} />
+            <Route path="hallazgos" element={<Findings />} />
+            <Route path="mejoras" element={<ImprovementActions />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </ToastContext.Provider>
+    </PlanProvider>
   )
 }
