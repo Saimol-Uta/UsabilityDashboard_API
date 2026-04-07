@@ -46,10 +46,40 @@ function KPICard({ icon, value, label, iconBg, valueColor = 'text-gray-900', del
 }
 
 export default function Dashboard() {
-    const { plans, activePlanId } = usePlan()
+    const { plans, activePlanId, setActivePlanId } = usePlan()
+
+    // dashboardFilter is LOCAL to this page only.
+    // '' = "Todas las evaluaciones (Global)" — does NOT affect other pages.
+    // Initialized from the global activePlanId so it starts showing the selected plan.
+    const [dashboardFilter, setDashboardFilter] = useState<string>(activePlanId)
+
     const [stats, setStats] = useState<Stats | null>(null)
     const [findings, setFindings] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
+
+    // Keep dashboardFilter in sync when activePlanId changes from ANOTHER page,
+    // but only if the dashboard is NOT showing Global (dashboardFilter !== '')
+    useEffect(() => {
+        if (dashboardFilter !== '') {
+            setDashboardFilter(activePlanId)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activePlanId])
+
+    /**
+     * Called when the user picks an option in the Dashboard filter selector.
+     * - Specific plan → update both the local filter AND the global context
+     *   so all other pages follow the new selection.
+     * - Global ('') → only update the local filter; the global context keeps
+     *   the last specific plan so other pages are unaffected.
+     */
+    const handleDashboardFilterChange = (id: string) => {
+        setDashboardFilter(id)
+        if (id !== '') {
+            setActivePlanId(id) // propagate to global context
+        }
+        // if id === '' → Global selected → don't touch global context
+    }
 
     const fetchDashboardData = async (planId: string) => {
         setLoading(true)
@@ -77,11 +107,11 @@ export default function Dashboard() {
     }
 
     useEffect(() => {
-        if (plans.length > 0 || activePlanId === '') {
-            fetchDashboardData(activePlanId)
+        if (plans.length > 0 || dashboardFilter === '') {
+            fetchDashboardData(dashboardFilter)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activePlanId, plans])
+    }, [dashboardFilter, plans])
 
     if (loading) {
         return (
@@ -135,7 +165,12 @@ export default function Dashboard() {
                         <p className="text-[12px] text-slate-500 mt-0.5">Métrica global (Todas las evaluaciones) o específicas por plan.</p>
                     </div>
                 </div>
-                <PlanSelector showAll className="sm:max-w-md" />
+                <PlanSelector
+                    showAll
+                    value={dashboardFilter}
+                    onChange={handleDashboardFilterChange}
+                    className="sm:max-w-md"
+                />
             </div>
 
             {/* KPI Cards - Row 1 */}

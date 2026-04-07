@@ -24,41 +24,58 @@ const statusDots: Record<string, string> = {
 function formatOption(option: PlanOption) {
   return (
     <div className="flex items-center gap-2">
-      <span
-        className="w-2 h-2 rounded-full flex-shrink-0"
-        style={{ background: statusDots[option.status] || '#94a3b8' }}
-      />
+      {option.value !== '' && (
+        <span
+          className="w-2 h-2 rounded-full flex-shrink-0"
+          style={{ background: statusDots[option.status] || '#94a3b8' }}
+        />
+      )}
       <span className="truncate">{option.label}</span>
-      <span className="text-[10px] text-slate-400 ml-auto flex-shrink-0">
-        {statusLabels[option.status] || option.status}
-      </span>
+      {option.value !== '' && option.status && (
+        <span className="text-[10px] text-slate-400 ml-auto flex-shrink-0">
+          {statusLabels[option.status] || option.status}
+        </span>
+      )}
     </div>
   )
 }
 
 interface PlanSelectorProps {
-  /** Show "Todas las Evaluaciones" as first option */
+  /**
+   * If true, adds "Todas las Evaluaciones (Global)" as first option.
+   * In this mode you MUST pass value + onChange to control the local filter —
+   * selecting Global will NOT affect the global PlanContext.
+   */
   showAll?: boolean
+  /** Override controlled value — required when showAll=true */
+  value?: string
+  /** Override onChange — required when showAll=true */
+  onChange?: (id: string) => void
   className?: string
 }
 
-export default function PlanSelector({ showAll, className }: PlanSelectorProps) {
+export default function PlanSelector({ showAll, value: valueProp, onChange: onChangeProp, className }: PlanSelectorProps) {
   const { plans, activePlanId, setActivePlanId } = usePlan()
+
+  // When showAll is used with external value/onChange, use those.
+  // Otherwise fall back to the global context.
+  const currentValue = valueProp !== undefined ? valueProp : activePlanId
+  const handleChange = onChangeProp ?? setActivePlanId
 
   const options: PlanOption[] = [
     ...(showAll ? [{ value: '', label: 'Todas las Evaluaciones (Global)', status: '' }] : []),
     ...plans.map(p => ({ value: p.id, label: p.projectName, status: p.status })),
   ]
 
-  const selected = options.find(o => o.value === activePlanId) || options[0] || null
+  const selected = options.find(o => o.value === currentValue) || options[0] || null
 
   return (
-    <div className={className} style={{ minWidth: 220 }}>
+    <div className={className} style={{ width: 300 }}>
       <Select<PlanOption>
         options={options}
         value={selected}
         onChange={(opt) => {
-          if (opt) setActivePlanId(opt.value)
+          if (opt !== null) handleChange(opt.value)
         }}
         formatOptionLabel={formatOption}
         placeholder="Buscar plan..."

@@ -1,26 +1,30 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { testSessionsApi, participantsApi, testPlansApi } from '../api'
+import { testSessionsApi, participantsApi } from '../api'
 import { useToast } from '../App'
-import { Plus, Save, CalendarRange, X, MonitorPlay, Calendar, Play } from 'lucide-react'
+import { usePlan } from '../context/PlanContext'
+import { extractErrorMessage } from '../hooks/useApiError'
+import Modal from '../components/Modal'
+import PlanSelector from '../components/PlanSelector'
+import { Plus, Save, CalendarRange, MonitorPlay, Calendar, Play, AlertTriangle } from 'lucide-react'
 
 export default function TestSessions() {
     const navigate = useNavigate()
     const [sessions, setSessions] = useState<any[]>([])
-    const [plans, setPlans] = useState<any[]>([])
     const [participants, setParticipants] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
-    const [activePlanId, setActivePlanId] = useState('')
     const [showForm, setShowForm] = useState(false)
     const [editId, setEditId] = useState<string | null>(null)
     const [sessionToDelete, setSessionToDelete] = useState<any | null>(null)
     const { addToast } = useToast()
+    const { activePlanId, activePlan, isReadOnly } = usePlan()
 
     const emptyForm = { testPlanId: '', participantId: '', date: new Date().toISOString().split('T')[0], platformTested: '' }
     const [form, setForm] = useState(emptyForm)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const fetchData = async (planId: string) => {
+        if (!planId) { setSessions([]); setParticipants([]); setLoading(false); return }
         setLoading(true)
         try {
             const [sessionsRes, participantsRes] = await Promise.all([
@@ -35,33 +39,8 @@ export default function TestSessions() {
     }
 
     useEffect(() => {
-        testPlansApi.getAll().then(res => {
-            const allPlans = res.data ?? []
-            setPlans(allPlans)
-            const planId = allPlans[0]?.id ?? ''
-            setActivePlanId(planId)
-            if (planId) {
-                fetchData(planId)
-            } else {
-                setSessions([])
-                setLoading(false)
-            }
-        })
-    }, [])
-
-    const handlePlanChange = (planId: string) => {
-        setActivePlanId(planId)
-        setForm(f => ({ ...f, testPlanId: planId }))
-        if (planId) {
-            fetchData(planId)
-        } else {
-            setSessions([])
-        }
-    }
-
-    const getPlanName = (planId: string) => {
-        return plans.find((p: any) => p.id === planId)?.projectName || 'Sin plan seleccionado'
-    }
+        fetchData(activePlanId)
+    }, [activePlanId])
 
     const resetForm = () => {
         setForm({ ...emptyForm, testPlanId: activePlanId, participantId: participants[0]?.id ?? '' })
@@ -92,7 +71,7 @@ export default function TestSessions() {
                 addToast('Sesión actualizada', 'success')
             } else {
                 await testSessionsApi.create({
-                    testPlanId: form.testPlanId,
+                    testPlanId: activePlanId,
                     participantId: form.participantId,
                     date: new Date(form.date).toISOString(),
                     platformTested: form.platformTested,
@@ -101,8 +80,11 @@ export default function TestSessions() {
             }
             resetForm()
             if (activePlanId) fetchData(activePlanId)
-        } catch { addToast('Error al programar sesión', 'error') }
-        finally { setIsSubmitting(false) }
+        } catch (err) {
+            addToast(extractErrorMessage(err, 'Error al programar sesión'), 'error')
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const confirmDelete = async (id: string) => {
@@ -110,8 +92,8 @@ export default function TestSessions() {
             await testSessionsApi.delete(id)
             addToast('Sesión eliminada', 'success')
             if (activePlanId) fetchData(activePlanId)
-        } catch {
-            addToast('Error al eliminar', 'error')
+        } catch (err) {
+            addToast(extractErrorMessage(err, 'Error al eliminar'), 'error')
         } finally {
             setSessionToDelete(null)
         }
@@ -128,67 +110,68 @@ export default function TestSessions() {
                     <h2 className="text-[22px] font-bold text-slate-900">Sesiones de Prueba</h2>
                     <p className="text-[13px] text-slate-500 mt-1">Organiza y agenda el trabajo de campo con los usuarios</p>
                 </div>
-                <button className="btn btn-primary" onClick={() => { setEditId(null); setForm({ ...emptyForm, testPlanId: activePlanId, participantId: participants[0]?.id ?? '' }); setShowForm(true) }}>
-                    <Plus size={18} /> Programar Sesión
+                <button
+                    className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => { setEditId(null); setForm({ ...emptyForm, testPlanId: activePlanId, participantId: participants[0]?.id ?? '' }); setShowForm(true) }}
+                    disabled={!activePlanId || isReadOnly}
+                    aria-label="Programar Sesión"
+                >
+                    <Plus size={18} aria-hidden="true" /> Programar Sesión
                 </button>
             </div>
 
+            {/* GLB-04: Read-only banner */}
+            {isReadOnly && activePlan && (
+                <div className="readonly-banner">
+                    <AlertTriangle size={16} className="flex-shrink-0" />
+                    <span>El plan "<strong>{activePlan.projectName}</strong>" está {activePlan.status === 'Completed' ? 'completado' : 'cancelado'}. No se pueden crear ni modificar sesiones.</span>
+                </div>
+            )}
+
             <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-end gap-4">
-                <div className="min-w-0 md:w-[420px]">
-                    <label htmlFor="sessionPlanSelector" className="form-label">Plan de prueba activo</label>
-                    <select id="sessionPlanSelector" value={activePlanId} onChange={e => handlePlanChange(e.target.value)} className="form-input">
-                        <option value="">Selecciona un plan</option>
-                        {plans.map((plan: any) => (
-                            <option key={plan.id} value={plan.id}>{plan.projectName}</option>
-                        ))}
-                    </select>
+                <div className="min-w-0">
+                    <label className="form-label">Plan de prueba activo</label>
+                    <PlanSelector />
                 </div>
                 <p className="text-[13px] text-slate-500 md:mb-2">Las sesiones nuevas se asignarán a este plan.</p>
             </div>
 
-            {showForm && (
-                <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) resetForm() }} role="dialog" aria-modal="true" aria-label="Formulario de sesión">
-                    <div className="modal-content rounded-2xl shadow-2xl border border-slate-200 overflow-hidden max-w-md">
-                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                            <h3 className="text-[16px] font-semibold text-slate-900">{editId ? 'Editar Sesión' : 'Programar Sesión'}</h3>
-                            <button onClick={resetForm} className="text-slate-400 hover:text-slate-600" aria-label="Cerrar"><X size={20} /></button>
-                        </div>
-                        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-                            <div>
-                                <label className="form-label">Plan asignado</label>
-                                <div className="form-input bg-slate-50 text-slate-700">{getPlanName(form.testPlanId)}</div>
-                            </div>
-                            <div>
-                                <label htmlFor="participantId" className="form-label">Participante <span className="text-red-500">*</span></label>
-                                {participants.length === 0 ? (
-                                    <div className="text-red-500 text-xs mt-1">No hay participantes registrados. Registra uno antes de programar sesiones.</div>
-                                ) : (
-                                    <select id="participantId" value={form.participantId} onChange={e => setForm(f => ({ ...f, participantId: e.target.value }))} className="form-input" required>
-                                        <option value="" disabled>Selecciona un participante</option>
-                                        {participants.map((p: any) => <option key={p.id} value={p.id}>{p.name} ({p.profile})</option>)}
-                                    </select>
-                                )}
-                            </div>
-                            <div>
-                                <label htmlFor="date" className="form-label">Fecha de la sesión <span className="text-red-500">*</span></label>
-                                <input id="date" type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className="form-input" required />
-                            </div>
-                            <div>
-                                <label htmlFor="platformTested" className="form-label">Plataforma a evaluar <span className="text-red-500">*</span></label>
-                                <input id="platformTested" type="text" value={form.platformTested} onChange={e => setForm(f => ({ ...f, platformTested: e.target.value }))} className="form-input" placeholder="Ej: iOS App, Android, Desktop Web..." required />
-                            </div>
-                            <div className="flex items-center gap-3 pt-3">
-                                <button type="submit" className="btn btn-primary" disabled={participants.length === 0 || isSubmitting}>
-                                    <Save size={16} /> {isSubmitting ? 'Guardando...' : (editId ? 'Actualizar' : 'Guardar')}
-                                </button>
-                                <button type="button" onClick={resetForm} className="btn btn-secondary text-center" disabled={isSubmitting}>
-                                    Cancelar
-                                </button>
-                            </div>
-                        </form>
+            {/* Form Modal */}
+            <Modal isOpen={showForm} onClose={resetForm} title={editId ? 'Editar Sesión' : 'Programar Sesión'} maxWidth="480px">
+                <form onSubmit={handleSubmit} className="p-5 space-y-4">
+                    <div>
+                        <label className="form-label">Plan asignado</label>
+                        <div className="form-input bg-slate-50 text-slate-700 cursor-not-allowed">{activePlan?.projectName || 'Sin plan seleccionado'}</div>
                     </div>
-                </div>
-            )}
+                    <div>
+                        <label htmlFor="participantId" className="form-label">Participante <span className="text-red-500">*</span></label>
+                        {participants.length === 0 ? (
+                            <div className="text-red-500 text-xs mt-1">No hay participantes registrados. Registra uno antes de programar sesiones.</div>
+                        ) : (
+                            <select id="participantId" value={form.participantId} onChange={e => setForm(f => ({ ...f, participantId: e.target.value }))} className="form-input" required>
+                                <option value="" disabled>Selecciona un participante</option>
+                                {participants.map((p: any) => <option key={p.id} value={p.id}>{p.name} ({p.profile})</option>)}
+                            </select>
+                        )}
+                    </div>
+                    <div>
+                        <label htmlFor="date" className="form-label">Fecha de la sesión <span className="text-red-500">*</span></label>
+                        <input id="date" type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className="form-input" required />
+                    </div>
+                    <div>
+                        <label htmlFor="platformTested" className="form-label">Plataforma a evaluar <span className="text-red-500">*</span></label>
+                        <input id="platformTested" type="text" value={form.platformTested} onChange={e => setForm(f => ({ ...f, platformTested: e.target.value }))} className="form-input" placeholder="Ej: iOS App, Android, Desktop Web..." required />
+                    </div>
+                    <div className="flex items-center gap-3 pt-3">
+                        <button type="submit" className="btn btn-primary" disabled={participants.length === 0 || isSubmitting}>
+                            <Save size={16} /> {isSubmitting ? 'Guardando...' : (editId ? 'Actualizar' : 'Guardar')}
+                        </button>
+                        <button type="button" onClick={resetForm} className="btn btn-secondary text-center" disabled={isSubmitting}>
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </Modal>
 
             {loading ? (
                 <div className="flex justify-center py-12"><div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" /></div>
@@ -205,11 +188,11 @@ export default function TestSessions() {
                             <div>
                                 <h3 className="text-[15px] font-bold text-slate-900">{getParticipantName(session.participantId)}</h3>
                                 <div className="flex items-center gap-2 text-slate-500 text-[12px] mt-1.5">
-                                    <Calendar size={13} />
+                                    <Calendar size={13} aria-hidden="true" />
                                     <span>{new Date(session.date).toLocaleDateString()}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-slate-500 text-[12px] mt-1">
-                                    <MonitorPlay size={13} />
+                                    <MonitorPlay size={13} aria-hidden="true" />
                                     <span>Plataforma: {session.platformTested || 'No definida'}</span>
                                 </div>
                             </div>
@@ -217,33 +200,26 @@ export default function TestSessions() {
                                 <button onClick={() => navigate(`/sesiones/${session.id}/ejecutar`)} className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-[11px] font-semibold py-1.5 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
                                     <Play size={12} /> Iniciar Sesión
                                 </button>
-                                <button onClick={() => handleEdit(session)} className="btn btn-secondary text-[11px] py-1 px-3">Modificar</button>
-                                <button onClick={() => setSessionToDelete(session)} className="btn btn-danger text-[11px] py-1 px-3">Eliminar</button>
+                                <button onClick={() => handleEdit(session)} className="btn btn-secondary text-[11px] py-1 px-3" disabled={isReadOnly} aria-label={`Modificar sesión de ${getParticipantName(session.participantId)}`}>Modificar</button>
+                                <button onClick={() => setSessionToDelete(session)} className="btn btn-danger text-[11px] py-1 px-3" disabled={isReadOnly} aria-label={`Eliminar sesión de ${getParticipantName(session.participantId)}`}>Eliminar</button>
                             </div>
                         </div>
                     ))}
                 </div>
             )}
 
-            {sessionToDelete && (
-                <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setSessionToDelete(null) }} role="dialog" aria-modal="true" aria-label="Confirmar eliminación de sesión">
-                    <div className="modal-content max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-rise bg-white">
-                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                            <h3 className="text-[16px] font-semibold text-slate-900">Eliminar Sesión</h3>
-                            <button onClick={() => setSessionToDelete(null)} className="text-slate-400 hover:text-slate-600" aria-label="Cerrar"><X size={20} /></button>
-                        </div>
-                        <div className="p-5 space-y-4">
-                            <p className="text-[14px] text-slate-600">
-                                ¿Estás seguro de que deseas eliminar la sesión del participante <strong>{getParticipantName(sessionToDelete.participantId)}</strong>? Esta acción no se puede deshacer.
-                            </p>
-                            <div className="flex justify-end gap-3">
-                                <button type="button" onClick={() => setSessionToDelete(null)} className="btn btn-secondary">Cancelar</button>
-                                <button type="button" onClick={() => confirmDelete(sessionToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
-                            </div>
-                        </div>
+            {/* Delete confirmation */}
+            <Modal isOpen={!!sessionToDelete} onClose={() => setSessionToDelete(null)} title="Eliminar Sesión" maxWidth="480px">
+                <div className="p-5 space-y-4">
+                    <p className="text-[14px] text-slate-600">
+                        ¿Estás seguro de que deseas eliminar la sesión del participante <strong>{sessionToDelete && getParticipantName(sessionToDelete.participantId)}</strong>? Esta acción no se puede deshacer.
+                    </p>
+                    <div className="flex justify-end gap-3">
+                        <button type="button" onClick={() => setSessionToDelete(null)} className="btn btn-secondary">Cancelar</button>
+                        <button type="button" onClick={() => sessionToDelete && confirmDelete(sessionToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
                     </div>
                 </div>
-            )}
+            </Modal>
         </div>
     )
 }
