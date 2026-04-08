@@ -1,4 +1,4 @@
-﻿using Application.DTOs;
+using Application.DTOs;
 using Application.Interfaces;
 using Domain.Common;
 using Domain.Entities;
@@ -41,6 +41,10 @@ namespace Application.Services
             {
                 sessions = sessions.Where(s => s.TestPlanId == testPlanId.Value).ToList();
                 findings = findings.Where(f => f.TestPlanId == testPlanId.Value).ToList();
+
+                // Actions belong to findings, not directly to plans — filter via finding IDs
+                var planFindingIds = findings.Select(f => f.Id).ToHashSet();
+                actions = actions.Where(a => planFindingIds.Contains(a.FindingId)).ToList();
             }
 
             // Aplanar todas las observaciones de todas las sesiones

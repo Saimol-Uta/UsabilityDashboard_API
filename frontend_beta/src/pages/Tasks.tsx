@@ -5,7 +5,7 @@ import { usePlan } from '../context/PlanContext'
 import { extractErrorMessage } from '../hooks/useApiError'
 import Modal from '../components/Modal'
 import PlanSelector from '../components/PlanSelector'
-import { Plus, Save, Trash2, ListChecks, X, Clock, AlertTriangle } from 'lucide-react'
+import { Plus, Save, Trash2, ListChecks, Clock, AlertTriangle } from 'lucide-react'
 
 export default function Tasks() {
     const [tasks, setTasks] = useState<any[]>([])
@@ -18,7 +18,7 @@ export default function Tasks() {
         testPlanId: '', taskNumber: 0, scenario: '', expectedResult: '', mainMetric: '', successCriteria: '', maxTimeSeconds: 120
     })
     const { addToast } = useToast()
-    const { activePlanId, activePlan, isReadOnly, plans } = usePlan()
+    const { activePlanId, activePlan, isReadOnly } = usePlan()
 
     const fetchTasks = (planId: string) => {
         if (!planId) { setTasks([]); setLoading(false); return }

@@ -4,7 +4,7 @@ import { useToast } from '../App'
 import { usePlan } from '../context/PlanContext'
 import { extractErrorMessage } from '../hooks/useApiError'
 import Modal from '../components/Modal'
-import { Plus, Edit3, Trash2, Calendar, Target, X, Save } from 'lucide-react'
+import { Plus, Edit3, Trash2, Calendar, Target, Save } from 'lucide-react'
 
 const todayIso = new Date().toISOString().split('T')[0]
 

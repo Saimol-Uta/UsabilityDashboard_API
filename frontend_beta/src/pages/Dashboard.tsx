@@ -82,6 +82,9 @@ export default function Dashboard() {
     }
 
     const fetchDashboardData = async (planId: string) => {
+        // Clear stale data immediately so previous plan's KPIs never show
+        setStats(null)
+        setFindings([])
         setLoading(true)
         try {
             const statsRes = await dashboardApi.getStats(planId || undefined)

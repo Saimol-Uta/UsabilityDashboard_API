@@ -5,7 +5,7 @@ import { usePlan } from '../context/PlanContext'
 import { extractErrorMessage } from '../hooks/useApiError'
 import Modal from '../components/Modal'
 import PlanSelector from '../components/PlanSelector'
-import { Plus, Save, Trash2, Eye, X, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react'
+import { Plus, Save, Trash2, Eye, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react'
 
 export default function Observations() {
     const [logs, setLogs] = useState<any[]>([])

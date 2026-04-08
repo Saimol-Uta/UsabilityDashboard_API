@@ -52,24 +52,39 @@ export default function ImprovementActions() {
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const fetchData = async (planId: string) => {
-        if (!planId) { setFindingsList([]); setActions([]); setLoading(false); return }
+        // Clear previous plan's data immediately so stale data never shows
+        setActions([])
+        setFindingsList([])
+
+        if (!planId) { setLoading(false); return }
+
         setLoading(true)
+
+        // Cancellation flag: if the plan changes again before this fetch
+        // completes, ignore the stale response
+        let cancelled = false
+
         try {
             const findingsRes = await findingsApi.getByPlan(planId)
+            if (cancelled) return
+
             const findings = findingsRes.data ?? []
             setFindingsList(findings)
+            setForm(f => ({ ...f, findingId: findings[0]?.id ?? '' }))
 
-            if (findings.length > 0 && !form.findingId) {
-                setForm(f => ({ ...f, findingId: findings[0].id }))
-            }
+            if (findings.length === 0) return
 
             const actionResponses = await Promise.all(
                 findings.map((f: any) => improvementActionsApi.getByFinding(f.id))
             )
+            if (cancelled) return
+
             setActions(actionResponses.flatMap(r => r.data ?? []))
         } finally {
-            setLoading(false)
+            if (!cancelled) setLoading(false)
         }
+
+        return () => { cancelled = true }
     }
 
     useEffect(() => {
