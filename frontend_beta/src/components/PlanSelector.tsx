@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import Select from 'react-select'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { usePlan } from '../context/PlanContext'
@@ -158,8 +158,8 @@ export default function PlanSelector({ showAll, value: valueProp, onChange: onCh
           <div className="flex items-start gap-4 p-4 rounded-xl bg-amber-50 border border-amber-200">
             <AlertTriangle size={24} className="text-amber-500 flex-shrink-0 mt-0.5" />
             <p className="text-[14px] text-amber-900 leading-relaxed font-medium">
-              Hay una sesión de prueba activa en ejecución.<br/><br/>
-              Si cambias de plan ahora, se cerrará la sesión actual y <strong className="font-bold text-red-600">perderás de forma permanente</strong> los resultados de esta sesión que aún no has registrado. <br/><br/>¿Deseas salir de todas formas?
+              Hay una sesión de prueba activa en ejecución.<br /><br />
+              Si cambias de plan ahora, se cerrará la sesión actual y <strong className="font-bold text-red-600">perderás de forma permanente</strong> los resultados de esta sesión que aún no has registrado. <br /><br />¿Deseas salir de todas formas?
             </p>
           </div>
           <div className="flex justify-end gap-3 pt-2">
