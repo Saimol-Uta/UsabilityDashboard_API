@@ -32,7 +32,7 @@ export default function TestPlans() {
     const [saving, setSaving] = useState(false)
     const [form, setForm] = useState(emptyForm)
     const { addToast } = useToast()
-    const { refreshPlans } = usePlan()
+    const { refreshPlans, setActivePlanId } = usePlan()
 
     const toInputDate = (value: string | null | undefined) => {
         if (!value) return ''
@@ -109,14 +109,20 @@ export default function TestPlans() {
             if (editId) {
                 await testPlansApi.update(editId, form)
                 addToast('Plan actualizado correctamente', 'success')
+                closeDrawer()
+                fetchPlans()
+                refreshPlans()
             } else {
                 const { status, ...createData } = form
-                await testPlansApi.create(createData)
+                const res = await testPlansApi.create(createData)
                 addToast('Plan creado correctamente', 'success')
+                closeDrawer()
+                fetchPlans()
+                await refreshPlans()
+                if (res.data?.id) {
+                    setActivePlanId(res.data.id)
+                }
             }
-            closeDrawer()
-            fetchPlans()
-            refreshPlans()
         } catch (err) {
             addToast(extractErrorMessage(err, 'Error al guardar el plan'), 'error')
         } finally {

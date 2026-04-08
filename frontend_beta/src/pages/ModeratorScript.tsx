@@ -4,7 +4,6 @@ import { useToast } from '../App'
 import { usePlan } from '../context/PlanContext'
 import { extractErrorMessage } from '../hooks/useApiError'
 import Modal from '../components/Modal'
-import PlanSelector from '../components/PlanSelector'
 import { Save, MessageSquareText, Plus, Edit3, Trash2, AlertTriangle } from 'lucide-react'
 
 export default function ModeratorScript() {
@@ -140,11 +139,12 @@ export default function ModeratorScript() {
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-rise">
                 <div className="h-1.5 w-full bg-gradient-to-r from-slate-800 to-blue-600" />
                 <div className="p-5 flex flex-col md:flex-row md:items-end gap-4">
-                    <div className="min-w-0">
-                        <label className="form-label">Plan de prueba activo</label>
-                        <PlanSelector />
+                    <div className="min-w-0 flex-1">
+                        <h3 className="text-[14px] font-bold text-slate-800">Plan de prueba activo</h3>
+                        <div className="mt-1 text-[14px] font-semibold text-slate-800 bg-slate-50 px-3 py-2 rounded border border-slate-200">
+                            {activePlan ? activePlan.projectName : 'Seleccione en el menú principal'}
+                        </div>
                     </div>
-                    <p className="text-[13px] text-slate-500 md:mb-2">Este guion quedará asociado al plan seleccionado.</p>
                 </div>
             </div>
 

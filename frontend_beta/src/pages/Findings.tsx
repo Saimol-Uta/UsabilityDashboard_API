@@ -4,7 +4,6 @@ import { useToast } from '../App'
 import { usePlan } from '../context/PlanContext'
 import { extractErrorMessage } from '../hooks/useApiError'
 import Modal from '../components/Modal'
-import PlanSelector from '../components/PlanSelector'
 import { Plus, Save, Trash2, Search, AlertCircle, AlertTriangle, ArrowRight, Filter } from 'lucide-react'
 
 export default function Findings() {
@@ -121,8 +120,6 @@ export default function Findings() {
                     <p className="text-[13px] text-slate-500 mt-1">Problemas de usabilidad detectados con frecuencia, severidad y recomendaciones</p>
                 </div>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-                    {/* GLB-05: Label on plan selector */}
-                    <PlanSelector />
                     <button onClick={() => { setEditId(null); setForm({ ...emptyForm, testPlanId: activePlanId }); setShowForm(true) }}
                         className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={!activePlanId || isReadOnly}

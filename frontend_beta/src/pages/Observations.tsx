@@ -4,7 +4,6 @@ import { useToast } from '../App'
 import { usePlan } from '../context/PlanContext'
 import { extractErrorMessage } from '../hooks/useApiError'
 import Modal from '../components/Modal'
-import PlanSelector from '../components/PlanSelector'
 import { Plus, Save, Trash2, Eye, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react'
 
 export default function Observations() {
@@ -176,7 +175,6 @@ export default function Observations() {
                     <p className="text-[13px] text-slate-500 mt-1">Registra resultados por sesión y tarea: éxito, tiempo, errores y severidad</p>
                 </div>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-                    <PlanSelector />
                     <button
                         onClick={() => { setEditId(null); resetForm(); setShowForm(true) }}
                         className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
