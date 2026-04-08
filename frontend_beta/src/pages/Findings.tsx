@@ -14,7 +14,7 @@ export default function Findings() {
     const [editId, setEditId] = useState<string | null>(null)
     const [findingToDelete, setFindingToDelete] = useState<any | null>(null)
     const { addToast } = useToast()
-    const { activePlanId, activePlan, isReadOnly } = usePlan()
+    const { activePlanId, activePlan, isReadOnly, refreshGates } = usePlan()
 
     const emptyForm = {
         testPlanId: '', description: '', frequency: '', severity: 'Medium',
@@ -89,6 +89,7 @@ export default function Findings() {
             }
             resetForm();
             if (form.testPlanId) fetchFindings(form.testPlanId)
+            refreshGates()
         } catch (err) {
             addToast(extractErrorMessage(err, 'Error al guardar el hallazgo'), 'error')
         } finally {
@@ -101,6 +102,7 @@ export default function Findings() {
             await findingsApi.delete(id)
             addToast('Hallazgo eliminado', 'success')
             if (activePlanId) fetchFindings(activePlanId)
+            refreshGates()
         } catch (err) {
             addToast(extractErrorMessage(err, 'Error al eliminar el hallazgo'), 'error')
         } finally {

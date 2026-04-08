@@ -44,7 +44,7 @@ export default function ImprovementActions() {
     const [actionToDelete, setActionToDelete] = useState<any | null>(null)
     const [statusChangeConfirm, setStatusChangeConfirm] = useState<{ id: string; newStatus: string } | null>(null)
     const { addToast } = useToast()
-    const { activePlanId, activePlan, isReadOnly } = usePlan()
+    const { activePlanId, activePlan, isReadOnly, refreshGates } = usePlan()
 
     const emptyForm = { findingId: '', description: '', status: 'Open', priority: 'Medium' }
     const [form, setForm] = useState(emptyForm)
@@ -126,6 +126,7 @@ export default function ImprovementActions() {
             }
             resetForm()
             if (activePlanId) fetchData(activePlanId)
+            refreshGates()
         } catch (err) {
             addToast(extractErrorMessage(err, 'Error al guardar la acción'), 'error')
         } finally {
@@ -160,6 +161,7 @@ export default function ImprovementActions() {
             await improvementActionsApi.delete(id)
             addToast('Acción eliminada', 'success')
             if (activePlanId) fetchData(activePlanId)
+            refreshGates()
         } catch (err) {
             addToast(extractErrorMessage(err, 'Error al eliminar la acción'), 'error')
         } finally {

@@ -60,7 +60,7 @@ interface PlanSelectorProps {
 }
 
 export default function PlanSelector({ showAll, value: valueProp, onChange: onChangeProp, className }: PlanSelectorProps) {
-  const { plans, activePlanId, setActivePlanId } = usePlan()
+  const { plans, activePlanId, setActivePlanId, needsPlanSelection } = usePlan()
   const navigate = useNavigate()
   const location = useLocation()
   const [pendingPlanId, setPendingPlanId] = useState<string | null>(null)
@@ -75,7 +75,11 @@ export default function PlanSelector({ showAll, value: valueProp, onChange: onCh
     ...plans.map(p => ({ value: p.id, label: p.projectName, status: p.status })),
   ]
 
-  const selected = options.find(o => o.value === currentValue) || options[0] || null
+  // When needsPlanSelection is true (first visit), show nothing selected (null)
+  // Once a plan is chosen, find normally without falling back to options[0]
+  const selected = (needsPlanSelection && valueProp === undefined)
+    ? null
+    : options.find(o => o.value === currentValue) || null
 
   return (
     <div className={className} style={{ width: 300 }}>
@@ -92,7 +96,7 @@ export default function PlanSelector({ showAll, value: valueProp, onChange: onCh
           }
         }}
         formatOptionLabel={formatOption}
-        placeholder="Buscar plan..."
+        placeholder={needsPlanSelection && valueProp === undefined ? '— Selecciona o crea un plan —' : 'Buscar plan...'}
         noOptionsMessage={() => 'No se encontraron planes'}
         isSearchable
         classNamePrefix="plan-select"

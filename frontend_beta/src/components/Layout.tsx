@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Outlet, NavLink, useLocation } from 'react-router-dom'
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, ListChecks, MessageSquareText,
   Eye, Search, Lightbulb, ChevronRight, FolderKanban, Sparkles, Users, CalendarRange,
@@ -9,12 +9,12 @@ import { usePlan } from '../context/PlanContext'
 import PlanSelector from './PlanSelector'
 
 const dashboardItem = { to: '/', icon: LayoutDashboard, label: 'Dashboard', detail: 'Progreso y métricas' }
+const planItem = { to: '/planes', icon: FileText, label: 'Plan de Prueba', detail: 'Gestión de planes de test', sectionKey: 'plan_de_prueba' }
 
 const phases = [
   {
     title: 'Fase 1 — Preparación',
     items: [
-      { to: '/planes', icon: FileText, label: 'Plan de Prueba', detail: 'Gestión de planes de test', sectionKey: 'plan_de_prueba' },
       { to: '/guion', icon: MessageSquareText, label: 'Guión del Moderador', detail: 'Instrucciones del moderador', sectionKey: 'guion' },
       { to: '/participantes', icon: Users, label: 'Participantes', detail: 'Directorio de usuarios', sectionKey: 'participantes' },
     ]
@@ -38,8 +38,16 @@ const phases = [
 
 export default function Layout() {
   const location = useLocation()
+  const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { activePlan, canAccessPhase2, canAccessPhase3, phase2Missing, phase3Missing } = usePlan()
+  const { activePlan, canAccessPhase2, canAccessPhase3, phase2Missing, phase3Missing, sectionDone, needsPlanSelection, loading } = usePlan()
+
+  // Redirect first-time users to /planes so they can create or pick a plan
+  useEffect(() => {
+    if (!loading && needsPlanSelection && location.pathname !== '/planes') {
+      navigate('/planes', { replace: true })
+    }
+  }, [loading, needsPlanSelection, location.pathname, navigate])
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
@@ -105,7 +113,7 @@ export default function Layout() {
                   Contexto Activo
                 </p>
                 <h1 className="text-white text-[15px] sm:text-[18px] font-semibold leading-tight tracking-tight truncate flex items-center gap-2">
-                  {activePlan ? `Plan: ${activePlan.projectName}` : 'Seleccione un plan de prueba...'}
+                  {activePlan ? `Plan: ${activePlan.projectName}` : 'Selecciona o crea un plan de prueba...'}
                 </h1>
               </div>
             </div>
@@ -173,12 +181,48 @@ export default function Layout() {
                 </NavLink>
               </div>
 
+              {/* Plan de Prueba — standalone, below dashboard */}
+              <div>
+                <NavLink
+                  to={planItem.to}
+                  className={({ isActive }) => {
+                    const done = sectionDone[planItem.sectionKey]
+                    if (isActive) return 'nav-item group relative is-active border-l-2 border-blue-500 bg-blue-50/50'
+                    if (done) return 'nav-item group relative border-l-2 border-emerald-400 bg-emerald-50/60 hover:bg-emerald-50'
+                    return 'nav-item group relative pl-[14px] border-l-2 border-transparent'
+                  }}
+                >
+                  {sectionDone[planItem.sectionKey] ? (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0">
+                      <circle cx="8" cy="8" r="7" fill="#10b981" opacity="0.15"/>
+                      <circle cx="8" cy="8" r="7" stroke="#10b981" strokeWidth="1.2"/>
+                      <path d="M5 8l2 2 4-4" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  ) : (
+                    <planItem.icon size={16} aria-hidden="true" className="flex-shrink-0 text-slate-400 group-hover:text-slate-600" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className={`text-[13px] font-medium transition-colors ${sectionDone[planItem.sectionKey] ? 'text-emerald-800' : 'text-slate-600 group-hover:text-slate-800'}`}>
+                      {planItem.label}
+                    </div>
+                    <div className={`text-[11px] mt-0.5 truncate ${sectionDone[planItem.sectionKey] ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      {planItem.detail}
+                    </div>
+                  </div>
+                </NavLink>
+              </div>
+
               {/* Phased Navigation */}
               {phases.map((phase, idx) => {
                 const isPhase1 = idx === 0
                 const isPhase2 = idx === 1
                 const isPhase3 = idx === 2
-                const phaseComplete = isPhase1 ? canAccessPhase2 : isPhase2 ? canAccessPhase3 : canAccessPhase3
+                // "Complete" means all sections inside the phase have records
+                const phaseComplete = isPhase1
+                  ? sectionDone.guion && sectionDone.participantes
+                  : isPhase2
+                    ? sectionDone.tareas && sectionDone.sesiones && sectionDone.observaciones
+                    : sectionDone.hallazgos && sectionDone.mejoras
                 const phaseLocked = (isPhase2 && !canAccessPhase2) || (isPhase3 && !canAccessPhase3)
 
                 return (
@@ -232,12 +276,29 @@ export default function Layout() {
                         <NavLink
                           key={item.to}
                           to={item.to}
-                          className={({ isActive }) => `nav-item group relative ${isActive ? 'is-active border-l-2 border-blue-500 bg-blue-50/50' : 'pl-[14px] border-l-2 border-transparent'}`}
+                          className={({ isActive }) => {
+                            const done = sectionDone[item.sectionKey]
+                            if (isActive) return 'nav-item group relative is-active border-l-2 border-blue-500 bg-blue-50/50'
+                            if (done) return 'nav-item group relative border-l-2 border-emerald-400 bg-emerald-50/60 hover:bg-emerald-50'
+                            return 'nav-item group relative pl-[14px] border-l-2 border-transparent'
+                          }}
                         >
-                          <item.icon size={16} aria-hidden="true" className="flex-shrink-0 text-slate-400 group-hover:text-slate-600" />
+                          {sectionDone[item.sectionKey] ? (
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0">
+                              <circle cx="8" cy="8" r="7" fill="#10b981" opacity="0.15"/>
+                              <circle cx="8" cy="8" r="7" stroke="#10b981" strokeWidth="1.2"/>
+                              <path d="M5 8l2 2 4-4" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          ) : (
+                            <item.icon size={16} aria-hidden="true" className="flex-shrink-0 text-slate-400 group-hover:text-slate-600" />
+                          )}
                           <div className="min-w-0 flex-1">
-                            <div className="text-[13px] font-medium text-slate-600 group-hover:text-slate-800 transition-colors">{item.label}</div>
-                            <div className="text-[11px] text-slate-400 mt-0.5 truncate">{item.detail}</div>
+                            <div className={`text-[13px] font-medium transition-colors ${
+                              sectionDone[item.sectionKey] ? 'text-emerald-800 group-hover:text-emerald-900' : 'text-slate-600 group-hover:text-slate-800'
+                            }`}>{item.label}</div>
+                            <div className={`text-[11px] mt-0.5 truncate ${
+                              sectionDone[item.sectionKey] ? 'text-emerald-600' : 'text-slate-400'
+                            }`}>{item.detail}</div>
                           </div>
                         </NavLink>
                       )
