@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { testSessionsApi, moderatorScriptsApi, testTasksApi, observationLogsApi, participantsApi } from '../api'
 import { useToast } from '../App'
+import { usePlan } from '../context/PlanContext'
 import {
     ArrowLeft, Play, BookOpen, MessageSquareText, CheckCircle2, XCircle,
     Clock, AlertTriangle, ChevronRight, Save, X, HelpCircle, Mic,
@@ -26,6 +27,7 @@ export default function SessionRunner() {
     const { sessionId } = useParams<{ sessionId: string }>()
     const navigate = useNavigate()
     const { addToast } = useToast()
+    const { refreshGates } = usePlan()
 
     const [phase, setPhase] = useState<SessionPhase>('loading')
     const [session, setSession] = useState<any>(null)
@@ -161,6 +163,7 @@ export default function SessionRunner() {
                 }
             }
             addToast('Sesión guardada correctamente', 'success')
+            await refreshGates()
             setPhase('saved')
             setTimeout(() => navigate('/sesiones'), 1500)
         } catch {

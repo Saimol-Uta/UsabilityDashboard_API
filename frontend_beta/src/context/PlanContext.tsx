@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
-import { testPlansApi } from '../api'
+import { testPlansApi, participantsApi, moderatorScriptsApi, testTasksApi, testSessionsApi, observationLogsApi } from '../api'
 
 interface Plan {
   id: string
@@ -17,7 +17,10 @@ interface PlanContextType {
   setActivePlanId: (id: string) => void
   isReadOnly: boolean
   refreshPlans: () => Promise<void>
+  refreshGates: () => Promise<void>
   loading: boolean
+  canAccessPhase2: boolean
+  canAccessPhase3: boolean
 }
 
 const PlanContext = createContext<PlanContextType>({
@@ -27,7 +30,10 @@ const PlanContext = createContext<PlanContextType>({
   setActivePlanId: () => {},
   isReadOnly: false,
   refreshPlans: async () => {},
+  refreshGates: async () => {},
   loading: true,
+  canAccessPhase2: false,
+  canAccessPhase3: false,
 })
 
 export const usePlan = () => useContext(PlanContext)
@@ -49,6 +55,50 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     }
   })
   const [loading, setLoading] = useState(true)
+  const [canAccessPhase2, setCanAccessPhase2] = useState(false)
+  const [canAccessPhase3, setCanAccessPhase3] = useState(false)
+
+  const refreshGates = useCallback(async () => {
+    if (!activePlanId || activePlanId === UNSET) {
+      setCanAccessPhase2(false)
+      setCanAccessPhase3(false)
+      return
+    }
+    try {
+      const [participantsReq, scriptReq, tasksReq, sessionsReq, logsReq] = await Promise.all([
+        participantsApi.getAll(),
+        moderatorScriptsApi.getByPlan(activePlanId).catch(() => ({ data: null })),
+        testTasksApi.getByPlan(activePlanId),
+        testSessionsApi.getAll(activePlanId),
+        observationLogsApi.getAll()
+      ])
+
+      const hasParticipants = (participantsReq.data?.length ?? 0) > 0
+      const hasScript = !!scriptReq.data
+      const hasTasks = (tasksReq.data?.length ?? 0) > 0
+
+      const planSessions = sessionsReq.data ?? []
+      const hasSessions = planSessions.length > 0
+
+      const sessionIds = new Set(planSessions.map((s: any) => s.id))
+      const allLogs = logsReq.data ?? []
+      const planLogs = allLogs.filter((l: any) => sessionIds.has(l.testSessionId))
+      const hasObservations = planLogs.length > 0
+
+      const phase2 = hasParticipants && hasScript
+      const phase3 = phase2 && hasTasks && hasSessions && hasObservations
+
+      setCanAccessPhase2(phase2)
+      setCanAccessPhase3(phase3)
+    } catch {
+      setCanAccessPhase2(false)
+      setCanAccessPhase3(false)
+    }
+  }, [activePlanId])
+
+  useEffect(() => {
+    refreshGates()
+  }, [activePlanId, refreshGates])
 
   const setActivePlanId = useCallback((id: string) => {
     if (!id) return // Never store empty — context always holds a specific plan
@@ -110,8 +160,11 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     setActivePlanId,
     isReadOnly,
     refreshPlans,
-    loading
-  }), [plans, activePlanId, activePlan, setActivePlanId, isReadOnly, refreshPlans, loading])
+    refreshGates,
+    loading,
+    canAccessPhase2,
+    canAccessPhase3
+  }), [plans, activePlanId, activePlan, setActivePlanId, isReadOnly, refreshPlans, refreshGates, loading, canAccessPhase2, canAccessPhase3])
 
   return (
     <PlanContext.Provider value={value}>

@@ -15,7 +15,7 @@ export default function Observations() {
     const [editId, setEditId] = useState<string | null>(null)
     const [logToDelete, setLogToDelete] = useState<any | null>(null)
     const { addToast } = useToast()
-    const { activePlanId, activePlan, isReadOnly } = usePlan()
+    const { activePlanId, activePlan, isReadOnly, refreshGates } = usePlan()
 
     const emptyForm = {
         testSessionId: '',
@@ -126,6 +126,7 @@ export default function Observations() {
             }
             resetForm()
             if (activePlanId) fetchData(activePlanId)
+            refreshGates()
         } catch (err) {
             addToast(extractErrorMessage(err, 'Error al guardar el registro'), 'error')
         } finally {
@@ -138,6 +139,7 @@ export default function Observations() {
             await observationLogsApi.delete(id)
             addToast('Registro eliminado', 'success')
             if (activePlanId) fetchData(activePlanId)
+            refreshGates()
         } catch (err) {
             addToast(extractErrorMessage(err, 'Error al eliminar el registro'), 'error')
         } finally {

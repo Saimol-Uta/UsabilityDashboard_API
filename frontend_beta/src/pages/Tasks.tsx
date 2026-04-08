@@ -18,7 +18,7 @@ export default function Tasks() {
         testPlanId: '', taskNumber: 0, scenario: '', expectedResult: '', mainMetric: '', successCriteria: '', maxTimeSeconds: 120
     })
     const { addToast } = useToast()
-    const { activePlanId, activePlan, isReadOnly } = usePlan()
+    const { activePlanId, activePlan, isReadOnly, refreshGates } = usePlan()
 
     const fetchTasks = (planId: string) => {
         if (!planId) { setTasks([]); setLoading(false); return }
@@ -75,6 +75,7 @@ export default function Tasks() {
             }
             resetForm()
             if (form.testPlanId) fetchTasks(form.testPlanId)
+            refreshGates()
         } catch (err) {
             addToast(extractErrorMessage(err, 'Error al guardar la tarea'), 'error')
         } finally {
@@ -87,6 +88,7 @@ export default function Tasks() {
             await testTasksApi.delete(id)
             addToast('Tarea eliminada', 'success')
             if (activePlanId) fetchTasks(activePlanId)
+            refreshGates()
         } catch (err) {
             addToast(extractErrorMessage(err, 'Error al eliminar la tarea'), 'error')
         } finally {

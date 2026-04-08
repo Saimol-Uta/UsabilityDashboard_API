@@ -15,7 +15,7 @@ export default function ModeratorScript() {
     const [scriptToDelete, setScriptToDelete] = useState<any | null>(null)
     const [form, setForm] = useState({ testPlanId: '', introduction: '', followUpQuestions: '', closingInstructions: '' })
     const { addToast } = useToast()
-    const { activePlanId, activePlan, isReadOnly } = usePlan()
+    const { activePlanId, activePlan, isReadOnly, refreshGates } = usePlan()
 
     const emptyForm = { testPlanId: '', introduction: '', followUpQuestions: '', closingInstructions: '' }
 
@@ -97,6 +97,7 @@ export default function ModeratorScript() {
                 addToast('Guión creado correctamente', 'success')
             }
             await loadScriptByPlan(activePlanId)
+            refreshGates()
             resetForm()
         } catch (err) {
             addToast(extractErrorMessage(err, 'Error al guardar el guión'), 'error')
@@ -110,6 +111,7 @@ export default function ModeratorScript() {
             await moderatorScriptsApi.delete(id)
             addToast('Guión eliminado correctamente', 'success')
             await loadScriptByPlan(activePlanId)
+            refreshGates()
         } catch (err) {
             addToast(extractErrorMessage(err, 'Error al eliminar el guión'), 'error')
         } finally {

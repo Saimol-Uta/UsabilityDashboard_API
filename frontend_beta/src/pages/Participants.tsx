@@ -3,6 +3,7 @@ import { participantsApi } from '../api'
 import { useToast } from '../App'
 import { extractErrorMessage } from '../hooks/useApiError'
 import Modal from '../components/Modal'
+import { usePlan } from '../context/PlanContext'
 import { Plus, Save, Users, User } from 'lucide-react'
 
 export default function Participants() {
@@ -13,6 +14,7 @@ export default function Participants() {
     const [editId, setEditId] = useState<string | null>(null)
     const [participantToDelete, setParticipantToDelete] = useState<any | null>(null)
     const { addToast } = useToast()
+    const { refreshGates } = usePlan()
 
     const emptyForm = { name: '', age: '', profile: '' }
     const [form, setForm] = useState(emptyForm)
@@ -57,6 +59,7 @@ export default function Participants() {
             }
             resetForm()
             fetchParticipants()
+            refreshGates()
         } catch (err) {
             addToast(extractErrorMessage(err, 'Error al guardar participante'), 'error')
         } finally {
@@ -69,6 +72,7 @@ export default function Participants() {
             await participantsApi.delete(id)
             addToast('Participante eliminado', 'success')
             fetchParticipants()
+            refreshGates()
         } catch (err) {
             addToast(extractErrorMessage(err, 'Error al eliminar participante'), 'error')
         } finally {

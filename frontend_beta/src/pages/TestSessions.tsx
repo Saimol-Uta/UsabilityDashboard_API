@@ -17,7 +17,7 @@ export default function TestSessions() {
     const [editId, setEditId] = useState<string | null>(null)
     const [sessionToDelete, setSessionToDelete] = useState<any | null>(null)
     const { addToast } = useToast()
-    const { activePlanId, activePlan, isReadOnly } = usePlan()
+    const { activePlanId, activePlan, isReadOnly, refreshGates } = usePlan()
 
     const emptyForm = { testPlanId: '', participantId: '', date: new Date().toISOString().split('T')[0], platformTested: '' }
     const [form, setForm] = useState(emptyForm)
@@ -82,6 +82,7 @@ export default function TestSessions() {
             }
             resetForm()
             if (activePlanId) fetchData(activePlanId)
+            refreshGates()
         } catch (err) {
             addToast(extractErrorMessage(err, 'Error al programar sesión'), 'error')
         } finally {
@@ -94,6 +95,7 @@ export default function TestSessions() {
             await testSessionsApi.delete(id)
             addToast('Sesión eliminada', 'success')
             if (activePlanId) fetchData(activePlanId)
+            refreshGates()
         } catch (err) {
             addToast(extractErrorMessage(err, 'Error al eliminar'), 'error')
         } finally {

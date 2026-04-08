@@ -3,7 +3,7 @@ import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, ListChecks, MessageSquareText,
   Eye, Search, Lightbulb, ChevronRight, FolderKanban, Sparkles, Users, CalendarRange,
-  Menu, X
+  Menu, X, Lock
 } from 'lucide-react'
 import { usePlan } from '../context/PlanContext'
 import PlanSelector from './PlanSelector'
@@ -39,7 +39,7 @@ const phases = [
 export default function Layout() {
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { activePlan } = usePlan()
+  const { activePlan, canAccessPhase2, canAccessPhase3 } = usePlan()
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
@@ -182,7 +182,24 @@ export default function Layout() {
                     <div className="flex-1 border-t border-slate-200" />
                   </div>
                   <div className="space-y-1">
-                    {phase.items.map(item => (
+                    {phase.items.map(item => {
+                      const isPhase2 = idx === 1;
+                      const isPhase3 = idx === 2;
+                      const locked = (isPhase2 && !canAccessPhase2) || (isPhase3 && !canAccessPhase3);
+
+                      if (locked) {
+                        return (
+                          <div key={item.to} className="nav-item pl-[14px] opacity-60 cursor-not-allowed group" title={isPhase2 ? "Requiere Participantes y Guión del Moderador" : "Requiere tareas y sesiones con observaciones"}>
+                            <Lock size={16} aria-hidden="true" className="flex-shrink-0 text-slate-400" />
+                            <div className="min-w-0 flex-1">
+                              <div className="text-[13px] font-medium text-slate-500">{item.label}</div>
+                              <div className="text-[11px] text-slate-400 mt-0.5 truncate">{isPhase2 ? "Requiere requisitos previos" : "Requiere datos de Fase 2"}</div>
+                            </div>
+                          </div>
+                        )
+                      }
+
+                      return (
                         <NavLink
                           key={item.to}
                           to={item.to}
@@ -194,7 +211,8 @@ export default function Layout() {
                             <div className="text-[11px] text-slate-400 mt-0.5 truncate">{item.detail}</div>
                           </div>
                         </NavLink>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               ))}
