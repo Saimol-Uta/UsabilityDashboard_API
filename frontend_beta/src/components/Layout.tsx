@@ -39,7 +39,7 @@ const phases = [
 export default function Layout() {
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { activePlan, canAccessPhase2, canAccessPhase3 } = usePlan()
+  const { activePlan, canAccessPhase2, canAccessPhase3, phase2Missing, phase3Missing } = usePlan()
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
@@ -174,26 +174,55 @@ export default function Layout() {
               </div>
 
               {/* Phased Navigation */}
-              {phases.map((phase, idx) => (
-                <div key={idx} className="space-y-2">
-                  <div className="text-[10px] uppercase tracking-[0.14em] text-slate-400 font-bold px-2 py-1 flex items-center gap-2">
-                    <div className="w-4 border-t border-slate-200" />
-                    <span>{phase.title}</span>
-                    <div className="flex-1 border-t border-slate-200" />
+              {phases.map((phase, idx) => {
+                const isPhase1 = idx === 0
+                const isPhase2 = idx === 1
+                const isPhase3 = idx === 2
+                const phaseComplete = isPhase1 ? canAccessPhase2 : isPhase2 ? canAccessPhase3 : canAccessPhase3
+                const phaseLocked = (isPhase2 && !canAccessPhase2) || (isPhase3 && !canAccessPhase3)
+
+                return (
+                <div key={idx} className="space-y-1.5">
+                  {/* Phase header */}
+                  <div className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors ${
+                    phaseComplete ? 'bg-emerald-50 border border-emerald-200' :
+                    phaseLocked ? 'bg-slate-50 border border-slate-200' :
+                    'border border-transparent'
+                  }`}>
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      phaseComplete ? 'bg-emerald-500' : phaseLocked ? 'bg-slate-300' : 'bg-blue-400'
+                    }`}>
+                      {phaseComplete ? (
+                        <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      ) : phaseLocked ? (
+                        <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><rect x="3" y="1.5" width="4" height="3" rx="1" stroke="white" strokeWidth="1.2"/><rect x="1.5" y="4" width="7" height="5" rx="1" stroke="white" strokeWidth="1.2"/></svg>
+                      ) : (
+                        <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                      )}
+                    </div>
+                    <span className={`text-[10px] uppercase tracking-[0.12em] font-bold flex-1 ${
+                      phaseComplete ? 'text-emerald-700' : phaseLocked ? 'text-slate-400' : 'text-blue-600'
+                    }`}>{phase.title}</span>
                   </div>
+
                   <div className="space-y-1">
                     {phase.items.map(item => {
-                      const isPhase2 = idx === 1;
-                      const isPhase3 = idx === 2;
-                      const locked = (isPhase2 && !canAccessPhase2) || (isPhase3 && !canAccessPhase3);
+                      const itemLocked = (isPhase2 && !canAccessPhase2) || (isPhase3 && !canAccessPhase3);
 
-                      if (locked) {
+                      if (itemLocked) {
+                        const missingList = isPhase2 ? phase2Missing : phase3Missing
+                        const tooltipText = missingList.length > 0
+                          ? `Falta: ${missingList.join(', ')}`
+                          : isPhase2 ? 'Requiere Participantes y Guión del Moderador' : 'Requiere datos de Fase 2'
+                        const sublabel = missingList.length > 0
+                          ? `Falta: ${missingList.join(' • ')}`
+                          : isPhase2 ? 'Requiere requisitos previos' : 'Requiere datos de Fase 2'
                         return (
-                          <div key={item.to} className="nav-item pl-[14px] opacity-60 cursor-not-allowed group" title={isPhase2 ? "Requiere Participantes y Guión del Moderador" : "Requiere tareas y sesiones con observaciones"}>
+                          <div key={item.to} className="nav-item pl-[14px] opacity-60 cursor-not-allowed" title={tooltipText}>
                             <Lock size={16} aria-hidden="true" className="flex-shrink-0 text-slate-400" />
                             <div className="min-w-0 flex-1">
                               <div className="text-[13px] font-medium text-slate-500">{item.label}</div>
-                              <div className="text-[11px] text-slate-400 mt-0.5 truncate">{isPhase2 ? "Requiere requisitos previos" : "Requiere datos de Fase 2"}</div>
+                              <div className="text-[10px] text-amber-600 mt-0.5 truncate font-medium">{sublabel}</div>
                             </div>
                           </div>
                         )
@@ -215,7 +244,7 @@ export default function Layout() {
                     })}
                   </div>
                 </div>
-              ))}
+              )})}
             </nav>
           </div>
         </aside>

@@ -21,6 +21,8 @@ interface PlanContextType {
   loading: boolean
   canAccessPhase2: boolean
   canAccessPhase3: boolean
+  phase2Missing: string[]
+  phase3Missing: string[]
 }
 
 const PlanContext = createContext<PlanContextType>({
@@ -34,6 +36,8 @@ const PlanContext = createContext<PlanContextType>({
   loading: true,
   canAccessPhase2: false,
   canAccessPhase3: false,
+  phase2Missing: [],
+  phase3Missing: [],
 })
 
 export const usePlan = () => useContext(PlanContext)
@@ -57,6 +61,8 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [canAccessPhase2, setCanAccessPhase2] = useState(false)
   const [canAccessPhase3, setCanAccessPhase3] = useState(false)
+  const [phase2Missing, setPhase2Missing] = useState<string[]>([])
+  const [phase3Missing, setPhase3Missing] = useState<string[]>([])
 
   const refreshGates = useCallback(async () => {
     if (!activePlanId || activePlanId === UNSET) {
@@ -88,11 +94,24 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       const phase2 = hasParticipants && hasScript
       const phase3 = phase2 && hasTasks && hasSessions && hasObservations
 
+      const missing2: string[] = []
+      if (!hasParticipants) missing2.push('Participantes')
+      if (!hasScript) missing2.push('Guión del Moderador')
+
+      const missing3: string[] = []
+      if (!hasTasks) missing3.push('Tareas')
+      if (!hasSessions) missing3.push('Sesiones programadas')
+      if (!hasObservations) missing3.push('Observaciones registradas')
+
       setCanAccessPhase2(phase2)
       setCanAccessPhase3(phase3)
+      setPhase2Missing(missing2)
+      setPhase3Missing(phase2 ? missing3 : [])
     } catch {
       setCanAccessPhase2(false)
       setCanAccessPhase3(false)
+      setPhase2Missing([])
+      setPhase3Missing([])
     }
   }, [activePlanId])
 
@@ -163,8 +182,10 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     refreshGates,
     loading,
     canAccessPhase2,
-    canAccessPhase3
-  }), [plans, activePlanId, activePlan, setActivePlanId, isReadOnly, refreshPlans, refreshGates, loading, canAccessPhase2, canAccessPhase3])
+    canAccessPhase3,
+    phase2Missing,
+    phase3Missing
+  }), [plans, activePlanId, activePlan, setActivePlanId, isReadOnly, refreshPlans, refreshGates, loading, canAccessPhase2, canAccessPhase3, phase2Missing, phase3Missing])
 
   return (
     <PlanContext.Provider value={value}>
