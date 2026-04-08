@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { dashboardApi, findingsApi } from '../api'
 import { usePlan } from '../context/PlanContext'
-import PlanSelector from '../components/PlanSelector'
-import { BarChart2, CheckCircle2, Clock, AlertCircle, AlertTriangle, Lightbulb, TrendingUp, Flame, PieChart as PieChartIcon, Filter } from 'lucide-react'
+import { BarChart2, CheckCircle2, Clock, AlertCircle, AlertTriangle, Lightbulb, TrendingUp, Flame, PieChart as PieChartIcon } from 'lucide-react'
 import { PieChart } from '../components/PieChart'
 
 interface Stats {
@@ -46,40 +45,11 @@ function KPICard({ icon, value, label, iconBg, valueColor = 'text-gray-900', del
 }
 
 export default function Dashboard() {
-    const { plans, activePlanId, setActivePlanId } = usePlan()
-
-    // dashboardFilter is LOCAL to this page only.
-    // '' = "Todas las evaluaciones (Global)" — does NOT affect other pages.
-    // Initialized from the global activePlanId so it starts showing the selected plan.
-    const [dashboardFilter, setDashboardFilter] = useState<string>(activePlanId)
+    const { plans, activePlanId } = usePlan()
 
     const [stats, setStats] = useState<Stats | null>(null)
     const [findings, setFindings] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
-
-    // Keep dashboardFilter in sync when activePlanId changes from ANOTHER page,
-    // but only if the dashboard is NOT showing Global (dashboardFilter !== '')
-    useEffect(() => {
-        if (dashboardFilter !== '') {
-            setDashboardFilter(activePlanId)
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activePlanId])
-
-    /**
-     * Called when the user picks an option in the Dashboard filter selector.
-     * - Specific plan → update both the local filter AND the global context
-     *   so all other pages follow the new selection.
-     * - Global ('') → only update the local filter; the global context keeps
-     *   the last specific plan so other pages are unaffected.
-     */
-    const handleDashboardFilterChange = (id: string) => {
-        setDashboardFilter(id)
-        if (id !== '') {
-            setActivePlanId(id) // propagate to global context
-        }
-        // if id === '' → Global selected → don't touch global context
-    }
 
     const fetchDashboardData = async (planId: string) => {
         // Clear stale data immediately so previous plan's KPIs never show
@@ -110,11 +80,11 @@ export default function Dashboard() {
     }
 
     useEffect(() => {
-        if (plans.length > 0 || dashboardFilter === '') {
-            fetchDashboardData(dashboardFilter)
+        if (plans.length > 0 || activePlanId !== '__UNSET__') {
+            fetchDashboardData(activePlanId && activePlanId !== '__UNSET__' ? activePlanId : '')
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dashboardFilter, plans])
+    }, [activePlanId, plans])
 
     if (loading) {
         return (
@@ -157,24 +127,6 @@ export default function Dashboard() {
                 </div>
             </section>
 
-            {/* Filter Section */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-white rounded-2xl border border-slate-200 shadow-sm animate-rise transition-all hover:shadow-md">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 border border-blue-100">
-                        <Filter size={18} className="text-blue-600" aria-hidden="true" />
-                    </div>
-                    <div>
-                        <h3 className="text-[15px] font-bold text-slate-900 leading-snug">Filtro de Datos por Evaluación</h3>
-                        <p className="text-[12px] text-slate-500 mt-0.5">Métrica global (Todas las evaluaciones) o específicas por plan.</p>
-                    </div>
-                </div>
-                <PlanSelector
-                    showAll
-                    value={dashboardFilter}
-                    onChange={handleDashboardFilterChange}
-                    className="sm:max-w-md"
-                />
-            </div>
 
             {/* KPI Cards - Row 1 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">

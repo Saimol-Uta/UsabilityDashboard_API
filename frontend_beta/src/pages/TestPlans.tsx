@@ -4,7 +4,7 @@ import { useToast } from '../App'
 import { usePlan } from '../context/PlanContext'
 import { extractErrorMessage } from '../hooks/useApiError'
 import Modal from '../components/Modal'
-import { Plus, Edit3, Trash2, Calendar, Target, Save } from 'lucide-react'
+import { Plus, Edit3, Trash2, Calendar, Target, Save, CheckCircle2, PlayCircle } from 'lucide-react'
 
 const todayIso = new Date().toISOString().split('T')[0]
 
@@ -137,6 +137,18 @@ export default function TestPlans() {
         }
     }
 
+    const togglePlanStatus = async (id: string, currentStatus: string) => {
+        const newStatus = currentStatus === 'Completed' ? 'InProgress' : 'Completed';
+        try {
+            await testPlansApi.updateStatus(id, newStatus);
+            addToast(`Plan ${newStatus === 'Completed' ? 'marcado como completado' : 'reactivado'} correctamente`, 'success');
+            fetchPlans();
+            refreshPlans();
+        } catch (err) {
+            addToast(extractErrorMessage(err, 'Error al cambiar el estado del plan'), 'error');
+        }
+    }
+
     if (loading) {
         return (
             <div className="flex items-center justify-center py-20">
@@ -196,12 +208,24 @@ export default function TestPlans() {
                                     </span>
                                 </div>
 
-                                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
-                                    <button onClick={() => openEdit(plan)} className="btn btn-secondary text-[12px] py-2 px-3" aria-label={`Editar plan ${plan.projectName}`}>
-                                        <Edit3 size={14} aria-hidden="true" /> Editar
-                                    </button>
-                                    <button onClick={() => setPlanToDelete({ id: plan.id, name: plan.projectName })} className="btn btn-danger text-[12px] py-2 px-3" aria-label={`Eliminar plan ${plan.projectName}`}>
-                                        <Trash2 size={14} aria-hidden="true" /> Eliminar
+                                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                                    <div className="flex gap-2">
+                                        <button onClick={() => openEdit(plan)} className="btn btn-secondary text-[12px] py-1.5 px-3" aria-label={`Editar plan ${plan.projectName}`}>
+                                            <Edit3 size={14} aria-hidden="true" /> Editar
+                                        </button>
+                                        <button onClick={() => setPlanToDelete({ id: plan.id, name: plan.projectName })} className="btn btn-danger text-[12px] py-1.5 px-3" aria-label={`Eliminar plan ${plan.projectName}`}>
+                                            <Trash2 size={14} aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                    <button 
+                                        onClick={() => togglePlanStatus(plan.id, plan.status)} 
+                                        className={`btn text-[12px] py-1.5 px-3 flex items-center gap-1.5 border transition-colors ${plan.status === 'Completed' ? 'text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100' : 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100'}`}
+                                    >
+                                        {plan.status === 'Completed' ? (
+                                            <><PlayCircle size={14} /> Reactivar</>
+                                        ) : (
+                                            <><CheckCircle2 size={14} /> Finalizar</>
+                                        )}
                                     </button>
                                 </div>
                             </div>

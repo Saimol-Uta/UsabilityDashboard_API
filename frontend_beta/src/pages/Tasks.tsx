@@ -4,7 +4,7 @@ import { useToast } from '../App'
 import { usePlan } from '../context/PlanContext'
 import { extractErrorMessage } from '../hooks/useApiError'
 import Modal from '../components/Modal'
-import PlanSelector from '../components/PlanSelector'
+
 import { Plus, Save, Trash2, ListChecks, Clock, AlertTriangle } from 'lucide-react'
 
 export default function Tasks() {
@@ -121,13 +121,7 @@ export default function Tasks() {
                 </div>
             )}
 
-            <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-end gap-4">
-                <div className="min-w-0 md:w-[420px]">
-                    <label className="form-label">Plan de prueba activo</label>
-                    <PlanSelector />
-                </div>
-                <p className="text-[13px] text-slate-500 md:mb-2">Las tareas nuevas se asignarán a este plan.</p>
-            </div>
+
 
             {/* Form Modal */}
             <Modal isOpen={showForm} onClose={resetForm} title={editId ? 'Editar Tarea' : 'Nueva Tarea'}>

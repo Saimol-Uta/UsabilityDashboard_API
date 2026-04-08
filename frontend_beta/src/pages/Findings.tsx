@@ -140,6 +140,8 @@ export default function Findings() {
                 </div>
             )}
 
+
+
             {/* Filter */}
             <div className="flex items-center gap-2 flex-wrap">
                 <Filter size={14} className="text-slate-400" aria-hidden="true" />

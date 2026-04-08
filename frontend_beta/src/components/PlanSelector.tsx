@@ -1,5 +1,10 @@
+import React, { useState } from 'react'
 import Select from 'react-select'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { usePlan } from '../context/PlanContext'
+import Modal from './Modal'
+import { AlertTriangle } from 'lucide-react'
+
 
 interface PlanOption {
   value: string
@@ -56,6 +61,9 @@ interface PlanSelectorProps {
 
 export default function PlanSelector({ showAll, value: valueProp, onChange: onChangeProp, className }: PlanSelectorProps) {
   const { plans, activePlanId, setActivePlanId } = usePlan()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [pendingPlanId, setPendingPlanId] = useState<string | null>(null)
 
   // When showAll is used with external value/onChange, use those.
   // Otherwise fall back to the global context.
@@ -75,7 +83,13 @@ export default function PlanSelector({ showAll, value: valueProp, onChange: onCh
         options={options}
         value={selected}
         onChange={(opt) => {
-          if (opt !== null) handleChange(opt.value)
+          if (opt !== null) {
+            if (location.pathname.includes('/ejecutar')) {
+              setPendingPlanId(opt.value)
+            } else {
+              handleChange(opt.value)
+            }
+          }
         }}
         formatOptionLabel={formatOption}
         placeholder="Buscar plan..."
@@ -138,6 +152,28 @@ export default function PlanSelector({ showAll, value: valueProp, onChange: onCh
         }}
         aria-label="Seleccionar plan de prueba"
       />
+
+      <Modal isOpen={!!pendingPlanId} onClose={() => setPendingPlanId(null)} title="Sesión en Curso" maxWidth="480px">
+        <div className="p-5 space-y-4">
+          <div className="flex items-start gap-4 p-4 rounded-xl bg-amber-50 border border-amber-200">
+            <AlertTriangle size={24} className="text-amber-500 flex-shrink-0 mt-0.5" />
+            <p className="text-[14px] text-amber-900 leading-relaxed font-medium">
+              Hay una sesión de prueba activa en ejecución.<br/><br/>
+              Si cambias de plan ahora, se cerrará la sesión actual y <strong className="font-bold text-red-600">perderás de forma permanente</strong> los resultados de esta sesión que aún no has registrado. <br/><br/>¿Deseas salir de todas formas?
+            </p>
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <button onClick={() => setPendingPlanId(null)} className="btn btn-secondary font-semibold">Cancelar</button>
+            <button onClick={() => {
+              if (pendingPlanId) {
+                handleChange(pendingPlanId)
+                navigate('/sesiones')
+                setPendingPlanId(null)
+              }
+            }} className="btn btn-danger px-5 font-bold">Sí, salir y cambiar plan</button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

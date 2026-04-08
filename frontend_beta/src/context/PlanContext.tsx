@@ -5,6 +5,7 @@ interface Plan {
   id: string
   projectName: string
   status: string
+  workflowState?: string
   [key: string]: any
 }
 
@@ -100,6 +101,8 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     [activePlan]
   )
 
+
+
   const value = useMemo(() => ({
     plans,
     activePlanId,
@@ -107,7 +110,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     setActivePlanId,
     isReadOnly,
     refreshPlans,
-    loading,
+    loading
   }), [plans, activePlanId, activePlan, setActivePlanId, isReadOnly, refreshPlans, loading])
 
   return (

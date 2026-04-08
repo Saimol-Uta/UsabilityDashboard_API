@@ -180,7 +180,7 @@ export default function Observations() {
                     <button
                         onClick={() => { setEditId(null); resetForm(); setShowForm(true) }}
                         className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={!activePlanId || isReadOnly}
+                        disabled={!activePlanId || isReadOnly || sessions.length === 0 || tasks.length === 0}
                         aria-label="Nuevo Registro"
                     >
                         <Plus size={14} aria-hidden="true" /> Nuevo Registro
@@ -193,6 +193,18 @@ export default function Observations() {
                 <div className="readonly-banner">
                     <AlertTriangle size={16} className="flex-shrink-0" />
                     <span>El plan "<strong>{activePlan.projectName}</strong>" está {activePlan.status === 'Completed' ? 'completado' : 'cancelado'}. No se pueden crear ni modificar observaciones.</span>
+                </div>
+            )}
+
+            {/* Blocking banner for missing dependencies */}
+            {!isReadOnly && activePlan && !loading && (sessions.length === 0 || tasks.length === 0) && (
+                <div className="flex items-start sm:items-center justify-between gap-3 bg-amber-50 rounded-xl p-3 sm:p-4 border border-amber-200">
+                    <div className="flex items-start gap-3">
+                        <AlertTriangle size={20} className="text-amber-500 flex-shrink-0 mt-0.5 sm:mt-0" />
+                        <div className="text-[13px] text-amber-800">
+                            <strong>No se pueden registrar observaciones:</strong> Es necesario contar con al menos una <strong>Tarea</strong> y una <strong>Sesión de Prueba</strong> registradas en este plan. Ve a dichas secciones para programarlas primero.
+                        </div>
+                    </div>
                 </div>
             )}
 

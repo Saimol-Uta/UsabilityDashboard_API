@@ -77,7 +77,12 @@ export default function SessionRunner() {
                     submitted: false,
                 })))
 
-                setPhase(scriptRes.data ? 'opening' : 'testing')
+                if (scriptRes.data) {
+                    setPhase('opening')
+                } else {
+                    setPhase('testing')
+                    setTimerRunning(true) // Start timer if jumping directly to testing
+                }
             } catch {
                 addToast('Error al cargar la sesión', 'error')
                 navigate('/sesiones')

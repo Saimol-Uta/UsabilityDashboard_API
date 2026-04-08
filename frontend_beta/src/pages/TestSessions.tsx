@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { testSessionsApi, participantsApi } from '../api'
+import { testSessionsApi, participantsApi, testTasksApi } from '../api'
 import { useToast } from '../App'
 import { usePlan } from '../context/PlanContext'
 import { extractErrorMessage } from '../hooks/useApiError'
 import Modal from '../components/Modal'
-import PlanSelector from '../components/PlanSelector'
 import { Plus, Save, CalendarRange, MonitorPlay, Calendar, Play, AlertTriangle } from 'lucide-react'
 
 export default function TestSessions() {
     const navigate = useNavigate()
     const [sessions, setSessions] = useState<any[]>([])
     const [participants, setParticipants] = useState<any[]>([])
+    const [tasksCount, setTasksCount] = useState(0)
     const [loading, setLoading] = useState(true)
     const [showForm, setShowForm] = useState(false)
     const [editId, setEditId] = useState<string | null>(null)
@@ -27,12 +27,14 @@ export default function TestSessions() {
         if (!planId) { setSessions([]); setParticipants([]); setLoading(false); return }
         setLoading(true)
         try {
-            const [sessionsRes, participantsRes] = await Promise.all([
+            const [sessionsRes, participantsRes, tasksRes] = await Promise.all([
                 testSessionsApi.getAll(planId),
-                participantsApi.getAll()
+                participantsApi.getAll(),
+                testTasksApi.getByPlan(planId)
             ])
             setSessions(sessionsRes.data ?? [])
             setParticipants(participantsRes.data ?? [])
+            setTasksCount((tasksRes.data ?? []).length)
         } finally {
             setLoading(false)
         }
@@ -131,10 +133,23 @@ export default function TestSessions() {
             <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-end gap-4">
                 <div className="min-w-0">
                     <label className="form-label">Plan de prueba activo</label>
-                    <PlanSelector />
+                    <div className="text-[14px] font-semibold text-slate-800 bg-slate-50 px-3 py-2 rounded border border-slate-200">
+                        {activePlan ? activePlan.projectName : 'Seleccione en el menú principal'}
+                    </div>
                 </div>
                 <p className="text-[13px] text-slate-500 md:mb-2">Las sesiones nuevas se asignarán a este plan.</p>
             </div>
+
+            {!loading && activePlan && tasksCount === 0 && sessions.length > 0 && (
+                <div className="flex items-start sm:items-center justify-between gap-3 bg-amber-50 rounded-xl p-3 border border-amber-200 mt-2">
+                    <div className="flex items-start gap-3">
+                        <AlertTriangle size={18} className="text-amber-500 flex-shrink-0 mt-0.5 sm:mt-0" />
+                        <div className="text-[13px] text-amber-800">
+                            <strong>Atención:</strong> No hay <strong>tareas</strong> registradas en este plan. Debes crear tareas antes de poder iniciar la ejecución de una sesión.
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Form Modal */}
             <Modal isOpen={showForm} onClose={resetForm} title={editId ? 'Editar Sesión' : 'Programar Sesión'} maxWidth="480px">
@@ -197,7 +212,7 @@ export default function TestSessions() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 mt-auto pt-3">
-                                <button onClick={() => navigate(`/sesiones/${session.id}/ejecutar`)} className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-[11px] font-semibold py-1.5 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
+                                <button onClick={() => navigate(`/sesiones/${session.id}/ejecutar`)} disabled={tasksCount === 0} title={tasksCount === 0 ? "Requiere crear tareas primero" : ""} className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-slate-400 disabled:to-slate-500 disabled:cursor-not-allowed text-white text-[11px] font-semibold py-1.5 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
                                     <Play size={12} /> Iniciar Sesión
                                 </button>
                                 <button onClick={() => handleEdit(session)} className="btn btn-secondary text-[11px] py-1 px-3" disabled={isReadOnly} aria-label={`Modificar sesión de ${getParticipantName(session.participantId)}`}>Modificar</button>
