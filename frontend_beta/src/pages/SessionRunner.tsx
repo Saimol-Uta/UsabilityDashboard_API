@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { testSessionsApi, moderatorScriptsApi, testTasksApi, observationLogsApi, participantsApi } from '../api'
 import { useToast } from '../App'
 import { usePlan } from '../context/PlanContext'
+import Modal from '../components/Modal'
 import {
     ArrowLeft, Play, BookOpen, MessageSquareText, CheckCircle2, XCircle,
-    Clock, AlertTriangle, ChevronRight, Save, X, HelpCircle, Mic,
+    Clock, AlertTriangle, ChevronRight, Save, HelpCircle, Mic,
     ArrowRight, ClipboardCheck, Timer, Sparkles
 } from 'lucide-react'
 
@@ -253,24 +254,17 @@ export default function SessionRunner() {
                     </button>
                 </div>
 
-                {/* Exit confirmation */}
-                {showExitConfirm && (
-                    <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowExitConfirm(false) }} role="dialog" aria-modal="true">
-                        <div className="modal-content max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden bg-white">
-                            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                                <h3 className="text-[16px] font-semibold text-slate-900">¿Salir de la sesión?</h3>
-                                <button onClick={() => setShowExitConfirm(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
-                            </div>
-                            <div className="p-5 space-y-4">
-                                <p className="text-[14px] text-slate-600">Se perderá el progreso de esta sesión. ¿Deseas salir?</p>
-                                <div className="flex justify-end gap-3">
-                                    <button onClick={() => setShowExitConfirm(false)} className="btn btn-secondary">Cancelar</button>
-                                    <button onClick={() => navigate('/sesiones')} className="btn btn-danger px-4">Salir</button>
-                                </div>
-                            </div>
+                <Modal isOpen={showExitConfirm} onClose={() => setShowExitConfirm(false)} title="¿Salir de la sesión?" maxWidth="440px">
+                    <div className="p-5 space-y-4">
+                        <p className="text-[14px] text-slate-600">
+                            Se perderá el progreso de esta sesión. ¿Deseas salir?
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <button onClick={() => setShowExitConfirm(false)} className="btn btn-secondary">Cancelar</button>
+                            <button onClick={() => navigate('/sesiones')} className="btn btn-danger px-4">Salir</button>
                         </div>
                     </div>
-                )}
+                </Modal>
             </div>
         )
     }
@@ -590,29 +584,21 @@ export default function SessionRunner() {
                     </div>
                 </div>
 
-                {/* Exit confirmation */}
-                {showExitConfirm && (
-                    <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowExitConfirm(false) }} role="dialog" aria-modal="true">
-                        <div className="modal-content max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden bg-white">
-                            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                                <h3 className="text-[16px] font-semibold text-slate-900">¿Salir de la sesión?</h3>
-                                <button onClick={() => setShowExitConfirm(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
-                            </div>
-                            <div className="p-5 space-y-4">
-                                <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
-                                    <AlertTriangle size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
-                                    <p className="text-[13px] text-amber-800">
-                                        Se perderán las observaciones no guardadas ({completedCount} de {tasks.length} tareas registradas).
-                                    </p>
-                                </div>
-                                <div className="flex justify-end gap-3">
-                                    <button onClick={() => setShowExitConfirm(false)} className="btn btn-secondary">Continuar</button>
-                                    <button onClick={() => navigate('/sesiones')} className="btn btn-danger px-4">Salir</button>
-                                </div>
-                            </div>
+                <Modal isOpen={showExitConfirm} onClose={() => setShowExitConfirm(false)} title="¿Salir de la sesión?" maxWidth="440px">
+                    <div className="p-5 space-y-4">
+                        <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200">
+                            <AlertTriangle size={20} className="text-amber-500 flex-shrink-0 mt-0.5" />
+                            <p className="text-[14px] text-amber-800 leading-relaxed">
+                                Se perderán las observaciones no guardadas.<br />
+                                <strong>{completedCount} de {tasks.length}</strong> tareas estaban registradas.
+                            </p>
+                        </div>
+                        <div className="flex justify-end gap-3">
+                            <button onClick={() => setShowExitConfirm(false)} className="btn btn-secondary">Continuar</button>
+                            <button onClick={() => navigate('/sesiones')} className="btn btn-danger px-4">Salir de todas formas</button>
                         </div>
                     </div>
-                )}
+                </Modal>
             </div>
         )
     }
