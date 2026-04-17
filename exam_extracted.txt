@@ -1,0 +1,183 @@
+Interacción Humano Computador 
+Página 1 
+PRUEBA PRÁCTICA INTEGRADORA 
+Rediseño, implementación y evaluación del aplicativo web 
+Usability Test Dashboard 
+Asignatura 
+Interacción Humano Computador 
+Puntaje total 
+2 puntos 
+Modalidad 
+Trabajo práctico grupal con sustentación 
+Base metodológica 
+Diseño Centrado en el Usuario (DCU) 
+Producto central 
+Mejora funcional del aplicativo web Usability Test 
+Dashboard 
+ 
+Documento elaborado a partir de los contenidos integrados del proyecto y alineado a la matriz de evaluación de usabilidad. 
+1. Objetivo 
+Evaluar la capacidad del estudiante para integrar los conocimientos desarrollados en la asignatura mediante 
+el análisis, diseño, implementación, validación y mejora de una solución funcional dentro del aplicativo web 
+Usability Test Dashboard. 
+La propuesta debe evidenciar el uso del Diseño Centrado en el Usuario, principios de usabilidad, criterios de 
+accesibilidad y herramientas de evaluación aplicadas a un caso real. 
+2. Contexto del examen 
+Durante el período académico se trabajaron contenidos relacionados con diseño centrado en el usuario, 
+investigación de usuarios, personas, escenarios, journey map, user flow, principios de usabilidad, leyes de 
+Gestalt, accesibilidad, evaluación con WAVE, Stark y Lighthouse, metáforas, así como observación, 
+hallazgos y mejora iterativa. 
+Con base en ello, cada grupo desarrollará una mejora funcional real dentro del aplicativo web Usability Test 
+Dashboard, de tal forma que el sistema permita registrar, analizar y visualizar de mejor manera una 
+evaluación de usabilidad aplicada a un proyecto web. 
+3. Enunciado de la prueba 
+Cada grupo deberá seleccionar o recibir un módulo del aplicativo Usability Test Dashboard para rediseñarlo, 
+implementarlo y evaluarlo. La mejora debe partir de un problema real de uso dentro del sistema y resolverse 
+mediante una propuesta funcional y visual sustentada técnicamente. 
+La solución deberá demostrar la integración del proceso de Diseño Centrado en el Usuario, desde la 
+comprensión del usuario y sus tareas hasta la validación del resultado final con evidencias. 
+4. Módulos sugeridos 
+• 
+Registro de proyecto evaluado. 
+• 
+Registro de participantes. 
+• 
+Registro de tareas de prueba. 
+• 
+Observación de usuarios. 
+• 
+Registro y priorización de hallazgos. 
+• 
+Panel de resultados o dashboard. 
+• 
+Módulo de accesibilidad. 
+Interacción Humano Computador 
+Página 2 
+• 
+Sección de personas, escenarios o journey map. 
+5. Actividades que deben realizar 
+5.1 Análisis del problema 
+• 
+Identificar el contexto de uso, el tipo de usuario, el problema detectado, la necesidad principal y la tarea más 
+importante del módulo asignado. 
+5.2 Aplicación de Diseño Centrado en el Usuario 
+• 
+Evidenciar al menos una persona o perfil de usuario, un escenario de uso, un flujo de tarea o user flow y la 
+justificación de la propuesta de mejora. 
+5.3 Diseño de la solución 
+• 
+Presentar un wireframe, boceto o esquema funcional; una propuesta de organización de la información; y una 
+mejora visual basada en principios de usabilidad y leyes de Gestalt. 
+5.4 Implementación funcional 
+• 
+Construir el módulo mejorado dentro del aplicativo web, con navegación clara, interacción funcional, 
+formularios comprensibles y mensajes adecuados de error o confirmación. 
+5.5 Evaluación de usabilidad 
+• 
+Aplicar una prueba breve con al menos tres usuarios o compañeros y tres tareas mínimas, registrando éxito o 
+fallo, tiempo estimado, errores observados y comentarios relevantes. 
+5.6 Evaluación de accesibilidad 
+• 
+Analizar la propuesta usando WAVE, Stark y Lighthouse, y presentar al menos dos hallazgos detectados y dos 
+correcciones aplicadas o propuestas. 
+5.7 Mejora final 
+• 
+Mostrar el antes y el después del módulo, explicando qué problema tenía la versión inicial, qué cambio se 
+realizó y qué mejora produjo en la experiencia del usuario. 
+6. Producto final esperado 
+• 
+Módulo funcional integrado dentro del aplicativo web. 
+• 
+Evidencia del análisis del usuario y del problema. 
+• 
+Persona o perfil de usuario. 
+• 
+Escenario de uso y flujo de tarea. 
+• 
+Evidencia de la prueba de usabilidad. 
+• 
+Evidencia de accesibilidad. 
+• 
+Hallazgos y mejoras aplicadas. 
+• 
+Repositorio GitHub actualizado. 
+• 
+Breve explicación final del proceso seguido. 
+7. Condiciones del examen 
+7.1 Durante el desarrollo 
+• 
+Se observará la organización del trabajo, la coherencia metodológica y la aplicación real de los conceptos de 
+IHC. 
+• 
+Las decisiones de diseño deberán estar justificadas con base en usuarios, tareas, problemas encontrados y 
+mejoras propuestas. 
+7.2 Durante la defensa 
+• 
+Cada grupo deberá explicar el problema inicial, cómo identificó al usuario, qué principios de usabilidad 
+aplicó, qué hallazgos encontró y qué mejoras realizó. 
+Interacción Humano Computador 
+Página 3 
+• 
+La defensa deberá evidenciar cómo el módulo desarrollado aporta al Usability Test Dashboard y mejora la 
+experiencia del usuario. 
+8. Rúbrica de evaluación sobre 2 puntos 
+Criterio 
+Descripción 
+Puntaje 
+Análisis del usuario y del 
+problema 
+Identifica contexto, usuario, necesidad y tarea principal con claridad. 
+0.25 
+Aplicación de DCU 
+Evidencia persona, escenario, flujo de tarea y justificación del diseño. 
+0.25 
+Diseño de la interfaz 
+Presenta estructura clara, organización visual y aplicación de usabilidad y Gestalt. 
+0.25 
+Implementación funcional 
+El módulo funciona correctamente y se integra al aplicativo web. 
+0.50 
+Evaluación de usabilidad y 
+accesibilidad 
+Presenta prueba con usuarios, hallazgos y uso de herramientas como WAVE, Stark o 
+Lighthouse. 
+0.35 
+Mejora final y sustentación 
+Explica cambios, muestra antes y después y defiende técnicamente la solución. 
+0.40 
+Total 
+2.00 
+ 
+9. Niveles de desempeño 
+Excelente: Integra todos los elementos del proceso DCU, implementa una mejora funcional real, presenta 
+evidencia clara de evaluación y justifica correctamente sus decisiones. 
+Bueno: Cumple la mayor parte de la práctica, aunque presenta pequeñas debilidades en profundidad del 
+análisis, validación o claridad de la mejora. 
+Básico: Implementa parcialmente la solución, pero con debilidades en el análisis del usuario, evaluación o 
+justificación técnica. 
+Insuficiente: Presenta una solución incompleta, poco funcional o sin evidencia clara del proceso de IHC. 
+10. Instrucción general para estudiantes 
+Desarrollar una mejora funcional de un módulo del aplicativo web Usability Test Dashboard, aplicando el 
+proceso de Diseño Centrado en el Usuario. La solución debe partir de un problema real de uso, proponer una 
+mejora visual y funcional, validar la propuesta mediante pruebas de usabilidad y evidenciar criterios de 
+accesibilidad. 
+11. Distribución sugerida por grupos 
+Grupo 
+Módulo sugerido 
+Grupo 1 
+Módulo de participantes 
+Grupo 2 
+Módulo de tareas 
+Grupo 3 
+Módulo de observación 
+Grupo 4 
+Módulo de hallazgos 
+Grupo 5 
+Dashboard de resultados 
+Grupo 6 
+Módulo de accesibilidad 
+Grupo 7 
+Personas y escenarios 
+Grupo 8 
+User flow y navegación 
+ 

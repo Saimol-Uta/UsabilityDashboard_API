@@ -3,7 +3,7 @@ import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, ListChecks, MessageSquareText,
   Eye, Search, Lightbulb, ChevronRight, FolderKanban, Sparkles, Users, CalendarRange,
-  Menu, X, Lock
+  Menu, X, Lock, ShieldCheck
 } from 'lucide-react'
 import { usePlan } from '../context/PlanContext'
 import PlanSelector from './PlanSelector'
@@ -32,6 +32,7 @@ const phases = [
     items: [
       { to: '/hallazgos', icon: Search, label: 'Hallazgos', detail: 'Síntesis de problemas', sectionKey: 'hallazgos' },
       { to: '/mejoras', icon: Lightbulb, label: 'Acciones de Mejora', detail: 'Plan de mejoras', sectionKey: 'mejoras' },
+      { to: '/accesibilidad', icon: ShieldCheck, label: 'Accesibilidad', detail: 'Auditorías WAVE, Stark, Lighthouse', sectionKey: 'accesibilidad' },
     ]
   }
 ]
@@ -181,7 +182,7 @@ export default function Layout() {
                 </NavLink>
               </div>
 
-              {/* Plan de Prueba — standalone, below dashboard */}
+                  {/* Plan de Prueba — standalone, below dashboard */}
               <div>
                 <NavLink
                   to={planItem.to}
@@ -193,7 +194,9 @@ export default function Layout() {
                   }}
                 >
                   {sectionDone[planItem.sectionKey] ? (
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0">
+                    /* ACCESIBILIDAD: SVG con role="img" y title (WCAG 1.1.1) */
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0" role="img" aria-label="Sección completada">
+                      <title>Sección completada</title>
                       <circle cx="8" cy="8" r="7" fill="#10b981" opacity="0.15"/>
                       <circle cx="8" cy="8" r="7" stroke="#10b981" strokeWidth="1.2"/>
                       <path d="M5 8l2 2 4-4" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -233,9 +236,10 @@ export default function Layout() {
                     phaseLocked ? 'bg-slate-50 border border-slate-200' :
                     'border border-transparent'
                   }`}>
+                    {/* ACCESIBILIDAD: SVG de estado de fase con title descriptivo (WCAG 1.1.1) */}
                     <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${
                       phaseComplete ? 'bg-emerald-500' : phaseLocked ? 'bg-slate-300' : 'bg-blue-400'
-                    }`}>
+                    }`} aria-hidden="true">
                       {phaseComplete ? (
                         <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                       ) : phaseLocked ? (
@@ -246,7 +250,13 @@ export default function Layout() {
                     </div>
                     <span className={`text-[10px] uppercase tracking-[0.12em] font-bold flex-1 ${
                       phaseComplete ? 'text-emerald-700' : phaseLocked ? 'text-slate-400' : 'text-blue-600'
-                    }`}>{phase.title}</span>
+                    }`}>
+                      {phase.title}
+                      {/* ACCESIBILIDAD: estado de fase anunciado a lectores de pantalla */}
+                      <span className="sr-only">
+                        {phaseComplete ? ' — Completada' : phaseLocked ? ' — Bloqueada' : ' — En progreso'}
+                      </span>
+                    </span>
                   </div>
 
                   <div className="space-y-1">
@@ -284,7 +294,9 @@ export default function Layout() {
                           }}
                         >
                           {sectionDone[item.sectionKey] ? (
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0">
+                            /* ACCESIBILIDAD: SVG de sección completada con texto alternativo (WCAG 1.1.1) */
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0" role="img" aria-label="Completado">
+                              <title>Completado</title>
                               <circle cx="8" cy="8" r="7" fill="#10b981" opacity="0.15"/>
                               <circle cx="8" cy="8" r="7" stroke="#10b981" strokeWidth="1.2"/>
                               <path d="M5 8l2 2 4-4" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -296,8 +308,9 @@ export default function Layout() {
                             <div className={`text-[13px] font-medium transition-colors ${
                               sectionDone[item.sectionKey] ? 'text-emerald-800 group-hover:text-emerald-900' : 'text-slate-600 group-hover:text-slate-800'
                             }`}>{item.label}</div>
+                            {/* ACCESIBILIDAD: contraste mejorado de text-slate-400 a text-slate-500 (ratio 4.6:1, WCAG 1.4.3) */}
                             <div className={`text-[11px] mt-0.5 truncate ${
-                              sectionDone[item.sectionKey] ? 'text-emerald-600' : 'text-slate-400'
+                              sectionDone[item.sectionKey] ? 'text-emerald-600' : 'text-slate-500'
                             }`}>{item.detail}</div>
                           </div>
                         </NavLink>
@@ -311,7 +324,8 @@ export default function Layout() {
         </aside>
 
         {/* Main Content */}
-        <main className="glass-panel flex-1 flex flex-col min-h-0 overflow-hidden relative z-0" role="main">
+        {/* ACCESIBILIDAD: id="main-content" como destino del skip link (WCAG 2.4.1) */}
+        <main id="main-content" className="glass-panel flex-1 flex flex-col min-h-0 overflow-hidden relative z-0" role="main">
           <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-md border-b border-slate-200 px-3 py-2.5 sm:px-4 sm:py-3 md:px-6 shadow-sm flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-[12px] text-slate-500">
               <span className="text-slate-400">Dashboard</span>

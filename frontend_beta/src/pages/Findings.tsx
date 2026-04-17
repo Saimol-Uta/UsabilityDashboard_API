@@ -157,49 +157,76 @@ export default function Findings() {
 
             {/* Form Modal */}
             <Modal isOpen={showForm} onClose={resetForm} title={editId ? 'Editar Hallazgo' : 'Nuevo Hallazgo'}>
-                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                <form onSubmit={handleSubmit} className="p-6 space-y-5" noValidate aria-label={editId ? 'Formulario de edición de hallazgo' : 'Formulario de nuevo hallazgo'}>
                     {/* Plan as read-only text */}
                     <div>
-                        <label className="form-label">Plan asignado</label>
-                        <div className="form-input bg-slate-50 text-slate-700 cursor-not-allowed">
+                        {/* ACCESIBILIDAD: label sin htmlFor → uso de aria-label en el div (WCAG 1.3.1) */}
+                        <p className="form-label" id="label-plan">Plan asignado</p>
+                        <div className="form-input bg-slate-50 text-slate-700 cursor-not-allowed" aria-labelledby="label-plan" tabIndex={-1}>
                             {activePlan?.projectName || 'Sin plan seleccionado'}
                         </div>
                     </div>
                     <div>
-                        <label htmlFor="findingDescription" className="form-label">Descripción <span className="text-red-500">*</span></label>
-                        <textarea id="findingDescription" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="form-input" rows={3} required />
+                        <label htmlFor="findingDescription" className="form-label">
+                            Descripción <span className="text-red-500" aria-hidden="true">*</span>
+                            <span className="sr-only">(requerido)</span>
+                        </label>
+                        <textarea
+                            id="findingDescription"
+                            value={form.description}
+                            onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                            className="form-input"
+                            rows={3}
+                            required
+                            aria-required="true"
+                        />
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div>
-                            <label htmlFor="findingSeverity" className="form-label">Severidad <span className="text-red-500">*</span></label>
-                            <select id="findingSeverity" value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value }))} className="form-input" required>
-                                <option value="Critical">Crítica</option>
-                                <option value="High">Alta</option>
-                                <option value="Medium">Media</option>
-                                <option value="Low">Baja</option>
-                            </select>
+
+                    {/* ACCESIBILIDAD: fieldset agrupa campos relacionados semánticamente (WCAG 1.3.1) */}
+                    <fieldset className="border-0 p-0 m-0">
+                        <legend className="form-label mb-3">Clasificación del hallazgo</legend>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <label htmlFor="findingSeverity" className="form-label">
+                                    Severidad <span className="text-red-500" aria-hidden="true">*</span>
+                                    <span className="sr-only">(requerido)</span>
+                                </label>
+                                <select id="findingSeverity" value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value }))} className="form-input" required aria-required="true">
+                                    <option value="Critical">Crítica</option>
+                                    <option value="High">Alta</option>
+                                    <option value="Medium">Media</option>
+                                    <option value="Low">Baja</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label htmlFor="findingPriority" className="form-label">
+                                    Prioridad <span className="text-red-500" aria-hidden="true">*</span>
+                                    <span className="sr-only">(requerido)</span>
+                                </label>
+                                <select id="findingPriority" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="form-input" required aria-required="true">
+                                    <option value="High">Alta</option>
+                                    <option value="Medium">Media</option>
+                                    <option value="Low">Baja</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label htmlFor="findingStatus" className="form-label">
+                                    Estado <span className="text-red-500" aria-hidden="true">*</span>
+                                    <span className="sr-only">(requerido)</span>
+                                </label>
+                                <select id="findingStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="form-input" required aria-required="true">
+                                    <option value="Open">Abierta</option>
+                                    <option value="Resolved">Resuelta</option>
+                                    <option value="Closed">Cerrada</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label htmlFor="findingFrequency" className="form-label">Frecuencia</label>
+                                <input id="findingFrequency" value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))} className="form-input" placeholder="Ej: 2/3" />
+                            </div>
                         </div>
-                        <div>
-                            <label htmlFor="findingPriority" className="form-label">Prioridad <span className="text-red-500">*</span></label>
-                            <select id="findingPriority" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="form-input" required>
-                                <option value="High">Alta</option>
-                                <option value="Medium">Media</option>
-                                <option value="Low">Baja</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label htmlFor="findingStatus" className="form-label">Estado <span className="text-red-500">*</span></label>
-                            <select id="findingStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="form-input" required>
-                                <option value="Open">Abierta</option>
-                                <option value="Resolved">Resuelta</option>
-                                <option value="Closed">Cerrada</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label htmlFor="findingFrequency" className="form-label">Frecuencia</label>
-                            <input id="findingFrequency" value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))} className="form-input" placeholder="Ej: 2/3" />
-                        </div>
-                    </div>
+                    </fieldset>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label htmlFor="findingCategory" className="form-label">Categoría</label>
@@ -221,8 +248,8 @@ export default function Findings() {
                         <textarea id="findingRecommendation" value={form.recommendation} onChange={e => setForm(f => ({ ...f, recommendation: e.target.value }))} className="form-input" rows={3} />
                     </div>
                     <div className="flex items-center gap-3 pt-3">
-                        <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                            <Save size={16} /> {isSubmitting ? 'Guardando...' : (editId ? 'Actualizar' : 'Guardar')}
+                        <button type="submit" className="btn btn-primary" disabled={isSubmitting} aria-busy={isSubmitting}>
+                            <Save size={16} aria-hidden="true" /> {isSubmitting ? 'Guardando...' : (editId ? 'Actualizar' : 'Guardar')}
                         </button>
                         <button type="button" onClick={resetForm} className="btn btn-secondary text-center" disabled={isSubmitting}>
                             Cancelar
