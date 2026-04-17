@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { dashboardApi, findingsApi, testPlansApi } from '../api'
-import { BarChart2, CheckCircle2, Clock, AlertCircle, AlertTriangle, Lightbulb, TrendingUp, Flame, PieChart as PieChartIcon, Filter } from 'lucide-react'
+import { dashboardApi, findingsApi } from '../api'
+import { usePlan } from '../context/PlanContext'
+import { BarChart2, CheckCircle2, Clock, AlertCircle, AlertTriangle, Lightbulb, TrendingUp, Flame, PieChart as PieChartIcon } from 'lucide-react'
 import { PieChart } from '../components/PieChart'
 
 interface Stats {
@@ -15,6 +16,7 @@ interface Stats {
     completedActions: number
     pendingActions: number
     inProgressActions: number
+    closedActions?: number
     errorsBySeverity: { severity: string; count: number }[]
     successByTask: { taskId: string; total: number; successes: number; avgTime: number }[]
 }
@@ -30,12 +32,12 @@ interface KPICardProps {
 
 function KPICard({ icon, value, label, iconBg, valueColor = 'text-gray-900', delay = '' }: KPICardProps) {
     return (
-        <div className={`kpi-card p-6 flex items-center gap-4 min-w-0 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-100 bg-gradient-to-br from-white to-slate-50/50 animate-rise ${delay} hover:scale-105`}>
-            <div className={`w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md ${iconBg} border border-white/50`}>
+        <div className={`kpi-card p-4 sm:p-6 flex items-center gap-3 sm:gap-4 min-w-0 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-100 bg-gradient-to-br from-white to-slate-50/50 animate-rise ${delay} hover:scale-105`}>
+            <div className={`w-11 h-11 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md ${iconBg} border border-white/50`}>
                 {icon}
             </div>
             <div className="min-w-0">
-                <div className={`text-3xl font-bold leading-none ${valueColor}`}>{value}</div>
+                <div className={`text-2xl sm:text-3xl font-bold leading-none ${valueColor}`}>{value}</div>
                 <div className="text-[12px] text-slate-500 mt-1.5 leading-tight font-medium">{label}</div>
             </div>
         </div>
@@ -43,23 +45,26 @@ function KPICard({ icon, value, label, iconBg, valueColor = 'text-gray-900', del
 }
 
 export default function Dashboard() {
+    const { plans, activePlanId } = usePlan()
+
     const [stats, setStats] = useState<Stats | null>(null)
     const [findings, setFindings] = useState<any[]>([])
-    const [plans, setPlans] = useState<any[]>([])
-    const [activePlanId, setActivePlanId] = useState('')
     const [loading, setLoading] = useState(true)
 
-    const fetchDashboardData = async (planId: string, allPlans: any[]) => {
+    const fetchDashboardData = async (planId: string) => {
+        // Clear stale data immediately so previous plan's KPIs never show
+        setStats(null)
+        setFindings([])
         setLoading(true)
         try {
             const statsRes = await dashboardApi.getStats(planId || undefined)
-            
+
             let allFindings: any[] = []
             if (planId) {
                 const findingsRes = await findingsApi.getByPlan(planId)
                 allFindings = findingsRes.data ?? []
             } else {
-                const findingsPromises = allPlans.map(p => findingsApi.getByPlan(p.id))
+                const findingsPromises = plans.map(p => findingsApi.getByPlan(p.id))
                 const responses = await Promise.all(findingsPromises)
                 allFindings = responses.flatMap(r => r.data ?? [])
             }
@@ -75,13 +80,11 @@ export default function Dashboard() {
     }
 
     useEffect(() => {
-        testPlansApi.getAll().then(res => {
-            const fetchedPlans = res.data ?? []
-            setPlans(fetchedPlans)
-            setActivePlanId('') // Por defecto a "Todos los planes"
-            fetchDashboardData('', fetchedPlans)
-        })
-    }, [])
+        if (plans.length > 0 || activePlanId !== '__UNSET__') {
+            fetchDashboardData(activePlanId && activePlanId !== '__UNSET__' ? activePlanId : '')
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activePlanId, plans])
 
     if (loading) {
         return (
@@ -96,10 +99,14 @@ export default function Dashboard() {
 
     if (!stats) return null
 
+    // DASH-01: Map "closed" as "completed" in progress bar
+    const effectiveCompleted = stats.completedActions + (stats.closedActions ?? 0)
+    const effectiveTotal = stats.totalActions
+
     return (
         <div className="flex flex-col gap-8">
             {/* Hero Banner */}
-            <section className="rounded-3xl border-2 border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-900 px-8 py-7 text-white animate-rise shadow-2xl overflow-hidden relative">
+            <section className="rounded-2xl sm:rounded-3xl border-2 border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-900 px-4 py-5 sm:px-8 sm:py-7 text-white animate-rise shadow-2xl overflow-hidden relative">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full -mr-48 -mt-48" />
                 <div className="relative z-10">
                     <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -111,7 +118,7 @@ export default function Dashboard() {
                             {stats.totalObservations} observaciones
                         </span>
                     </div>
-                    <h2 className="text-[28px] font-bold leading-tight mb-2">
+                    <h2 className="text-[20px] sm:text-[24px] md:text-[28px] font-bold leading-tight mb-2">
                         Resumen General del Plan de Usabilidad
                     </h2>
                     <p className="text-[14px] text-blue-100/80 max-w-4xl leading-relaxed">
@@ -120,34 +127,6 @@ export default function Dashboard() {
                 </div>
             </section>
 
-            {/* Filter Section */}
-            {plans.length > 0 && (
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-white rounded-2xl border border-slate-200 shadow-sm animate-rise transition-all hover:shadow-md">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 border border-blue-100">
-                            <Filter size={18} className="text-blue-600" aria-hidden="true" />
-                        </div>
-                        <div>
-                            <h3 className="text-[15px] font-bold text-slate-900 leading-snug">Filtro de Datos por Evaluación</h3>
-                            <p className="text-[12px] text-slate-500 mt-0.5">Métrica global (Todas las evaluaciones) o específicas por plan.</p>
-                        </div>
-                    </div>
-                    
-                    <select 
-                        className="form-input max-w-md bg-slate-50 border-slate-200 text-slate-700 font-semibold focus:border-blue-500 focus:ring-2 focus:ring-blue-200 py-2.5 shadow-inner" 
-                        value={activePlanId}
-                        onChange={(e) => {
-                            setActivePlanId(e.target.value)
-                            fetchDashboardData(e.target.value, plans)
-                        }}
-                    >
-                        <option value="" className="font-bold text-blue-700">✨ Todas las Evaluaciones (Global)</option>
-                        {plans.map((p: any) => (
-                            <option key={p.id} value={p.id}>{p.projectName}</option>
-                        ))}
-                    </select>
-                </div>
-            )}
 
             {/* KPI Cards - Row 1 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
@@ -203,7 +182,7 @@ export default function Dashboard() {
                 />
                 <KPICard
                     icon={<Lightbulb size={22} className="text-emerald-500" />}
-                    value={stats.completedActions}
+                    value={effectiveCompleted}
                     label="Mejoras completadas"
                     iconBg="bg-gradient-to-br from-emerald-50 to-emerald-100"
                     valueColor="text-emerald-600"
@@ -314,38 +293,38 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* Actions Status */}
+            {/* Actions Status - DASH-01: closed counted as completed */}
             <div className="bg-white rounded-3xl border-2 border-slate-100 shadow-lg overflow-hidden animate-rise hover:shadow-xl transition-all duration-300">
                 <div className="px-6 py-4 border-b-2 border-slate-100 bg-gradient-to-r from-indigo-50 to-blue-50">
                     <h3 className="text-[15px] font-bold text-slate-900">Estado de Acciones de Mejora</h3>
                 </div>
-                <div className="p-7">
-                    <div className="flex items-center gap-8 flex-wrap">
-                        <div className="flex items-center gap-8 flex-1">
+                <div className="p-4 sm:p-7">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 sm:gap-8">
+                        <div className="flex items-center gap-6 sm:gap-8 flex-1 w-full justify-around sm:justify-start">
                             <div className="text-center">
-                                <div className="text-4xl font-bold text-emerald-600 mb-1">{stats.completedActions}</div>
+                                <div className="text-3xl sm:text-4xl font-bold text-emerald-600 mb-1">{effectiveCompleted}</div>
                                 <div className="text-[12px] text-slate-600 font-semibold">Completadas</div>
                             </div>
                             <div className="text-center">
-                                <div className="text-4xl font-bold text-amber-500 mb-1">{stats.inProgressActions}</div>
+                                <div className="text-3xl sm:text-4xl font-bold text-amber-500 mb-1">{stats.inProgressActions}</div>
                                 <div className="text-[12px] text-slate-600 font-semibold">En Progreso</div>
                             </div>
                             <div className="text-center">
-                                <div className="text-4xl font-bold text-slate-400 mb-1">{stats.pendingActions}</div>
+                                <div className="text-3xl sm:text-4xl font-bold text-slate-400 mb-1">{stats.pendingActions}</div>
                                 <div className="text-[12px] text-slate-600 font-semibold">Pendientes</div>
                             </div>
                         </div>
-                        <div className="flex-1 min-w-64">
+                        <div className="flex-1 w-full min-w-0">
                             <div className="h-4 rounded-full bg-slate-200 flex overflow-hidden shadow-md">
-                                {stats.totalActions > 0 && (
+                                {effectiveTotal > 0 && (
                                     <>
-                                        <div className="bg-gradient-to-r from-emerald-500 to-emerald-400 h-full transition-all duration-700" style={{ width: `${(stats.completedActions / stats.totalActions) * 100}%` }} />
-                                        <div className="bg-gradient-to-r from-amber-400 to-amber-300 h-full transition-all duration-700" style={{ width: `${(stats.inProgressActions / stats.totalActions) * 100}%` }} />
+                                        <div className="bg-gradient-to-r from-emerald-500 to-emerald-400 h-full transition-all duration-700" style={{ width: `${(effectiveCompleted / effectiveTotal) * 100}%` }} />
+                                        <div className="bg-gradient-to-r from-amber-400 to-amber-300 h-full transition-all duration-700" style={{ width: `${(stats.inProgressActions / effectiveTotal) * 100}%` }} />
                                     </>
                                 )}
                             </div>
                             <div className="mt-2 text-[12px] text-slate-600 text-right font-bold">
-                                {stats.totalActions > 0 ? Math.round((stats.completedActions / stats.totalActions) * 100) : 0}% completado • {stats.totalActions} total
+                                {effectiveTotal > 0 ? Math.round((effectiveCompleted / effectiveTotal) * 100) : 0}% completado • {effectiveTotal} total
                             </div>
                         </div>
                     </div>

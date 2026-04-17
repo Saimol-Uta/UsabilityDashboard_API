@@ -1,30 +1,38 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { testPlansApi } from '../api'
 import { useToast } from '../App'
-import { Plus, Edit3, Trash2, Calendar, Target, X, Save } from 'lucide-react'
+import { usePlan } from '../context/PlanContext'
+import { extractErrorMessage } from '../hooks/useApiError'
+import Modal from '../components/Modal'
+import { Plus, Edit3, Trash2, Calendar, Target, Save, CheckCircle2, PlayCircle } from 'lucide-react'
+
+const todayIso = new Date().toISOString().split('T')[0]
+
+const emptyForm = {
+    projectName: '',
+    product: '',
+    evaluatedModule: '',
+    objective: '',
+    userProfile: '',
+    methodology: '',
+    startDate: todayIso,
+    endDate: todayIso,
+    location: '',
+    estimatedDuration: '',
+    scope: '',
+    status: 'Draft',
+}
 
 export default function TestPlans() {
     const [plans, setPlans] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [planToDelete, setPlanToDelete] = useState<{ id: string, name: string } | null>(null)
-    const [planToEdit, setPlanToEdit] = useState<any | null>(null)
-    const [savingEdit, setSavingEdit] = useState(false)
-    const [editForm, setEditForm] = useState({
-        projectName: '',
-        product: '',
-        evaluatedModule: '',
-        objective: '',
-        userProfile: '',
-        methodology: '',
-        startDate: '',
-        endDate: '',
-        location: '',
-        estimatedDuration: '',
-        scope: '',
-        status: 'Draft',
-    })
+    const [showDrawer, setShowDrawer] = useState(false)
+    const [editId, setEditId] = useState<string | null>(null)
+    const [saving, setSaving] = useState(false)
+    const [form, setForm] = useState(emptyForm)
     const { addToast } = useToast()
+    const { refreshPlans, setActivePlanId } = usePlan()
 
     const toInputDate = (value: string | null | undefined) => {
         if (!value) return ''
@@ -38,9 +46,15 @@ export default function TestPlans() {
 
     useEffect(() => { fetchPlans() }, [])
 
-    const openEditModal = (plan: any) => {
-        setPlanToEdit(plan)
-        setEditForm({
+    const openCreate = () => {
+        setForm(emptyForm)
+        setEditId(null)
+        setShowDrawer(true)
+    }
+
+    const openEdit = (plan: any) => {
+        setEditId(plan.id)
+        setForm({
             projectName: plan.projectName || '',
             product: plan.product || '',
             evaluatedModule: plan.evaluatedModule || '',
@@ -54,50 +68,65 @@ export default function TestPlans() {
             scope: plan.scope || '',
             status: plan.status || 'Draft',
         })
+        setShowDrawer(true)
     }
 
-    const closeEditModal = () => {
-        setPlanToEdit(null)
-        setSavingEdit(false)
+    const closeDrawer = () => {
+        setShowDrawer(false)
+        setEditId(null)
+        setSaving(false)
     }
 
-    const submitEdit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!planToEdit) return
+        if (saving) return
 
-        if (!editForm.projectName.trim()) { addToast('El nombre del proyecto es obligatorio', 'error'); return }
-        if (!editForm.product.trim()) { addToast('El producto es obligatorio', 'error'); return }
-        if (!editForm.evaluatedModule.trim()) { addToast('El módulo evaluado es obligatorio', 'error'); return }
-        if (!editForm.objective.trim()) { addToast('El objetivo es obligatorio', 'error'); return }
-        if (!editForm.userProfile.trim()) { addToast('El perfil de usuario es obligatorio', 'error'); return }
-        if (!editForm.methodology.trim()) { addToast('La metodología es obligatoria', 'error'); return }
-        if (!editForm.startDate || !editForm.endDate) { addToast('Las fechas son obligatorias', 'error'); return }
-        if (new Date(editForm.endDate) <= new Date(editForm.startDate)) { addToast('La fecha de fin debe ser posterior a la fecha de inicio', 'error'); return }
+        if (!form.projectName.trim()) { addToast('El nombre del proyecto es obligatorio', 'error'); return }
+        if (!form.product.trim()) { addToast('El producto es obligatorio', 'error'); return }
+        if (!form.evaluatedModule.trim()) { addToast('El módulo evaluado es obligatorio', 'error'); return }
+        if (!form.objective.trim()) { addToast('El objetivo es obligatorio', 'error'); return }
+        if (!form.userProfile.trim()) { addToast('El perfil de usuario es obligatorio', 'error'); return }
+        if (!form.methodology.trim()) { addToast('La metodología es obligatoria', 'error'); return }
+        if (!form.startDate || !form.endDate) { addToast('Las fechas son obligatorias', 'error'); return }
+        if (new Date(form.endDate) <= new Date(form.startDate)) { addToast('La fecha de fin debe ser posterior a la fecha de inicio', 'error'); return }
 
-        setSavingEdit(true)
+        setSaving(true)
         try {
-            await testPlansApi.update(planToEdit.id, {
-                projectName: editForm.projectName,
-                product: editForm.product,
-                evaluatedModule: editForm.evaluatedModule,
-                objective: editForm.objective,
-                userProfile: editForm.userProfile,
-                methodology: editForm.methodology,
-                startDate: editForm.startDate,
-                endDate: editForm.endDate,
-                location: editForm.location,
-                estimatedDuration: editForm.estimatedDuration,
-                scope: editForm.scope,
-                status: editForm.status,
-            })
+            // Check for duplicate name
+            const existingPlansRes = await testPlansApi.getAll()
+            const existingPlans = existingPlansRes.data ?? []
+            const nameTrimmed = form.projectName.trim().toLowerCase()
+            const duplicate = existingPlans.find((p: any) =>
+                p.projectName?.trim().toLowerCase() === nameTrimmed && String(p.id) !== String(editId)
+            )
 
-            addToast('Plan actualizado correctamente', 'success')
-            closeEditModal()
-            fetchPlans()
-        } catch {
-            addToast('Error al actualizar el plan', 'error')
+            if (duplicate) {
+                addToast('Ya existe un plan de prueba con ese nombre', 'error')
+                setSaving(false)
+                return
+            }
+
+            if (editId) {
+                await testPlansApi.update(editId, form)
+                addToast('Plan actualizado correctamente', 'success')
+                closeDrawer()
+                fetchPlans()
+                refreshPlans()
+            } else {
+                const { status, ...createData } = form
+                const res = await testPlansApi.create(createData)
+                addToast('Plan creado correctamente', 'success')
+                closeDrawer()
+                fetchPlans()
+                await refreshPlans()
+                if (res.data?.id) {
+                    setActivePlanId(res.data.id)
+                }
+            }
+        } catch (err) {
+            addToast(extractErrorMessage(err, 'Error al guardar el plan'), 'error')
         } finally {
-            setSavingEdit(false)
+            setSaving(false)
         }
     }
 
@@ -106,8 +135,24 @@ export default function TestPlans() {
             await testPlansApi.delete(id)
             addToast('Plan eliminado correctamente', 'success')
             fetchPlans()
-        } catch { addToast('Error al eliminar el plan', 'error') }
-        finally { setPlanToDelete(null) }
+            refreshPlans()
+        } catch (err) {
+            addToast(extractErrorMessage(err, 'Error al eliminar el plan'), 'error')
+        } finally {
+            setPlanToDelete(null)
+        }
+    }
+
+    const togglePlanStatus = async (id: string, currentStatus: string) => {
+        const newStatus = currentStatus === 'Completed' ? 'InProgress' : 'Completed';
+        try {
+            await testPlansApi.updateStatus(id, newStatus);
+            addToast(`Plan ${newStatus === 'Completed' ? 'marcado como completado' : 'reactivado'} correctamente`, 'success');
+            fetchPlans();
+            refreshPlans();
+        } catch (err) {
+            addToast(extractErrorMessage(err, 'Error al cambiar el estado del plan'), 'error');
+        }
     }
 
     if (loading) {
@@ -125,10 +170,10 @@ export default function TestPlans() {
                     <h2 className="text-[20px] font-semibold text-slate-900">Planes de Prueba</h2>
                     <p className="text-[13px] text-slate-500 mt-1">Gestiona los planes de prueba de usabilidad</p>
                 </div>
-                <Link to="/planes/nuevo" className="btn btn-primary">
+                <button onClick={openCreate} className="btn btn-primary">
                     <Plus size={16} aria-hidden="true" />
                     Nuevo Plan
-                </Link>
+                </button>
             </div>
 
             {plans.length === 0 ? (
@@ -136,9 +181,9 @@ export default function TestPlans() {
                     <Target size={40} className="text-slate-300 mx-auto" />
                     <h3 className="mt-3 text-[15px] font-semibold text-slate-600">Sin planes de prueba</h3>
                     <p className="text-[13px] text-slate-400 mt-1">Crea tu primer plan de prueba para comenzar</p>
-                    <Link to="/planes/nuevo" className="btn btn-primary mt-4">
+                    <button onClick={openCreate} className="btn btn-primary mt-4">
                         <Plus size={16} /> Crear Plan
-                    </Link>
+                    </button>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -151,7 +196,7 @@ export default function TestPlans() {
                                         <h3 className="text-[15px] font-semibold text-slate-900 leading-snug">{plan.projectName}</h3>
                                         <p className="text-[12px] text-slate-500 mt-1 line-clamp-2">{plan.objective}</p>
                                     </div>
-                                    <span className={`badge ${plan.status === 'Completed' ? 'badge-completada' : plan.status === 'InProgress' ? 'badge-enprogreso' : 'badge-pendiente'}`}>
+                                    <span className={`badge ${plan.status === 'Completed' ? 'badge-completada' : plan.status === 'InProgress' ? 'badge-enprogreso' : plan.status === 'Cancelled' ? 'badge-alta' : 'badge-pendiente'}`}>
                                         {plan.status === 'Draft' ? 'Borrador' : plan.status === 'InProgress' ? 'En Progreso' : plan.status === 'Completed' ? 'Completado' : plan.status === 'Cancelled' ? 'Cancelado' : plan.status}
                                     </span>
                                 </div>
@@ -169,12 +214,24 @@ export default function TestPlans() {
                                     </span>
                                 </div>
 
-                                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
-                                    <button onClick={() => openEditModal(plan)} className="btn btn-secondary text-[12px] py-2 px-3">
-                                        <Edit3 size={14} aria-hidden="true" /> Editar
-                                    </button>
-                                    <button onClick={() => setPlanToDelete({ id: plan.id, name: plan.projectName })} className="btn btn-danger text-[12px] py-2 px-3" aria-label={`Eliminar plan ${plan.projectName}`}>
-                                        <Trash2 size={14} aria-hidden="true" /> Eliminar
+                                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                                    <div className="flex gap-2">
+                                        <button onClick={() => openEdit(plan)} className="btn btn-secondary text-[12px] py-1.5 px-3" aria-label={`Editar plan ${plan.projectName}`}>
+                                            <Edit3 size={14} aria-hidden="true" /> Editar
+                                        </button>
+                                        <button onClick={() => setPlanToDelete({ id: plan.id, name: plan.projectName })} className="btn btn-danger text-[12px] py-1.5 px-3" aria-label={`Eliminar plan ${plan.projectName}`}>
+                                            <Trash2 size={14} aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                    <button 
+                                        onClick={() => togglePlanStatus(plan.id, plan.status)} 
+                                        className={`btn text-[12px] py-1.5 px-3 flex items-center gap-1.5 border transition-colors ${plan.status === 'Completed' ? 'text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100' : 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100'}`}
+                                    >
+                                        {plan.status === 'Completed' ? (
+                                            <><PlayCircle size={14} /> Reactivar</>
+                                        ) : (
+                                            <><CheckCircle2 size={14} /> Finalizar</>
+                                        )}
                                     </button>
                                 </div>
                             </div>
@@ -183,114 +240,101 @@ export default function TestPlans() {
                 </div>
             )}
 
-            {planToDelete && (
-                <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setPlanToDelete(null) }} role="dialog" aria-modal="true">
-                    <div className="modal-content max-w-md">
-                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                            <h3 className="text-[16px] font-semibold text-slate-900">Eliminar Plan</h3>
-                            <button onClick={() => setPlanToDelete(null)} className="text-slate-400 hover:text-slate-600" aria-label="Cerrar"><X size={20} /></button>
-                        </div>
-                        <div className="p-5">
-                            <p className="text-[14px] text-slate-600 mb-5">
-                                ¿Estás seguro de que deseas eliminar el plan <strong>{planToDelete.name}</strong>? Esta acción no se puede deshacer.
-                            </p>
-                            <div className="flex justify-end gap-3">
-                                <button type="button" onClick={() => setPlanToDelete(null)} className="btn btn-secondary">Cancelar</button>
-                                <button type="button" onClick={() => confirmDelete(planToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
-                            </div>
-                        </div>
+            {/* Delete confirmation modal */}
+            <Modal isOpen={!!planToDelete} onClose={() => setPlanToDelete(null)} title="Eliminar Plan" maxWidth="480px">
+                <div className="p-5">
+                    <p className="text-[14px] text-slate-600 mb-5">
+                        ¿Estás seguro de que deseas eliminar el plan <strong>{planToDelete?.name}</strong>? Esta acción no se puede deshacer.
+                    </p>
+                    <div className="flex justify-end gap-3">
+                        <button type="button" onClick={() => setPlanToDelete(null)} className="btn btn-secondary">Cancelar</button>
+                        <button type="button" onClick={() => planToDelete && confirmDelete(planToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
                     </div>
                 </div>
-            )}
+            </Modal>
 
-            {planToEdit && (
-                <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) closeEditModal() }} role="dialog" aria-modal="true" aria-label="Editar plan">
-                    <div className="modal-content rounded-2xl shadow-2xl border border-slate-200 overflow-hidden bg-white">
-                        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
-                            <h3 className="text-[18px] font-semibold text-slate-900">Editar Plan de Prueba</h3>
-                            <button onClick={closeEditModal} className="text-slate-400 hover:text-slate-600" aria-label="Cerrar"><X size={20} /></button>
-                        </div>
-
-                        <form onSubmit={submitEdit} className="p-6 space-y-5">
-                            <div>
-                                <label htmlFor="editProjectName" className="form-label">Nombre del Proyecto <span className="text-red-500">*</span></label>
-                                <input id="editProjectName" value={editForm.projectName} onChange={e => setEditForm(f => ({ ...f, projectName: e.target.value }))} className="form-input" required />
-                            </div>
-
-                            <div>
-                                <label htmlFor="editObjective" className="form-label">Objetivo <span className="text-red-500">*</span></label>
-                                <textarea id="editObjective" value={editForm.objective} onChange={e => setEditForm(f => ({ ...f, objective: e.target.value }))} className="form-input" rows={3} required />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="editProduct" className="form-label">Producto <span className="text-red-500">*</span></label>
-                                    <input id="editProduct" value={editForm.product} onChange={e => setEditForm(f => ({ ...f, product: e.target.value }))} className="form-input" required />
-                                </div>
-                                <div>
-                                    <label htmlFor="editEvaluatedModule" className="form-label">Módulo evaluado <span className="text-red-500">*</span></label>
-                                    <input id="editEvaluatedModule" value={editForm.evaluatedModule} onChange={e => setEditForm(f => ({ ...f, evaluatedModule: e.target.value }))} className="form-input" required />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="editMethodology" className="form-label">Metodología <span className="text-red-500">*</span></label>
-                                    <input id="editMethodology" value={editForm.methodology} onChange={e => setEditForm(f => ({ ...f, methodology: e.target.value }))} className="form-input" required />
-                                </div>
-                                <div>
-                                    <label htmlFor="editStatus" className="form-label">Estado</label>
-                                    <select id="editStatus" value={editForm.status} onChange={e => setEditForm(f => ({ ...f, status: e.target.value }))} className="form-input">
-                                        <option value="Draft">Borrador</option>
-                                        <option value="InProgress">En Progreso</option>
-                                        <option value="Completed">Completado</option>
-                                        <option value="Cancelled">Cancelado</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="editStartDate" className="form-label">Fecha de Inicio <span className="text-red-500">*</span></label>
-                                    <input id="editStartDate" type="date" value={editForm.startDate} onChange={e => setEditForm(f => ({ ...f, startDate: e.target.value }))} className="form-input" required />
-                                </div>
-                                <div>
-                                    <label htmlFor="editEndDate" className="form-label">Fecha de Fin <span className="text-red-500">*</span></label>
-                                    <input id="editEndDate" type="date" min={editForm.startDate} value={editForm.endDate} onChange={e => setEditForm(f => ({ ...f, endDate: e.target.value }))} className="form-input" required />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label htmlFor="editUserProfile" className="form-label">Perfil de Usuario <span className="text-red-500">*</span></label>
-                                <textarea id="editUserProfile" value={editForm.userProfile} onChange={e => setEditForm(f => ({ ...f, userProfile: e.target.value }))} className="form-input" rows={2} required />
-                            </div>
-
-                            <div>
-                                <label htmlFor="editScope" className="form-label">Alcance</label>
-                                <textarea id="editScope" value={editForm.scope} onChange={e => setEditForm(f => ({ ...f, scope: e.target.value }))} className="form-input" rows={2} />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="editLocation" className="form-label">Ubicación</label>
-                                    <input id="editLocation" value={editForm.location} onChange={e => setEditForm(f => ({ ...f, location: e.target.value }))} className="form-input" />
-                                </div>
-                                <div>
-                                    <label htmlFor="editEstimatedDuration" className="form-label">Duración estimada</label>
-                                    <input id="editEstimatedDuration" value={editForm.estimatedDuration} onChange={e => setEditForm(f => ({ ...f, estimatedDuration: e.target.value }))} className="form-input" />
-                                </div>
-                            </div>
-
-                            <div className="pt-3 flex items-center gap-3">
-                                <button type="submit" className="btn btn-primary flex items-center gap-2" disabled={savingEdit}>
-                                    <Save size={16} aria-hidden="true" /> {savingEdit ? 'Guardando...' : 'Actualizar Plan'}
-                                </button>
-                                <button type="button" onClick={closeEditModal} className="btn btn-secondary">Cancelar</button>
-                            </div>
-                        </form>
+            {/* Create/Edit Drawer */}
+            <Modal isOpen={showDrawer} onClose={closeDrawer} title={editId ? 'Editar Plan de Prueba' : 'Nuevo Plan de Prueba'} drawer>
+                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                    <div>
+                        <label htmlFor="drawerProjectName" className="form-label">Nombre del Proyecto <span className="text-red-500">*</span></label>
+                        <input id="drawerProjectName" value={form.projectName} onChange={e => setForm(f => ({ ...f, projectName: e.target.value }))} className="form-input" placeholder="Ej: Auditoría de Usabilidad: freeCodeCamp vs Coursera" required />
                     </div>
-                </div>
-            )}
+
+                    <div>
+                        <label htmlFor="drawerObjective" className="form-label">Objetivo <span className="text-red-500">*</span></label>
+                        <textarea id="drawerObjective" value={form.objective} onChange={e => setForm(f => ({ ...f, objective: e.target.value }))} className="form-input" rows={3} placeholder="Describe el objetivo principal del plan de prueba" required />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label htmlFor="drawerProduct" className="form-label">Producto <span className="text-red-500">*</span></label>
+                            <input id="drawerProduct" value={form.product} onChange={e => setForm(f => ({ ...f, product: e.target.value }))} className="form-input" placeholder="Ej: Plataforma e-learning" required />
+                        </div>
+                        <div>
+                            <label htmlFor="drawerModule" className="form-label">Módulo evaluado <span className="text-red-500">*</span></label>
+                            <input id="drawerModule" value={form.evaluatedModule} onChange={e => setForm(f => ({ ...f, evaluatedModule: e.target.value }))} className="form-input" placeholder="Ej: Registro y pago" required />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label htmlFor="drawerMethodology" className="form-label">Metodología <span className="text-red-500">*</span></label>
+                            <input id="drawerMethodology" value={form.methodology} onChange={e => setForm(f => ({ ...f, methodology: e.target.value }))} className="form-input" placeholder="Ej: Evaluación heurística + WAVE" required />
+                        </div>
+                        {editId && (
+                            <div>
+                                <label htmlFor="drawerStatus" className="form-label">Estado</label>
+                                <select id="drawerStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="form-input">
+                                    <option value="Draft">Borrador</option>
+                                    <option value="InProgress">En Progreso</option>
+                                    <option value="Completed">Completado</option>
+                                    <option value="Cancelled">Cancelado</option>
+                                </select>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label htmlFor="drawerStartDate" className="form-label">Fecha de Inicio <span className="text-red-500">*</span></label>
+                            <input id="drawerStartDate" type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className="form-input" required />
+                        </div>
+                        <div>
+                            <label htmlFor="drawerEndDate" className="form-label">Fecha de Fin <span className="text-red-500">*</span></label>
+                            <input id="drawerEndDate" type="date" min={form.startDate} value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className="form-input" required />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label htmlFor="drawerUserProfile" className="form-label">Perfil de Usuario <span className="text-red-500">*</span></label>
+                        <textarea id="drawerUserProfile" value={form.userProfile} onChange={e => setForm(f => ({ ...f, userProfile: e.target.value }))} className="form-input" rows={2} placeholder="Describe el perfil de los participantes" required />
+                    </div>
+
+                    <div>
+                        <label htmlFor="drawerScope" className="form-label">Alcance</label>
+                        <textarea id="drawerScope" value={form.scope} onChange={e => setForm(f => ({ ...f, scope: e.target.value }))} className="form-input" rows={2} placeholder="Define el alcance de las pruebas" />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label htmlFor="drawerLocation" className="form-label">Ubicación</label>
+                            <input id="drawerLocation" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} className="form-input" placeholder="Ej: Laboratorio 2 / Remoto" />
+                        </div>
+                        <div>
+                            <label htmlFor="drawerDuration" className="form-label">Duración estimada (minutos) <span className="text-red-500">*</span></label>
+                            <input id="drawerDuration" type="number" min="1" value={form.estimatedDuration} onChange={e => setForm(f => ({ ...f, estimatedDuration: e.target.value }))} className="form-input" placeholder="Ej: 45" required />
+                        </div>
+                    </div>
+
+                    <div className="pt-3 flex items-center gap-3 sticky bottom-0 bg-white py-4 border-t border-slate-100 -mx-6 px-6 -mb-6">
+                        <button type="submit" className="btn btn-primary flex items-center gap-2" disabled={saving}>
+                            <Save size={16} aria-hidden="true" /> {saving ? 'Guardando...' : editId ? 'Actualizar Plan' : 'Crear Plan'}
+                        </button>
+                        <button type="button" onClick={closeDrawer} className="btn btn-secondary">Cancelar</button>
+                    </div>
+                </form>
+            </Modal>
         </div>
     )
 }

@@ -1,51 +1,39 @@
 import { useEffect, useState } from 'react'
-import { testPlansApi, testTasksApi } from '../api'
+import { testTasksApi } from '../api'
 import { useToast } from '../App'
-import { Plus, Save, Trash2, ListChecks, X, Clock } from 'lucide-react'
+import { usePlan } from '../context/PlanContext'
+import { extractErrorMessage } from '../hooks/useApiError'
+import Modal from '../components/Modal'
+
+import { Plus, Save, Trash2, ListChecks, Clock, AlertTriangle } from 'lucide-react'
 
 export default function Tasks() {
     const [tasks, setTasks] = useState<any[]>([])
-    const [plans, setPlans] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
-    const [activePlanId, setActivePlanId] = useState('')
     const [showForm, setShowForm] = useState(false)
     const [editId, setEditId] = useState<string | null>(null)
     const [taskToDelete, setTaskToDelete] = useState<any | null>(null)
+    const [isSubmitting, setIsSubmitting] = useState(false)
     const [form, setForm] = useState({
         testPlanId: '', taskNumber: 0, scenario: '', expectedResult: '', mainMetric: '', successCriteria: '', maxTimeSeconds: 120
     })
     const { addToast } = useToast()
+    const { activePlanId, activePlan, isReadOnly, refreshGates } = usePlan()
 
     const fetchTasks = (planId: string) => {
+        if (!planId) { setTasks([]); setLoading(false); return }
         setLoading(true)
         testTasksApi.getByPlan(planId).then(res => setTasks(res.data)).finally(() => setLoading(false))
     }
 
     useEffect(() => {
-        testPlansApi.getAll().then(res => {
-            const allPlans = res.data ?? []
-            setPlans(allPlans)
-            const planId = allPlans[0]?.id ?? ''
-            setActivePlanId(planId)
-            setForm(f => ({ ...f, testPlanId: planId, taskNumber: 1 }))
-            if (planId) {
-                fetchTasks(planId)
-            } else {
-                setTasks([])
-                setLoading(false)
-            }
-        })
-    }, [])
-
-    const handlePlanChange = (planId: string) => {
-        setActivePlanId(planId)
-        setForm(f => ({ ...f, testPlanId: planId, taskNumber: tasks.length + 1 }))
-        if (planId) {
-            fetchTasks(planId)
+        if (activePlanId) {
+            fetchTasks(activePlanId)
         } else {
             setTasks([])
+            setLoading(false)
         }
-    }
+    }, [activePlanId])
 
     const resetForm = () => {
         setForm({ testPlanId: activePlanId, taskNumber: tasks.length + 1, scenario: '', expectedResult: '', mainMetric: '', successCriteria: '', maxTimeSeconds: 120 })
@@ -65,10 +53,12 @@ export default function Tasks() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (isSubmitting) return
         if (!form.testPlanId) { addToast('Selecciona un plan de prueba', 'error'); return }
         if (!form.scenario.trim()) { addToast('El escenario es requerido', 'error'); return }
         if (!form.mainMetric.trim()) { addToast('La métrica principal es requerida', 'error'); return }
         if (form.maxTimeSeconds <= 0) { addToast('El tiempo máximo debe ser mayor a 0', 'error'); return }
+        setIsSubmitting(true)
         try {
             if (editId) {
                 await testTasksApi.update(editId, {
@@ -83,12 +73,14 @@ export default function Tasks() {
                 await testTasksApi.create(form)
                 addToast('Tarea creada', 'success')
             }
-            if (activePlanId !== form.testPlanId) {
-                setActivePlanId(form.testPlanId)
-            }
             resetForm()
             if (form.testPlanId) fetchTasks(form.testPlanId)
-        } catch { addToast('Error al guardar', 'error') }
+            refreshGates()
+        } catch (err) {
+            addToast(extractErrorMessage(err, 'Error al guardar la tarea'), 'error')
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const confirmDelete = async (id: string) => {
@@ -96,12 +88,15 @@ export default function Tasks() {
             await testTasksApi.delete(id)
             addToast('Tarea eliminada', 'success')
             if (activePlanId) fetchTasks(activePlanId)
-        } catch {
-            addToast('Error al eliminar', 'error')
+            refreshGates()
+        } catch (err) {
+            addToast(extractErrorMessage(err, 'Error al eliminar la tarea'), 'error')
         } finally {
             setTaskToDelete(null)
         }
     }
+
+    const planName = activePlan?.projectName || 'Sin plan seleccionado'
 
     return (
         <div className="flex flex-col gap-6">
@@ -110,87 +105,78 @@ export default function Tasks() {
                     <h2 className="text-[20px] font-semibold text-slate-900">Gestión de Tareas</h2>
                     <p className="text-[13px] text-slate-500 mt-1">Define los escenarios de prueba que realizarán los participantes</p>
                 </div>
-                <button onClick={() => { setForm(f => ({ ...f, testPlanId: activePlanId, taskNumber: tasks.length + 1 })); setEditId(null); setShowForm(true) }} disabled={!activePlanId} className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
+                <button
+                    onClick={() => { setForm(f => ({ ...f, testPlanId: activePlanId, taskNumber: tasks.length + 1 })); setEditId(null); setShowForm(true) }}
+                    disabled={!activePlanId || isReadOnly}
+                    className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Nueva Tarea"
+                >
                     <Plus size={18} aria-hidden="true" /> Nueva Tarea
                 </button>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-end gap-4">
-                <div className="min-w-0 md:w-[420px]">
-                    <label htmlFor="taskPlanSelector" className="form-label">Plan de prueba activo</label>
-                    <select id="taskPlanSelector" value={activePlanId} onChange={e => handlePlanChange(e.target.value)} className="form-input">
-                        <option value="">Selecciona un plan</option>
-                        {plans.map((plan: any) => (
-                            <option key={plan.id} value={plan.id}>{plan.projectName}</option>
-                        ))}
-                    </select>
-                </div>
-                <p className="text-[13px] text-slate-500 md:mb-2">Las tareas nuevas se asignarán a este plan.</p>
-            </div>
-
-            {/* Form Modal */}
-            {showForm && (
-                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) resetForm() }} role="dialog" aria-modal="true" aria-label="Formulario de tarea">
-                    <div className="modal-content rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-rise bg-white">
-                        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
-                            <h3 className="text-[18px] font-semibold text-slate-900">{editId ? 'Editar Tarea' : 'Nueva Tarea'}</h3>
-                            <button onClick={resetForm} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-full transition-colors" aria-label="Cerrar formulario"><X size={22} /></button>
-                        </div>
-                        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                            <div>
-                                <label htmlFor="taskFormPlanId" className="form-label">Plan asignado <span className="text-red-500">*</span></label>
-                                <select
-                                    id="taskFormPlanId"
-                                    value={form.testPlanId}
-                                    onChange={e => setForm(f => ({ ...f, testPlanId: e.target.value }))}
-                                    className="form-input"
-                                    disabled={Boolean(editId)}
-                                    required
-                                >
-                                    <option value="">Selecciona un plan</option>
-                                    {plans.map((plan: any) => (
-                                        <option key={plan.id} value={plan.id}>{plan.projectName}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="taskNumber" className="form-label">Número de Tarea</label>
-                                    <input id="taskNumber" type="number" value={form.taskNumber} onChange={e => setForm(f => ({ ...f, taskNumber: Number(e.target.value) }))} className="form-input" min={1} />
-                                </div>
-                                <div>
-                                    <label htmlFor="maxTimeSeconds" className="form-label">Tiempo Máximo (seg) <span className="text-red-500">*</span></label>
-                                    <input id="maxTimeSeconds" type="number" value={form.maxTimeSeconds} onChange={e => setForm(f => ({ ...f, maxTimeSeconds: Number(e.target.value) }))} className="form-input" min={1} required />
-                                </div>
-                            </div>
-                            <div>
-                                <label htmlFor="scenario" className="form-label">Escenario <span className="text-red-500">*</span></label>
-                                <textarea id="scenario" value={form.scenario} onChange={e => setForm(f => ({ ...f, scenario: e.target.value }))} className="form-input" rows={3} placeholder="Describe la tarea que realizará el participante" required />
-                            </div>
-                            <div>
-                                <label htmlFor="expectedResult" className="form-label">Resultado Esperado</label>
-                                <textarea id="expectedResult" value={form.expectedResult} onChange={e => setForm(f => ({ ...f, expectedResult: e.target.value }))} className="form-input" rows={2} placeholder="¿Qué se espera que logre?" />
-                            </div>
-                            <div>
-                                <label htmlFor="mainMetric" className="form-label">Métrica Principal <span className="text-red-500">*</span></label>
-                                <input id="mainMetric" value={form.mainMetric} onChange={e => setForm(f => ({ ...f, mainMetric: e.target.value }))} className="form-input" placeholder="Ej: Tasa de éxito" required />
-                            </div>
-                            <div>
-                                <label htmlFor="successCriteria" className="form-label">Criterio de Éxito</label>
-                                <textarea id="successCriteria" value={form.successCriteria} onChange={e => setForm(f => ({ ...f, successCriteria: e.target.value }))} className="form-input" rows={2} placeholder="¿Cómo se mide el éxito?" />
-                            </div>
-                            <div className="flex items-center gap-3 pt-3">
-                                <button type="submit" className="btn btn-primary">
-                                    <Save size={16} /> {editId ? 'Actualizar' : 'Crear'}
-                                </button>
-                                <button type="button" onClick={resetForm} className="btn btn-secondary text-center">
-                                    Cancelar
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+            {/* GLB-04: Read-only banner */}
+            {isReadOnly && activePlan && (
+                <div className="readonly-banner">
+                    <AlertTriangle size={16} className="flex-shrink-0" />
+                    <span>El plan "<strong>{activePlan.projectName}</strong>" está {activePlan.status === 'Completed' ? 'completado' : 'cancelado'}. No se pueden crear ni modificar tareas.</span>
                 </div>
             )}
+
+
+
+            {/* Form Modal */}
+            <Modal isOpen={showForm} onClose={resetForm} title={editId ? 'Editar Tarea' : 'Nueva Tarea'}>
+                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                    {/* TASK-02: Plan asignado as read-only text */}
+                    <div>
+                        <label className="form-label">Plan asignado</label>
+                        <div className="form-input bg-slate-50 text-slate-700 cursor-not-allowed">{planName}</div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* TASK-01: Task number read-only */}
+                        <div>
+                            <label htmlFor="taskNumber" className="form-label">Número de Tarea</label>
+                            <input
+                                id="taskNumber"
+                                type="number"
+                                value={form.taskNumber}
+                                readOnly
+                                className="form-input bg-slate-50 text-slate-500 cursor-not-allowed"
+                                tabIndex={-1}
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="maxTimeSeconds" className="form-label">Tiempo Máximo (seg) <span className="text-red-500">*</span></label>
+                            <input id="maxTimeSeconds" type="number" value={form.maxTimeSeconds} onChange={e => setForm(f => ({ ...f, maxTimeSeconds: Number(e.target.value) }))} className="form-input" min={1} required />
+                        </div>
+                    </div>
+                    <div>
+                        <label htmlFor="scenario" className="form-label">Escenario <span className="text-red-500">*</span></label>
+                        <textarea id="scenario" value={form.scenario} onChange={e => setForm(f => ({ ...f, scenario: e.target.value }))} className="form-input" rows={3} placeholder="Describe la tarea que realizará el participante" required />
+                    </div>
+                    <div>
+                        <label htmlFor="expectedResult" className="form-label">Resultado Esperado</label>
+                        <textarea id="expectedResult" value={form.expectedResult} onChange={e => setForm(f => ({ ...f, expectedResult: e.target.value }))} className="form-input" rows={2} placeholder="¿Qué se espera que logre?" />
+                    </div>
+                    <div>
+                        <label htmlFor="mainMetric" className="form-label">Métrica Principal <span className="text-red-500">*</span></label>
+                        <input id="mainMetric" value={form.mainMetric} onChange={e => setForm(f => ({ ...f, mainMetric: e.target.value }))} className="form-input" placeholder="Ej: Tasa de éxito" required />
+                    </div>
+                    <div>
+                        <label htmlFor="successCriteria" className="form-label">Criterio de Éxito</label>
+                        <textarea id="successCriteria" value={form.successCriteria} onChange={e => setForm(f => ({ ...f, successCriteria: e.target.value }))} className="form-input" rows={2} placeholder="¿Cómo se mide el éxito?" />
+                    </div>
+                    <div className="flex items-center gap-3 pt-3">
+                        <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                            <Save size={16} /> {isSubmitting ? 'Guardando...' : (editId ? 'Actualizar' : 'Crear')}
+                        </button>
+                        <button type="button" onClick={resetForm} className="btn btn-secondary text-center" disabled={isSubmitting}>
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </Modal>
 
             {/* Tasks List */}
             {loading ? (
@@ -225,8 +211,8 @@ export default function Tasks() {
                                         <Clock size={14} aria-hidden="true" /> {task.maxTimeSeconds}s máx.
                                     </span>
                                     <div className="flex items-center gap-2">
-                                        <button onClick={() => handleEdit(task)} className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-[12px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-blue-200" aria-label={`Editar tarea ${task.taskNumber}`}>Editar</button>
-                                        <button onClick={() => setTaskToDelete(task)} className="bg-red-50 hover:bg-red-100 text-red-700 text-[12px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-red-200" aria-label={`Eliminar tarea ${task.taskNumber}`}>
+                                        <button onClick={() => handleEdit(task)} className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-[12px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-blue-200" aria-label={`Editar tarea ${task.taskNumber}`} disabled={isReadOnly}>Editar</button>
+                                        <button onClick={() => setTaskToDelete(task)} className="bg-red-50 hover:bg-red-100 text-red-700 text-[12px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-red-200" aria-label={`Eliminar tarea ${task.taskNumber}`} disabled={isReadOnly}>
                                             <Trash2 size={14} />
                                         </button>
                                     </div>
@@ -237,25 +223,18 @@ export default function Tasks() {
                 </div>
             )}
 
-            {taskToDelete && (
-                <div className="modal-overlay animate-fade-in" onClick={e => { if (e.target === e.currentTarget) setTaskToDelete(null) }} role="dialog" aria-modal="true" aria-label="Confirmar eliminación de tarea">
-                    <div className="modal-content max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-rise bg-white">
-                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                            <h3 className="text-[16px] font-semibold text-slate-900">Eliminar Tarea</h3>
-                            <button onClick={() => setTaskToDelete(null)} className="text-slate-400 hover:text-slate-600" aria-label="Cerrar"><X size={20} /></button>
-                        </div>
-                        <div className="p-5 space-y-4">
-                            <p className="text-slate-600">
-                                ¿Estás seguro de que deseas eliminar la tarea <strong>T{taskToDelete.taskNumber}</strong>? Esta acción no se puede deshacer.
-                            </p>
-                            <div className="flex items-center justify-end gap-3">
-                                <button type="button" onClick={() => setTaskToDelete(null)} className="btn btn-secondary">Cancelar</button>
-                                <button type="button" onClick={() => confirmDelete(taskToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
-                            </div>
-                        </div>
+            {/* Delete confirmation */}
+            <Modal isOpen={!!taskToDelete} onClose={() => setTaskToDelete(null)} title="Eliminar Tarea" maxWidth="480px">
+                <div className="p-5 space-y-4">
+                    <p className="text-slate-600">
+                        ¿Estás seguro de que deseas eliminar la tarea <strong>T{taskToDelete?.taskNumber}</strong>? Esta acción no se puede deshacer.
+                    </p>
+                    <div className="flex items-center justify-end gap-3">
+                        <button type="button" onClick={() => setTaskToDelete(null)} className="btn btn-secondary">Cancelar</button>
+                        <button type="button" onClick={() => confirmDelete(taskToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
                     </div>
                 </div>
-            )}
+            </Modal>
         </div>
     )
 }

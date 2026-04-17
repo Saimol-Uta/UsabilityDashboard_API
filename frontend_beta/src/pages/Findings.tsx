@@ -1,44 +1,43 @@
 import { useEffect, useState } from 'react'
-import { findingsApi, testPlansApi } from '../api'
+import { findingsApi } from '../api'
 import { useToast } from '../App'
-import { Plus, Save, Trash2, Search, X, AlertCircle, AlertTriangle, ArrowRight, Filter } from 'lucide-react'
+import { usePlan } from '../context/PlanContext'
+import { extractErrorMessage } from '../hooks/useApiError'
+import Modal from '../components/Modal'
+import { Plus, Save, Trash2, Search, AlertCircle, AlertTriangle, ArrowRight, Filter } from 'lucide-react'
 
 export default function Findings() {
     const [findings, setFindings] = useState<any[]>([])
-    const [plans, setPlans] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
-    const [activePlanId, setActivePlanId] = useState<string>('')
     const [filter, setFilter] = useState('')
     const [showForm, setShowForm] = useState(false)
     const [editId, setEditId] = useState<string | null>(null)
     const [findingToDelete, setFindingToDelete] = useState<any | null>(null)
     const { addToast } = useToast()
+    const { activePlanId, activePlan, isReadOnly, refreshGates } = usePlan()
 
     const emptyForm = {
         testPlanId: '', description: '', frequency: '', severity: 'Medium',
         priority: 'Medium', status: 'Open', category: '', recommendation: '', tool: 'WAVE'
     }
     const [form, setForm] = useState(emptyForm)
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const fetchFindings = (planId: string) => {
+        if (!planId) { setFindings([]); setLoading(false); return }
         setLoading(true)
         findingsApi.getByPlan(planId).then(res => setFindings(res.data)).finally(() => setLoading(false))
     }
 
     useEffect(() => {
-        testPlansApi.getAll().then(res => {
-            const allPlans = res.data ?? []
-            setPlans(allPlans)
-            const planId = allPlans[0]?.id ?? ''
-            setActivePlanId(planId)
-            if (planId) {
-                setForm(f => ({ ...f, testPlanId: planId }))
-                fetchFindings(planId)
-            } else {
-                setLoading(false)
-            }
-        })
-    }, [])
+        if (activePlanId) {
+            setForm(f => ({ ...f, testPlanId: activePlanId }))
+            fetchFindings(activePlanId)
+        } else {
+            setFindings([])
+            setLoading(false)
+        }
+    }, [activePlanId])
 
     const resetForm = () => {
         setForm({ ...emptyForm, testPlanId: activePlanId })
@@ -58,8 +57,10 @@ export default function Findings() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (isSubmitting) return
         if (!form.testPlanId) { addToast('Selecciona un plan de prueba', 'error'); return }
         if (!form.description.trim()) { addToast('La descripción es requerida', 'error'); return }
+        setIsSubmitting(true)
         try {
             if (editId) {
                 await findingsApi.update(editId, {
@@ -86,12 +87,14 @@ export default function Findings() {
                 })
                 addToast('Hallazgo creado', 'success')
             }
-            if (activePlanId !== form.testPlanId) {
-                setActivePlanId(form.testPlanId)
-            }
             resetForm();
             if (form.testPlanId) fetchFindings(form.testPlanId)
-        } catch { addToast('Error al guardar', 'error') }
+            refreshGates()
+        } catch (err) {
+            addToast(extractErrorMessage(err, 'Error al guardar el hallazgo'), 'error')
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const confirmDelete = async (id: string) => {
@@ -99,8 +102,9 @@ export default function Findings() {
             await findingsApi.delete(id)
             addToast('Hallazgo eliminado', 'success')
             if (activePlanId) fetchFindings(activePlanId)
-        } catch {
-            addToast('Error al eliminar', 'error')
+            refreshGates()
+        } catch (err) {
+            addToast(extractErrorMessage(err, 'Error al eliminar el hallazgo'), 'error')
         } finally {
             setFindingToDelete(null)
         }
@@ -117,27 +121,25 @@ export default function Findings() {
                     <h2 className="text-[20px] font-semibold text-slate-900">Síntesis de Hallazgos</h2>
                     <p className="text-[13px] text-slate-500 mt-1">Problemas de usabilidad detectados con frecuencia, severidad y recomendaciones</p>
                 </div>
-                <div className="flex items-center gap-4">
-                    {plans.length > 0 && (
-                        <select 
-                            className="form-input bg-white text-sm py-2" 
-                            value={activePlanId}
-                            onChange={(e) => {
-                                setActivePlanId(e.target.value)
-                                fetchFindings(e.target.value)
-                            }}
-                        >
-                            {plans.map((p: any) => (
-                                <option key={p.id} value={p.id}>{p.projectName}</option>
-                            ))}
-                        </select>
-                    )}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                     <button onClick={() => { setEditId(null); setForm({ ...emptyForm, testPlanId: activePlanId }); setShowForm(true) }}
-                        className="btn btn-primary">
+                        className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!activePlanId || isReadOnly}
+                        aria-label="Nuevo Hallazgo">
                         <Plus size={14} aria-hidden="true" /> Nuevo Hallazgo
                     </button>
                 </div>
             </div>
+
+            {/* GLB-04: Read-only banner */}
+            {isReadOnly && activePlan && (
+                <div className="readonly-banner">
+                    <AlertTriangle size={16} className="flex-shrink-0" />
+                    <span>El plan "<strong>{activePlan.projectName}</strong>" está {activePlan.status === 'Completed' ? 'completado' : 'cancelado'}. No se pueden crear ni modificar hallazgos.</span>
+                </div>
+            )}
+
+
 
             {/* Filter */}
             <div className="flex items-center gap-2 flex-wrap">
@@ -145,7 +147,8 @@ export default function Findings() {
                 <span className="text-[12px] text-slate-400 font-semibold">Severidad:</span>
                 {['', 'Critical', 'High', 'Medium', 'Low'].map(s => (
                     <button key={s} onClick={() => setFilter(s)}
-                        className={`text-[13px] px-4 py-2 rounded-full border transition-all duration-200 font-medium ${filter === s ? 'bg-gradient-to-r from-blue-200 to-blue-100 border-blue-300 text-blue-700 shadow-md scale-105' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'}`}>
+                        className={`text-[13px] px-4 py-2 rounded-full border transition-all duration-200 font-medium ${filter === s ? 'bg-gradient-to-r from-blue-200 to-blue-100 border-blue-300 text-blue-700 shadow-md scale-105' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'}`}
+                        aria-label={`Filtrar por severidad: ${s === '' ? 'Todas' : s === 'Critical' ? 'Crítica' : s === 'High' ? 'Alta' : s === 'Medium' ? 'Media' : 'Baja'}`}>
                         {s === '' ? 'Todas' : s === 'Critical' ? 'Crítica' : s === 'High' ? 'Alta' : s === 'Medium' ? 'Media' : 'Baja'}
                     </button>
                 ))}
@@ -153,97 +156,107 @@ export default function Findings() {
             </div>
 
             {/* Form Modal */}
-            {showForm && (
-                <div className="modal-overlay animate-fade-in" onClick={e => { if (e.target === e.currentTarget) resetForm() }} role="dialog" aria-modal="true" aria-label="Formulario de hallazgo">
-                    <div className="modal-content rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-rise bg-white">
-                        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
-                            <h3 className="text-[18px] font-semibold text-slate-900">{editId ? 'Editar Hallazgo' : 'Nuevo Hallazgo'}</h3>
-                            <button onClick={resetForm} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-full transition-colors" aria-label="Cerrar"><X size={22} /></button>
+            <Modal isOpen={showForm} onClose={resetForm} title={editId ? 'Editar Hallazgo' : 'Nuevo Hallazgo'}>
+                <form onSubmit={handleSubmit} className="p-6 space-y-5" noValidate aria-label={editId ? 'Formulario de edición de hallazgo' : 'Formulario de nuevo hallazgo'}>
+                    {/* Plan as read-only text */}
+                    <div>
+                        {/* ACCESIBILIDAD: label sin htmlFor → uso de aria-label en el div (WCAG 1.3.1) */}
+                        <p className="form-label" id="label-plan">Plan asignado</p>
+                        <div className="form-input bg-slate-50 text-slate-700 cursor-not-allowed" aria-labelledby="label-plan" tabIndex={-1}>
+                            {activePlan?.projectName || 'Sin plan seleccionado'}
                         </div>
-                        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                    </div>
+                    <div>
+                        <label htmlFor="findingDescription" className="form-label">
+                            Descripción <span className="text-red-500" aria-hidden="true">*</span>
+                            <span className="sr-only">(requerido)</span>
+                        </label>
+                        <textarea
+                            id="findingDescription"
+                            value={form.description}
+                            onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                            className="form-input"
+                            rows={3}
+                            required
+                            aria-required="true"
+                        />
+                    </div>
+
+                    {/* ACCESIBILIDAD: fieldset agrupa campos relacionados semánticamente (WCAG 1.3.1) */}
+                    <fieldset className="border-0 p-0 m-0">
+                        <legend className="form-label mb-3">Clasificación del hallazgo</legend>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div>
-                                <label htmlFor="findingPlanId" className="form-label">Plan asignado <span className="text-red-500">*</span></label>
-                                <select
-                                    id="findingPlanId"
-                                    value={form.testPlanId}
-                                    onChange={e => setForm(f => ({ ...f, testPlanId: e.target.value }))}
-                                    className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500"
-                                    disabled={Boolean(editId)}
-                                    required
-                                >
-                                    <option value="">Selecciona un plan</option>
-                                    {plans.map((plan: any) => (
-                                        <option key={plan.id} value={plan.id}>{plan.projectName}</option>
-                                    ))}
+                                <label htmlFor="findingSeverity" className="form-label">
+                                    Severidad <span className="text-red-500" aria-hidden="true">*</span>
+                                    <span className="sr-only">(requerido)</span>
+                                </label>
+                                <select id="findingSeverity" value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value }))} className="form-input" required aria-required="true">
+                                    <option value="Critical">Crítica</option>
+                                    <option value="High">Alta</option>
+                                    <option value="Medium">Media</option>
+                                    <option value="Low">Baja</option>
                                 </select>
                             </div>
                             <div>
-                                <label htmlFor="description" className="form-label">Descripción <span className="text-red-500">*</span></label>
-                                <textarea id="description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" rows={3} required />
-                            </div>
-                            <div className="grid grid-cols-4 gap-4">
-                                <div>
-                                    <label htmlFor="severity" className="form-label">Severidad <span className="text-red-500">*</span></label>
-                                    <select id="severity" value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" required>
-                                        <option value="Critical">Crítica</option>
-                                        <option value="High">Alta</option>
-                                        <option value="Medium">Media</option>
-                                        <option value="Low">Baja</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label htmlFor="priority" className="form-label">Prioridad <span className="text-red-500">*</span></label>
-                                    <select id="priority" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" required>
-                                        <option value="High">Alta</option>
-                                        <option value="Medium">Media</option>
-                                        <option value="Low">Baja</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label htmlFor="status" className="form-label">Estado <span className="text-red-500">*</span></label>
-                                    <select id="status" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" required>
-                                        <option value="Open">Abierta</option>
-                                        <option value="Resolved">Resuelta</option>
-                                        <option value="Closed">Cerrada</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label htmlFor="frequency" className="form-label">Frecuencia</label>
-                                    <input id="frequency" value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" placeholder="Ej: 2/3" />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="category" className="form-label">Categoría</label>
-                                    <input id="category" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" placeholder="Ej: Formularios" />
-                                </div>
-                                <div>
-                                    <label htmlFor="tool" className="form-label">Herramienta</label>
-                                    <select id="tool" value={form.tool} onChange={e => setForm(f => ({ ...f, tool: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500">
-                                        <option value="WAVE">WAVE</option>
-                                        <option value="Lighthouse">Lighthouse</option>
-                                        <option value="Stark">Stark</option>
-                                        <option value="WAVE + Lighthouse">WAVE + Lighthouse</option>
-                                        <option value="Observación manual">Observación manual</option>
-                                    </select>
-                                </div>
+                                <label htmlFor="findingPriority" className="form-label">
+                                    Prioridad <span className="text-red-500" aria-hidden="true">*</span>
+                                    <span className="sr-only">(requerido)</span>
+                                </label>
+                                <select id="findingPriority" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="form-input" required aria-required="true">
+                                    <option value="High">Alta</option>
+                                    <option value="Medium">Media</option>
+                                    <option value="Low">Baja</option>
+                                </select>
                             </div>
                             <div>
-                                <label htmlFor="recommendation" className="form-label">Recomendación</label>
-                                <textarea id="recommendation" value={form.recommendation} onChange={e => setForm(f => ({ ...f, recommendation: e.target.value }))} className="form-input border border-slate-300 shadow-sm focus:ring-1 focus:ring-blue-500" rows={3} />
+                                <label htmlFor="findingStatus" className="form-label">
+                                    Estado <span className="text-red-500" aria-hidden="true">*</span>
+                                    <span className="sr-only">(requerido)</span>
+                                </label>
+                                <select id="findingStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="form-input" required aria-required="true">
+                                    <option value="Open">Abierta</option>
+                                    <option value="Resolved">Resuelta</option>
+                                    <option value="Closed">Cerrada</option>
+                                </select>
                             </div>
-                            <div className="flex items-center gap-3 pt-3">
-                                <button type="submit" className="btn btn-primary">
-                                    <Save size={16} /> {editId ? 'Actualizar' : 'Guardar'}
-                                </button>
-                                <button type="button" onClick={resetForm} className="btn btn-secondary text-center">
-                                    Cancelar
-                                </button>
+                            <div>
+                                <label htmlFor="findingFrequency" className="form-label">Frecuencia</label>
+                                <input id="findingFrequency" value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))} className="form-input" placeholder="Ej: 2/3" />
                             </div>
-                        </form>
+                        </div>
+                    </fieldset>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label htmlFor="findingCategory" className="form-label">Categoría</label>
+                            <input id="findingCategory" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className="form-input" placeholder="Ej: Formularios" />
+                        </div>
+                        <div>
+                            <label htmlFor="findingTool" className="form-label">Herramienta</label>
+                            <select id="findingTool" value={form.tool} onChange={e => setForm(f => ({ ...f, tool: e.target.value }))} className="form-input">
+                                <option value="WAVE">WAVE</option>
+                                <option value="Lighthouse">Lighthouse</option>
+                                <option value="Stark">Stark</option>
+                                <option value="WAVE + Lighthouse">WAVE + Lighthouse</option>
+                                <option value="Observación manual">Observación manual</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
-            )}
+                    <div>
+                        <label htmlFor="findingRecommendation" className="form-label">Recomendación</label>
+                        <textarea id="findingRecommendation" value={form.recommendation} onChange={e => setForm(f => ({ ...f, recommendation: e.target.value }))} className="form-input" rows={3} />
+                    </div>
+                    <div className="flex items-center gap-3 pt-3">
+                        <button type="submit" className="btn btn-primary" disabled={isSubmitting} aria-busy={isSubmitting}>
+                            <Save size={16} aria-hidden="true" /> {isSubmitting ? 'Guardando...' : (editId ? 'Actualizar' : 'Guardar')}
+                        </button>
+                        <button type="button" onClick={resetForm} className="btn btn-secondary text-center" disabled={isSubmitting}>
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </Modal>
 
             {/* Findings Cards */}
             {loading ? (
@@ -262,7 +275,7 @@ export default function Findings() {
                             <div className="p-5">
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                                        <span className="text-[11px] font-mono text-gray-400 bg-gray-100 px-2 py-1 rounded-md border border-gray-200 shadow-sm">#{finding.id}</span>
+                                        {/* HAL-02: Removed finding.id display */}
                                         {finding.category && <span className="text-[11px] font-medium bg-blue-100 text-blue-800 px-2 py-1 rounded-md border border-blue-200 shadow-sm">{finding.category}</span>}
                                         <span className="text-[11px] font-medium bg-purple-100 text-purple-800 px-2 py-1 rounded-md border border-purple-200 shadow-sm">{finding.tool}</span>
                                     </div>
@@ -287,10 +300,11 @@ export default function Findings() {
                                         )}
                                     </div>
                                     <div className="flex gap-2">
-                                        <button onClick={() => handleEdit(finding)} className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-blue-200">
+                                        {/* HAL-01: aria-labels on all buttons */}
+                                        <button onClick={() => handleEdit(finding)} className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-blue-200" aria-label={`Editar hallazgo: ${finding.description?.substring(0, 40)}`} disabled={isReadOnly}>
                                             Editar
                                         </button>
-                                        <button onClick={() => setFindingToDelete(finding)} className="bg-red-50 hover:bg-red-100 text-red-700 text-[11px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-red-200">
+                                        <button onClick={() => setFindingToDelete(finding)} className="bg-red-50 hover:bg-red-100 text-red-700 text-[11px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-red-200" aria-label={`Eliminar hallazgo: ${finding.description?.substring(0, 40)}`} disabled={isReadOnly}>
                                             <Trash2 size={12} />
                                         </button>
                                     </div>
@@ -301,25 +315,18 @@ export default function Findings() {
                 </div>
             )}
 
-            {findingToDelete && (
-                <div className="modal-overlay animate-fade-in" onClick={e => { if (e.target === e.currentTarget) setFindingToDelete(null) }} role="dialog" aria-modal="true" aria-label="Confirmar eliminación">
-                    <div className="modal-content max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-rise bg-white">
-                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                            <h3 className="text-[16px] font-semibold text-slate-900">Eliminar Hallazgo</h3>
-                            <button onClick={() => setFindingToDelete(null)} className="text-slate-400 hover:text-slate-600" aria-label="Cerrar"><X size={20} /></button>
-                        </div>
-                        <div className="p-5">
-                            <p className="text-[14px] text-slate-600 mb-5">
-                                ¿Estás seguro de que deseas eliminar este hallazgo? Esta acción no se puede deshacer.
-                            </p>
-                            <div className="flex justify-end gap-3">
-                                <button type="button" onClick={() => setFindingToDelete(null)} className="btn btn-secondary">Cancelar</button>
-                                <button type="button" onClick={() => confirmDelete(findingToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
-                            </div>
-                        </div>
+            {/* Delete confirmation */}
+            <Modal isOpen={!!findingToDelete} onClose={() => setFindingToDelete(null)} title="Eliminar Hallazgo" maxWidth="480px">
+                <div className="p-5">
+                    <p className="text-[14px] text-slate-600 mb-5">
+                        ¿Estás seguro de que deseas eliminar este hallazgo? Esta acción no se puede deshacer.
+                    </p>
+                    <div className="flex justify-end gap-3">
+                        <button type="button" onClick={() => setFindingToDelete(null)} className="btn btn-secondary">Cancelar</button>
+                        <button type="button" onClick={() => findingToDelete && confirmDelete(findingToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
                     </div>
                 </div>
-            )}
+            </Modal>
         </div>
     )
 }

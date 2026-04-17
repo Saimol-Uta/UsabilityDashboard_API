@@ -285,9 +285,15 @@ body {
 /* ── Modal ── */
 .modal-overlay {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
   background: rgba(15, 23, 42, 0.4);
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -304,7 +310,188 @@ body {
   animation: rise-in 250ms ease;
 }
 
+/* ── Drawer (lateral modal) ── */
+.modal-overlay-drawer {
+  justify-content: flex-end;
+  align-items: stretch;
+}
+.drawer-content {
+  background: white;
+  width: min(95vw, 580px);
+  height: 100%;
+  overflow-y: auto;
+  box-shadow: -8px 0 40px rgba(15, 23, 42, 0.18);
+  animation: drawer-slide-in 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes drawer-slide-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* ── Read-only banner ── */
+.readonly-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  font-size: 13px;
+  font-weight: 500;
+}
+
 /* ──  Responsive ── */
 @media (max-width: 1024px) {
   .glass-panel { border-radius: 12px; }
+}
+
+@media (max-width: 640px) {
+  /* Glass panel */
+  .glass-panel {
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  }
+
+  /* Nav items */
+  .nav-item {
+    padding: 10px 12px;
+    font-size: 13px;
+    border-radius: 10px;
+  }
+  .nav-item:hover {
+    transform: none;
+  }
+
+  /* KPI cards */
+  .kpi-card {
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  }
+  .kpi-card:hover {
+    transform: none;
+  }
+
+  /* Form inputs */
+  .form-input {
+    padding: 10px 12px;
+    font-size: 14px;
+    border-radius: 8px;
+  }
+
+  /* Buttons */
+  .btn {
+    padding: 9px 16px;
+    font-size: 13px;
+    border-radius: 8px;
+  }
+
+  /* Toast */
+  .toast-container {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+  }
+  .toast {
+    font-size: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+  }
+
+  /* Modal */
+  .modal-content {
+    width: calc(100vw - 24px);
+    max-height: 90vh;
+    border-radius: 14px;
+    margin: 12px;
+  }
+
+  /* Badges */
+  .badge {
+    font-size: 10px;
+    padding: 2px 8px;
+  }
+
+  /* Tab pills */
+  .tab-pill {
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+}
+
+/* Safe area support for notched phones */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  html, body, #root {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Prevent horizontal overflow on mobile */
+html, body {
+  overflow-x: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MEJORAS DE ACCESIBILIDAD — Módulo de Accesibilidad IHC
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Skip Link (WCAG 2.4.1 — Omitir bloques) ── */
+/* Visible solo al recibir foco por teclado */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ── Focus visible en todos los elementos interactivos (WCAG 2.4.7) ──
+   ANTES: sin estilos :focus-visible definidos — el outline era invisible
+   DESPUÉS: anillo azul de 3px visible y consistente en toda la app      */
+.btn:focus-visible,
+.nav-item:focus-visible,
+.tab-pill:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Excepción: form-input ya tiene su propio estilo de foco con box-shadow */
+.form-input:focus-visible {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+/* ── Contraste de textos secundarios (WCAG 1.4.3 — Contraste mínimo) ──
+   ANTES: text-slate-400 (#94a3b8) ratio 2.5:1 sobre blanco — FALLA AA
+   DESPUÉS: forzar mínimo slate-500 (#64748b) ratio 4.6:1 — CUMPLE AA  */
+.nav-item .text-slate-400,
+aside .text-slate-400 {
+  color: #64748b !important; /* slate-500 — ratio 4.6:1 sobre blanco */
+}
+
+/* ── Mejora visual del modal overlay (Gestalt: figura-fondo) ── */
+.modal-overlay {
+  /* sombra adicional para mayor separación visual del fondo */
+}
+.modal-content,
+.drawer-content {
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(255,255,255,0.15);
 }

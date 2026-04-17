@@ -1,4 +1,4 @@
-﻿using Application.DTOs;
+using Application.DTOs;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -41,6 +41,20 @@ namespace UsabilityDashboard_API.Controllers
         {
             var updated = await _service.UpdateAsync(id, dto);
             return Ok(updated);
+        }
+
+        [HttpPatch("{id:guid}/status")]
+        public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] string status)
+        {
+            try
+            {
+                var updated = await _service.UpdateStatusAsync(id, status);
+                return Ok(updated);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpDelete("{id:guid}")]

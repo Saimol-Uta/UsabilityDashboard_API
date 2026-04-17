@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -18,6 +18,7 @@ namespace Application.DTOs
     string EstimatedDuration,
     string Scope,
     string Status,
+    string WorkflowState,
     DateTime CreatedAt
 );
 
@@ -47,6 +48,7 @@ namespace Application.DTOs
         string Location,
         string EstimatedDuration,
         string Scope,
-        string Status
+        string Status,
+        string WorkflowState = null
     );
 }

@@ -1,4 +1,4 @@
-﻿using Application.DTOs;
+using Application.DTOs;
 using Application.Interfaces;
 using AutoMapper;
 using Domain.Common;
@@ -63,14 +63,35 @@ namespace Application.Services
             var plan = await _repository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"TestPlan {id} not found");
 
+            var oldState = plan.WorkflowState;
             _mapper.Map(dto, plan);
             plan.UpdatedAt = DateTime.UtcNow;
+
+            if (dto.WorkflowState == null)
+            {
+                plan.WorkflowState = oldState; // prevent overwriting with null
+            }
 
             if (Enum.TryParse<TestPlanStatus>(dto.Status, ignoreCase: true, out var status))
                 plan.Status = status;
 
             await _repository.UpdateAsync(plan);
             return _mapper.Map<TestPlanDto>(plan);
+        }
+
+        public async Task<TestPlanDto> UpdateStatusAsync(Guid id, string status)
+        {
+            var plan = await _repository.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException($"TestPlan {id} not found");
+
+            if (Enum.TryParse<TestPlanStatus>(status, ignoreCase: true, out var newStatus))
+            {
+                plan.Status = newStatus;
+                plan.UpdatedAt = DateTime.UtcNow;
+                await _repository.UpdateAsync(plan);
+                return _mapper.Map<TestPlanDto>(plan);
+            }
+            throw new ArgumentException($"Invalid status: {status}");
         }
 
         public async Task DeleteAsync(Guid id)

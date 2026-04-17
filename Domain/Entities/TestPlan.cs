@@ -1,4 +1,4 @@
-﻿using Domain.Common;
+using Domain.Common;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -22,6 +22,10 @@ namespace Domain.Entities
 
         // el Draft es el estado inicial, luego se puede pasar a InProgress, Completed, etc.
         public TestPlanStatus Status { get; set; } = TestPlanStatus.Draft;
+        
+        // JSON string storing the manual completion states of different workflow sections/phases
+        public string WorkflowState { get; set; } = "{}";
+
         public ModeratorScript ModeratorScript { get; set; }
         public ICollection<TestTask> Tasks { get; set; }
         public ICollection<TestSession> Sessions { get; set; } 

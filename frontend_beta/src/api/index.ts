@@ -12,6 +12,7 @@ export const testPlansApi = {
     get: (id: Guid) => api.get(`/TestPlans/${id}`),
     create: (data: any) => api.post('/TestPlans', data),
     update: (id: Guid, data: any) => api.put(`/TestPlans/${id}`, data),
+    updateStatus: (id: Guid, status: string) => api.patch(`/TestPlans/${id}/status`, `"${status}"`, { headers: { 'Content-Type': 'application/json' } }),
     delete: (id: Guid) => api.delete(`/TestPlans/${id}`),
 };
 
