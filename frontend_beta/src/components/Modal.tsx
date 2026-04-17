@@ -44,7 +44,11 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth, draw
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
       role="dialog"
       aria-modal="true"
-      aria-label={title}
+      // ACCESIBILIDAD: aria-labelledby referencia al h3 visible en el DOM (WCAG 4.1.2)
+      // ANTES: aria-label={title} — texto plano sin elemento visible vinculado
+      // DESPUÉS: aria-labelledby="modal-dialog-title" — vincula al <h3> real
+      aria-labelledby={title ? 'modal-dialog-title' : undefined}
+      aria-label={!title ? 'Diálogo' : undefined}
     >
       <div
         ref={containerRef}
@@ -53,13 +57,14 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth, draw
       >
         {title && (
           <div className={`px-6 py-5 border-b border-slate-100 flex items-center justify-between ${drawer ? 'bg-gradient-to-r from-slate-900 to-blue-900' : 'bg-gradient-to-r from-blue-50 to-indigo-50'}`}>
-            <h3 className={`text-[18px] font-semibold ${drawer ? 'text-white' : 'text-slate-900'}`}>{title}</h3>
+            {/* ACCESIBILIDAD: id vinculado al aria-labelledby del dialog (WCAG 4.1.2) */}
+            <h3 id="modal-dialog-title" className={`text-[18px] font-semibold ${drawer ? 'text-white' : 'text-slate-900'}`}>{title}</h3>
             <button
               onClick={onClose}
               className={`p-1.5 rounded-full transition-colors ${drawer ? 'text-white/70 hover:text-white hover:bg-white/10' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
-              aria-label="Cerrar"
+              aria-label="Cerrar diálogo"
             >
-              <X size={20} />
+              <X size={20} aria-hidden="true" />
             </button>
           </div>
         )}

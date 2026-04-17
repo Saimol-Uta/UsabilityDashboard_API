@@ -432,3 +432,66 @@ body {
 html, body {
   overflow-x: hidden;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   MEJORAS DE ACCESIBILIDAD — Módulo de Accesibilidad IHC
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Skip Link (WCAG 2.4.1 — Omitir bloques) ── */
+/* Visible solo al recibir foco por teclado */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ── Focus visible en todos los elementos interactivos (WCAG 2.4.7) ──
+   ANTES: sin estilos :focus-visible definidos — el outline era invisible
+   DESPUÉS: anillo azul de 3px visible y consistente en toda la app      */
+.btn:focus-visible,
+.nav-item:focus-visible,
+.tab-pill:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Excepción: form-input ya tiene su propio estilo de foco con box-shadow */
+.form-input:focus-visible {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+/* ── Contraste de textos secundarios (WCAG 1.4.3 — Contraste mínimo) ──
+   ANTES: text-slate-400 (#94a3b8) ratio 2.5:1 sobre blanco — FALLA AA
+   DESPUÉS: forzar mínimo slate-500 (#64748b) ratio 4.6:1 — CUMPLE AA  */
+.nav-item .text-slate-400,
+aside .text-slate-400 {
+  color: #64748b !important; /* slate-500 — ratio 4.6:1 sobre blanco */
+}
+
+/* ── Mejora visual del modal overlay (Gestalt: figura-fondo) ── */
+.modal-overlay {
+  /* sombra adicional para mayor separación visual del fondo */
+}
+.modal-content,
+.drawer-content {
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(255,255,255,0.15);
+}

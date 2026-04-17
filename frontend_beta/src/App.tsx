@@ -40,10 +40,23 @@ export default function App() {
   return (
     <PlanProvider>
       <ToastContext.Provider value={{ addToast }}>
-        <div className="toast-container" role="status" aria-live="polite">
+        {/* ACCESIBILIDAD: Skip link para navegación por teclado (WCAG 2.4.1) */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:bg-blue-700 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-semibold focus:shadow-lg"
+        >
+          Saltar al contenido principal
+        </a>
+
+        {/* ACCESIBILIDAD: role="alert" en toasts de error para anuncio inmediato (WCAG 4.1.3) */}
+        <div className="toast-container" aria-live="polite">
           {toasts.map(t => (
-            <div key={t.id} className={`toast toast-${t.type}`}>
-              <span>{t.type === 'success' ? '✓' : '✗'}</span>
+            <div
+              key={t.id}
+              className={`toast toast-${t.type}`}
+              role={t.type === 'error' ? 'alert' : 'status'}
+            >
+              <span aria-hidden="true">{t.type === 'success' ? '✓' : '✗'}</span>
               <span>{t.message}</span>
             </div>
           ))}
