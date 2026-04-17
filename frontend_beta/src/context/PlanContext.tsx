@@ -128,6 +128,11 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
         hasActions = actionsResults.some(r => (r.data?.length ?? 0) > 0)
       }
 
+      // Check if there are accessibility-specific findings (WAVE, Lighthouse, Stark)
+      const accessibilityTools = ['WAVE', 'Lighthouse', 'Stark', 'Observación manual']
+      const allFindings: any[] = findingsReq.data ?? []
+      const hasAccessibility = allFindings.some(f => accessibilityTools.includes(f.tool))
+
       setSectionDone({
         guion: hasScript,
         participantes: hasParticipants,
@@ -136,6 +141,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
         observaciones: hasObservations,
         hallazgos: hasFindings,
         mejoras: hasActions,
+        accesibilidad: hasAccessibility,
       })
     } catch {
       setCanAccessPhase2(false)
