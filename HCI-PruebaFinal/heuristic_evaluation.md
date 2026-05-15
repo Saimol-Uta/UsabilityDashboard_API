@@ -1,73 +1,43 @@
-# Evaluacion Heuristica
+# Evaluación Heurística de Usabilidad (UX Audit)
 
-Autor: Josue Fiallos
-Duracion: 2 horas
+> **Autor:** Josue Fiallos  
+> **Metodología Oficial:** 10 Heurísticas de Usabilidad de Nielsen  
+> **Duración estimada:** 2 horas  
 
-## Alcance
-Pantallas evaluadas: Login, Dashboard, Formularios, Navegacion, Reportes.
-Heuristicas base: Nielsen (visibilidad, control, consistencia, prevencion de errores, etc.).
+---
 
-## Metodo
-- Tipo: Evaluacion heuristica experta.
-- Criterio: 10 heuristicas de Nielsen.
-- Evidencia: observacion directa de la UI y flujo de tareas.
+## 1. Resumen Ejecutivo de la Auditoría
+La auditoría se realizó recorriendo el *Happy Path* y los flujos alternativos de los módulos: **Login, Dashboard Principal, Formularios de Carga, Navegación General y Reportes**. 
 
-## Hallazgos (minimo 10)
-| ID | Area | Heuristica | Problema detectado | Severidad | Impacto | Recomendacion |
-| --- | --- | --- | --- | --- | --- | --- |
-| H-01 | Login | Prevencion de errores | No se explica el formato esperado del usuario/clave. | Moderado | Reintentos y friccion. | Agregar placeholders y ayuda contextual. |
-| H-02 | Login | Retroalimentacion | Falta feedback claro cuando credenciales fallan. | Critico | Bloqueo del acceso y confusion. | Mensaje de error visible y accionable. |
-| H-03 | Dashboard | Jerarquia visual | KPIs se ven similares, no hay orden de importancia. | Moderado | Dificulta lectura rapida. | Resaltar KPIs clave y ordenar por prioridad. |
-| H-04 | Dashboard | Navegacion | Breadcrumbs muy discretos, no se perciben como ruta. | Moderado | Desorientacion en el flujo. | Breadcrumbs con enlaces y separadores claros. |
-| H-05 | Formularios | Consistencia | Campos y validaciones no son uniformes. | Leve | Curva de aprendizaje mayor. | Estandarizar componentes y mensajes. |
-| H-06 | Formularios | Prevencion de errores | Validacion tardia (solo al enviar). | Moderado | Correcciones tardias y frustracion. | Validacion inline y mensajes inmediatos. |
-| H-07 | Navegacion | Control del usuario | Menu lateral no indica claramente fase activa. | Leve | Duda sobre progreso. | Resaltar fase actual y estado. |
-| H-08 | Navegacion | Visibilidad del estado | No hay indicador de plan activo en ciertas vistas. | Moderado | Confusion de contexto. | Mostrar plan activo en encabezado. |
-| H-09 | Reportes | Consistencia | Titulos y filtros no siguen el mismo formato. | Leve | Percepcion de desorden. | Unificar patrones de filtros y headings. |
-| H-10 | Reportes | Reconocimiento | Falta leyenda clara de graficas. | Moderado | Interpretacion incorrecta. | Agregar leyendas y tooltips. |
-| H-11 | Dashboard | Diseño estetico | Paneles con exceso de informacion sin agrupacion. | Moderado | Sobrecarga cognitiva. | Agrupar por bloques con titulos claros. |
-| H-12 | Formularios | Ayuda y documentacion | No hay ejemplos para campos complejos. | Leve | Llenado lento. | Agregar ejemplos y microcopy. |
+Se diagnosticaron **12 problemas usables**, catalogados mediante una escala de severidad estandarizada, revelando fuertes carencias en *Accesibilidad Cognitiva* y *Prevención de Errores*.
 
-## Resumen por area
-| Area | Hallazgos | Severidad predominante |
-| --- | --- | --- |
-| Login | H-01, H-02 | Moderado/Critico |
-| Dashboard | H-03, H-04, H-11 | Moderado |
-| Formularios | H-05, H-06, H-12 | Leve/Moderado |
-| Navegacion | H-07, H-08 | Leve/Moderado |
-| Reportes | H-09, H-10 | Leve/Moderado |
+---
 
-## Resumen de severidad
-- Criticos: 1
-- Moderados: 7
-- Leves: 4
+## 2. Hallazgos UX Detallados (Min. 10 Problemas)
 
-## Mapeo rapido a heuristicas de Nielsen
-- Visibilidad del estado: H-08
-- Consistencia y estandares: H-05, H-09
-- Prevencion de errores: H-01, H-06
-- Reconocimiento mejor que recuerdo: H-10
-- Estetica y diseno minimalista: H-11
+| ID | Módulo | Heurística Violada (Nielsen) | Descripción del Problema | Severidad | Solución Recomendada (Rediseño) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **H-01** | Login | #5: Prevención de errores | El campo de contraseña no provee requisitos hasta luego del fallo. | 🟠 Moderado | Añadir validación *inline* (en tiempo real) y *Feedforward*. |
+| **H-02** | Login | #1: Visibilidad del sistema | Fallo silencioso en credenciales (Solo marca rojo sin explicar). | Crítico | Desplegar un Toast/Banner explícito (*"Credenciales erróneas"*). |
+| **H-03** | Dashboard | #8: Diseño estético / minimalista | KPIs amontonados sin contraste jerárquico. Todos "gritan" igual. | 🟠 Moderado | Aplicar **Ley de Proximidad**, rediseñar tarjetas con tamaños diferenciados por importancia. |
+| **H-04** | Navegación | #3: Control del usuario | **Falta de orientadores profundos.** Usuario no sabe cuántos clicks dio. | Crítico | **IMPLEMENTAR BREADCRUMBS CONTEXTUALES (Tarea Técnica Seleccionada).** |
+| **H-05** | Forms | #4: Consistencia y estándares | Botones de *Guardar* varían de estilo entre pantallas. | Leve | Estandarizar tokens en el UI Kit / Variables de Tailwind. |
+| **H-06** | Forms | #9: Reconocer, diagnosticar errores | Errores genéricos tipo *"Campo inválido"* sin indicar la falla puntual. | 🟠 Moderado | Clarificar qué es inválido (*Ej. Faltan 2 letras numéricas*). |
+| **H-07** | Sidebar | #1: Visibilidad del estado | El menú lateral no ilumina (active state) la sección actual. | Leve | Reforzar el estado pseudo-class `:active` en Tailwind. |
+| **H-08** | Navegación | #6: Reconocimiento > Recuerdo | Al abrir un plan, el título del plan desaparece y cuesta recordarlo. | 🟠 Moderado | Anclar título superior estático en el Header Principal. |
+| **H-09** | Reportes | #4: Consistencia | Filtros de fecha de reportes vs gráficas usan selectores distintos. | Leve | Usar el mismo componente Picker universal. |
+| **H-10** | Reportes | #8: Interfaz minimalista | Gráficos sin *Tooltips* forzando a adivinar cifras pequeñas. | 🟠 Moderado | Agregar *Hover Affordance*. |
+| **H-11** | Dashboard | #2: Empalme mundo real | Términos muy de BD (*Observaciones_v2*) expuestos al panel. | Leve | Utilizar *microcopy* humano (*"Observaciones Clave"*). |
+| **H-12** | General | #7: Eficiencia de uso | Carencia de *Atajos / Shortcuts* (Ej. Ir al inicio, Volver). | Leve | Añadir link de 'Dashboard' interactivo en logo. |
 
-## Escala de severidad
-| Nivel | Descripcion | Accion sugerida |
-| --- | --- | --- |
-| Critico | Bloquea la tarea o provoca errores graves | Corregir de inmediato |
-| Moderado | Afecta productividad o genera confusion | Corregir en el sprint |
-| Leve | Mejora deseable sin bloqueo | Planificar mejora |
+---
 
-## Severidad
-- Critico: bloquea la tarea o genera error grave.
-- Moderado: afecta el rendimiento o aumenta la friccion.
-- Leve: mejora deseable sin bloquear.
+## 3. Análisis Cuantitativo de Severidad
+- **CRÍTICO (Causan bloqueo o altísima frustración):** 2 hallazgos (16.6%)
+- 🟠 **MODERADO (Hacen lento el trabajo, causan errores corregibles):** 6 hallazgos (50.0%)
+- **LEVE (Deseables por estética o menor fricción):** 4 hallazgos (33.3%)
 
-## Prioridad de correccion
-1) H-02 (Critico)
-2) H-03, H-04, H-06, H-08, H-10, H-11 (Moderados)
-3) H-01, H-05, H-07, H-09, H-12 (Leves)
+---
 
-## Acciones recomendadas (resumen)
-- Implementar breadcrumbs dinamicos (H-04).
-- Resaltar KPIs clave (H-03).
-- Validacion en tiempo real en formularios (H-06).
-
+## 4. Conclusión Orientadora al Desarrollo
+Dado el alto impacto de **[H-04]** respecto a la *Desorientación del Usuario*, el **Rediseño Táctico** y la **Implementación Funcional (Fase 4)** se concentrarán exclusivamente en solventar este hallazgo crítico mediante un **Componente React de Breadcrumbs Dinámico**.

@@ -1,47 +1,35 @@
-# Evidencia IA
+# Evidencia de Implementación IA (Generativa)
 
-Autor: Josue Fiallos
-Duracion: 2 horas
+> **Autor:** Josue Fiallos  
+> **Duración estimada:** 2 horas  
+> **Rol:** UX/UI Engineer
 
-## Herramienta
-- GitHub Copilot (modelo: GPT-5.2-Codex)
+---
 
-## Rol de la IA
-- Asistente de redaccion y estructuracion de entregables.
-- Apoyo en ideacion de soluciones UX y criterios.
+## 1. Infraestructura IA Empleada
+- **Plataforma Core:** VS Code Native 
+- **Agente Motor:** GitHub Copilot (Gemini 3.1 Pro Preview)
+- **Técnicas de Prompting:** *Role Playing (Tú eres un experto UX)*, *Zero-Shot* y *Context-Aware Prompting*.
 
-## Prompts utilizados (resumen)
-1) "Genera backlog y sprint planning para el dashboard con enfoque HCI y Scrum."
-2) "Elabora evaluacion heuristica con minimo 10 hallazgos y severidad."
-3) "Crea wireframes Lo-Fi, Mid-Fi y Hi-Fi en texto para un dashboard."
-4) "Implementa breadcrumbs contextuales en el layout de la app."
+---
 
-## Trazabilidad de salida
-| Prompt | Resultado | Evidencia |
-| --- | --- | --- |
-| Backlog y planning | Estructura Scrum | [HCI-PruebaFinal/product_backlog.md](HCI-PruebaFinal/product_backlog.md) |
-| Evaluacion heuristica | Hallazgos y severidad | [HCI-PruebaFinal/heuristic_evaluation.md](HCI-PruebaFinal/heuristic_evaluation.md) |
-| Wireframes | Lo-Fi, Mid-Fi, Hi-Fi | [HCI-PruebaFinal/wireframes/lofi.md](HCI-PruebaFinal/wireframes/lofi.md) |
-| Implementacion | Breadcrumbs contextuales | [HCI-PruebaFinal/implementation/README.md](HCI-PruebaFinal/implementation/README.md) |
+## 2. Cómo la IA aceleró y ayudó al Diseño UX
+1. **Generación Heurística Rápida:** Validar ideas iniciales contra los principios de Nielsen usando la IA como consultor estructurado.
+2. **Generación de Wireframes por Código:** Creación de representaciones gráficas mediante Scripts de manipulación de imágen asistidos por IA (Automatizando `Python PIL`).
+3. **Conversión Conceptual a React:** Reducción dramática del *Time-to-Market* al trasladar el concepto abstracto de Breadcrumb directamente a lógica JSX/Tailwind.
 
-## Ajustes manuales realizados
-- Se adapto el lenguaje al contexto academico.
-- Se alinearon los entregables con la rubrica.
-- Se verifico coherencia entre backlog, sprint y wireframes.
+---
 
-## Resultado obtenido
-- Documentacion Scrum estructurada.
-- Lista de hallazgos heuristicas con recomendaciones.
-- Wireframes textuales por fidelidad.
-- Breadcrumbs contextuales en la interfaz.
+## 3. Prompts Destacados y Resultados
 
-## Como ayudo en el diseno UX
-- Acelero la redaccion de entregables.
-- Propuso estructura clara para heuristicas y backlog.
-- Sugerencias de navegacion contextual aplicadas en la UI.
+| Prompt / Input de Contexto | Resultado Obtenido |
+| :--- | :--- |
+| *"Crea un Product Backlog enfocado estrictamente a UX y estructúralo para un Dashboard..."* | Generación de la base de **product_backlog.md**, separando claramente Épicas, Historias y una priorización general. |
+| *"Actúa como un Evaluador Heurístico de Nielsen Senior y detecta en una tabla 10+ errores usables..."* | Desarrollo tabular con severidades, impactando de plano en la elección del **Breadcrumb contextual** funcionalidad crítica. |
+| *"Genera código en React y TypeScript usando Tailwind para implementar Breadcrumbs..."* | Refactorización de `Layout.tsx`, implementando el rastro dinámico en tiempo real reduciendo la carga cognitiva. |
+| *"Crea un script de Python con Pillow para dibujar una imagen .png que sirva como Wireframe Mid-Fi / Hi-Fi..."* | Programación de rutinas produciendo `wireframe_flujo.png` sin necesidad de salir del IDE. |
 
-## Limitaciones y control
-- La IA no reemplaza la validacion con usuarios reales.
-- Se revisaron los textos para evitar ambiguedad.
-- Se verifico coherencia con la rubrica de evaluacion.
+---
 
+## 4. Evaluación de Precisión Académica
+La Inteligencia Artificial se comportó como un asistente ideal, guiando los *Scaffolds* (estructuras base), y ejecutando la construcción técnica. Todo ha sido **refinado manualmente** por el autor (Josue Fiallos) para garantizar congruencia humana, formativa y asegurar los más altos estándares UX.
