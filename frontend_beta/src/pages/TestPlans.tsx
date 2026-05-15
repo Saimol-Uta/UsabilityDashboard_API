@@ -4,7 +4,7 @@ import { useToast } from '../App'
 import { usePlan } from '../context/PlanContext'
 import { extractErrorMessage } from '../hooks/useApiError'
 import Modal from '../components/Modal'
-import { Plus, Edit3, Trash2, Calendar, Target, Save, CheckCircle2, PlayCircle } from 'lucide-react'
+import { Plus, Edit3, Trash2, Calendar, Target, Save, CheckCircle2, PlayCircle, AlertCircle, Loader2 } from 'lucide-react'
 
 const todayIso = new Date().toISOString().split('T')[0]
 
@@ -33,6 +33,33 @@ export default function TestPlans() {
     const [form, setForm] = useState(emptyForm)
     const { addToast } = useToast()
     const { refreshPlans, setActivePlanId } = usePlan()
+    const [touched, setTouched] = useState<Record<string, boolean>>({})
+
+    const markTouched = (field: string) => setTouched(t => ({ ...t, [field]: true }))
+
+    // Inline validation helpers
+    const dateError = form.startDate && form.endDate && new Date(form.endDate) <= new Date(form.startDate)
+        ? 'La fecha de fin debe ser posterior a la fecha de inicio' : ''
+    const requiredFields: Record<string, string> = {
+        projectName: 'El nombre es obligatorio',
+        product: 'El producto es obligatorio',
+        evaluatedModule: 'El módulo es obligatorio',
+        objective: 'El objetivo es obligatorio',
+        userProfile: 'El perfil es obligatorio',
+        methodology: 'La metodología es obligatoria',
+    }
+    const getFieldError = (field: string) => {
+        if (!touched[field]) return ''
+        const val = (form as any)[field]
+        if (requiredFields[field] && (!val || !val.trim())) return requiredFields[field]
+        return ''
+    }
+    const fieldClass = (field: string) => {
+        const err = getFieldError(field)
+        if (err) return 'form-input field-error'
+        if (touched[field] && (form as any)[field]?.trim()) return 'form-input field-success'
+        return 'form-input'
+    }
 
     const toInputDate = (value: string | null | undefined) => {
         if (!value) return ''
@@ -255,32 +282,38 @@ export default function TestPlans() {
 
             {/* Create/Edit Drawer */}
             <Modal isOpen={showDrawer} onClose={closeDrawer} title={editId ? 'Editar Plan de Prueba' : 'Nuevo Plan de Prueba'} drawer>
-                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                <form onSubmit={handleSubmit} className="p-6 space-y-5" noValidate>
                     <div>
                         <label htmlFor="drawerProjectName" className="form-label">Nombre del Proyecto <span className="text-red-500">*</span></label>
-                        <input id="drawerProjectName" value={form.projectName} onChange={e => setForm(f => ({ ...f, projectName: e.target.value }))} className="form-input" placeholder="Ej: Auditoría de Usabilidad: freeCodeCamp vs Coursera" required />
+                        <input id="drawerProjectName" value={form.projectName} onChange={e => setForm(f => ({ ...f, projectName: e.target.value }))} onBlur={() => markTouched('projectName')} className={fieldClass('projectName')} placeholder="Ej: Auditoría de Usabilidad: freeCodeCamp vs Coursera" required />
+                        {getFieldError('projectName') && <div className="field-hint is-error"><AlertCircle size={12} />{getFieldError('projectName')}</div>}
+                        {touched.projectName && form.projectName.trim() && <div className="field-hint is-success"><CheckCircle2 size={12} />Correcto</div>}
                     </div>
 
                     <div>
                         <label htmlFor="drawerObjective" className="form-label">Objetivo <span className="text-red-500">*</span></label>
-                        <textarea id="drawerObjective" value={form.objective} onChange={e => setForm(f => ({ ...f, objective: e.target.value }))} className="form-input" rows={3} placeholder="Describe el objetivo principal del plan de prueba" required />
+                        <textarea id="drawerObjective" value={form.objective} onChange={e => setForm(f => ({ ...f, objective: e.target.value }))} onBlur={() => markTouched('objective')} className={fieldClass('objective')} rows={3} placeholder="Describe el objetivo principal del plan de prueba" required />
+                        {getFieldError('objective') && <div className="field-hint is-error"><AlertCircle size={12} />{getFieldError('objective')}</div>}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label htmlFor="drawerProduct" className="form-label">Producto <span className="text-red-500">*</span></label>
-                            <input id="drawerProduct" value={form.product} onChange={e => setForm(f => ({ ...f, product: e.target.value }))} className="form-input" placeholder="Ej: Plataforma e-learning" required />
+                            <input id="drawerProduct" value={form.product} onChange={e => setForm(f => ({ ...f, product: e.target.value }))} onBlur={() => markTouched('product')} className={fieldClass('product')} placeholder="Ej: Plataforma e-learning" required />
+                            {getFieldError('product') && <div className="field-hint is-error"><AlertCircle size={12} />{getFieldError('product')}</div>}
                         </div>
                         <div>
                             <label htmlFor="drawerModule" className="form-label">Módulo evaluado <span className="text-red-500">*</span></label>
-                            <input id="drawerModule" value={form.evaluatedModule} onChange={e => setForm(f => ({ ...f, evaluatedModule: e.target.value }))} className="form-input" placeholder="Ej: Registro y pago" required />
+                            <input id="drawerModule" value={form.evaluatedModule} onChange={e => setForm(f => ({ ...f, evaluatedModule: e.target.value }))} onBlur={() => markTouched('evaluatedModule')} className={fieldClass('evaluatedModule')} placeholder="Ej: Registro y pago" required />
+                            {getFieldError('evaluatedModule') && <div className="field-hint is-error"><AlertCircle size={12} />{getFieldError('evaluatedModule')}</div>}
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label htmlFor="drawerMethodology" className="form-label">Metodología <span className="text-red-500">*</span></label>
-                            <input id="drawerMethodology" value={form.methodology} onChange={e => setForm(f => ({ ...f, methodology: e.target.value }))} className="form-input" placeholder="Ej: Evaluación heurística + WAVE" required />
+                            <input id="drawerMethodology" value={form.methodology} onChange={e => setForm(f => ({ ...f, methodology: e.target.value }))} onBlur={() => markTouched('methodology')} className={fieldClass('methodology')} placeholder="Ej: Evaluación heurística + WAVE" required />
+                            {getFieldError('methodology') && <div className="field-hint is-error"><AlertCircle size={12} />{getFieldError('methodology')}</div>}
                         </div>
                         {editId && (
                             <div>
@@ -298,17 +331,20 @@ export default function TestPlans() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label htmlFor="drawerStartDate" className="form-label">Fecha de Inicio <span className="text-red-500">*</span></label>
-                            <input id="drawerStartDate" type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className="form-input" required />
+                            <input id="drawerStartDate" type="date" value={form.startDate} onChange={e => { setForm(f => ({ ...f, startDate: e.target.value })); markTouched('dates') }} className="form-input" required />
                         </div>
                         <div>
                             <label htmlFor="drawerEndDate" className="form-label">Fecha de Fin <span className="text-red-500">*</span></label>
-                            <input id="drawerEndDate" type="date" min={form.startDate} value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className="form-input" required />
+                            <input id="drawerEndDate" type="date" min={form.startDate} value={form.endDate} onChange={e => { setForm(f => ({ ...f, endDate: e.target.value })); markTouched('dates') }} className={`form-input ${dateError ? 'field-error' : ''}`} required />
+                            {dateError && <div className="field-hint is-error"><AlertCircle size={12} />{dateError}</div>}
+                            {touched.dates && !dateError && form.endDate && <div className="field-hint is-success"><CheckCircle2 size={12} />Rango válido</div>}
                         </div>
                     </div>
 
                     <div>
                         <label htmlFor="drawerUserProfile" className="form-label">Perfil de Usuario <span className="text-red-500">*</span></label>
-                        <textarea id="drawerUserProfile" value={form.userProfile} onChange={e => setForm(f => ({ ...f, userProfile: e.target.value }))} className="form-input" rows={2} placeholder="Describe el perfil de los participantes" required />
+                        <textarea id="drawerUserProfile" value={form.userProfile} onChange={e => setForm(f => ({ ...f, userProfile: e.target.value }))} onBlur={() => markTouched('userProfile')} className={fieldClass('userProfile')} rows={2} placeholder="Describe el perfil de los participantes" required />
+                        {getFieldError('userProfile') && <div className="field-hint is-error"><AlertCircle size={12} />{getFieldError('userProfile')}</div>}
                     </div>
 
                     <div>
@@ -329,7 +365,7 @@ export default function TestPlans() {
 
                     <div className="pt-3 flex items-center gap-3 sticky bottom-0 bg-white py-4 border-t border-slate-100 -mx-6 px-6 -mb-6">
                         <button type="submit" className="btn btn-primary flex items-center gap-2" disabled={saving}>
-                            <Save size={16} aria-hidden="true" /> {saving ? 'Guardando...' : editId ? 'Actualizar Plan' : 'Crear Plan'}
+                            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} aria-hidden="true" />} {saving ? 'Guardando...' : editId ? 'Actualizar Plan' : 'Crear Plan'}
                         </button>
                         <button type="button" onClick={closeDrawer} className="btn btn-secondary">Cancelar</button>
                     </div>
