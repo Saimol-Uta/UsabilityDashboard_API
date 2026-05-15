@@ -37,6 +37,8 @@ const phases = [
   }
 ]
 
+type BreadcrumbItem = { label: string; to?: string }
+
 export default function Layout() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -76,16 +78,30 @@ export default function Layout() {
     return () => { document.body.style.overflow = '' }
   }, [sidebarOpen])
 
-  let activeLabel = 'Dashboard'
-  if (location.pathname === '/') {
-    activeLabel = 'Dashboard'
-  } else {
+  const breadcrumbItems: BreadcrumbItem[] = [{ label: 'Dashboard', to: '/' }]
+
+  if (location.pathname === planItem.to) {
+    breadcrumbItems.push({ label: planItem.label, to: planItem.to })
+  } else if (location.pathname !== '/') {
+    let matchedPhase: string | null = null
+    let matchedItem: { to: string; label: string } | null = null
+
     for (const phase of phases) {
       for (const item of phase.items) {
         if (location.pathname.startsWith(item.to)) {
-          activeLabel = item.label
+          matchedPhase = phase.title
+          matchedItem = { to: item.to, label: item.label }
+          break
         }
       }
+      if (matchedItem) break
+    }
+
+    if (matchedPhase) {
+      breadcrumbItems.push({ label: matchedPhase })
+    }
+    if (matchedItem) {
+      breadcrumbItems.push({ label: matchedItem.label, to: matchedItem.to })
     }
   }
 
@@ -327,11 +343,28 @@ export default function Layout() {
         {/* ACCESIBILIDAD: id="main-content" como destino del skip link (WCAG 2.4.1) */}
         <main id="main-content" className="glass-panel flex-1 flex flex-col min-h-0 overflow-hidden relative z-0" role="main">
           <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-md border-b border-slate-200 px-3 py-2.5 sm:px-4 sm:py-3 md:px-6 shadow-sm flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-[12px] text-slate-500">
-              <span className="text-slate-400">Dashboard</span>
-              <ChevronRight size={12} aria-hidden="true" />
-              <span className="font-semibold text-slate-700">{activeLabel}</span>
-            </div>
+            <nav aria-label="Breadcrumb" className="flex items-center flex-wrap gap-1.5 text-[12px] text-slate-500">
+              {breadcrumbItems.map((item, idx) => {
+                const isLast = idx === breadcrumbItems.length - 1
+                return (
+                  <div key={`${item.label}-${idx}`} className="flex items-center gap-1.5">
+                    {item.to && !isLast ? (
+                      <NavLink to={item.to} className="text-slate-500 hover:text-slate-700 font-medium">
+                        {item.label}
+                      </NavLink>
+                    ) : (
+                      <span
+                        className={isLast ? 'font-semibold text-slate-700' : 'text-slate-500'}
+                        aria-current={isLast ? 'page' : undefined}
+                      >
+                        {item.label}
+                      </span>
+                    )}
+                    {!isLast && <ChevronRight size={12} aria-hidden="true" />}
+                  </div>
+                )
+              })}
+            </nav>
           </div>
           <div className="flex-1 overflow-y-auto soft-scrollbar p-3 sm:p-4 md:p-6 bg-slate-50/30">
             <Outlet />
