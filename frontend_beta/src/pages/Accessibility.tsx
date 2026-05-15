@@ -68,9 +68,9 @@ const TOOL_META: Record<string, { color: string; bg: string; border: string; ico
 
 const SEVERITY_STYLES: Record<string, { badge: string; bar: string; label: string }> = {
   Critical: { badge: 'bg-red-100 text-red-800 border-red-300', bar: 'bg-red-500', label: 'Crítica' },
-  High:     { badge: 'bg-orange-100 text-orange-800 border-orange-300', bar: 'bg-orange-500', label: 'Alta' },
-  Medium:   { badge: 'bg-yellow-100 text-yellow-800 border-yellow-300', bar: 'bg-yellow-500', label: 'Media' },
-  Low:      { badge: 'bg-green-100 text-green-800 border-green-300', bar: 'bg-green-500', label: 'Baja' },
+  High: { badge: 'bg-orange-100 text-orange-800 border-orange-300', bar: 'bg-orange-500', label: 'Alta' },
+  Medium: { badge: 'bg-yellow-100 text-yellow-800 border-yellow-300', bar: 'bg-yellow-500', label: 'Media' },
+  Low: { badge: 'bg-green-100 text-green-800 border-green-300', bar: 'bg-green-500', label: 'Baja' },
 }
 
 const WCAG_LEVELS = ['A', 'AA', 'AAA', 'N/A']
@@ -98,18 +98,18 @@ const makeEmpty = (planId: string) => ({
 // ── Componente principal ──────────────────────────────────────────────────────
 
 export default function Accessibility() {
-  const [findings, setFindings]     = useState<AccessibilityFinding[]>([])
-  const [loading, setLoading]       = useState(true)
+  const [findings, setFindings] = useState<AccessibilityFinding[]>([])
+  const [loading, setLoading] = useState(true)
   const [filterTool, setFilterTool] = useState('')
-  const [filterSev, setFilterSev]   = useState('')
+  const [filterSev, setFilterSev] = useState('')
   const [expandedTool, setExpandedTool] = useState<string | null>(null)
-  const [showForm, setShowForm]     = useState(false)
-  const [editId, setEditId]         = useState<string | null>(null)
+  const [showForm, setShowForm] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<AccessibilityFinding | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [form, setForm]             = useState(() => makeEmpty(''))
+  const [form, setForm] = useState(() => makeEmpty(''))
 
-  const { addToast }                                     = useToast()
+  const { addToast } = useToast()
   const { activePlanId, activePlan, isReadOnly, refreshGates } = usePlan()
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
@@ -249,9 +249,9 @@ export default function Accessibility() {
 
   // ── KPIs ───────────────────────────────────────────────────────────────────
 
-  const total    = findings.length
+  const total = findings.length
   const resolved = findings.filter(f => f.status === 'Resolved' || f.status === 'Closed').length
-  const open     = total - resolved
+  const open = total - resolved
   const critical = findings.filter(f => f.severity === 'Critical' && f.status !== 'Resolved').length
 
   // Grupos por herramienta
@@ -343,10 +343,10 @@ export default function Accessibility() {
             <div className="flex items-center gap-2">
               {/* Ícono SVG de radar */}
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="text-slate-500">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 2"/>
-                <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 2"/>
-                <circle cx="12" cy="12" r="2" fill="currentColor"/>
-                <line x1="12" y1="2" x2="12" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.5"/>
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 2" />
+                <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 2" />
+                <circle cx="12" cy="12" r="2" fill="currentColor" />
+                <line x1="12" y1="2" x2="12" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
               </svg>
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                 Radar de Barreras
@@ -361,9 +361,7 @@ export default function Accessibility() {
             <p className="text-[11px] text-slate-400">
               barreras detectadas
             </p>
-            <p className="text-[10px] text-slate-300 italic mt-auto">
-              Como un radar, las herramientas revelan obstáculos ocultos
-            </p>
+
           </div>
 
           {/* KPI 2 — METÁFORA: Puertas Cerradas
@@ -373,9 +371,9 @@ export default function Accessibility() {
             <div className="flex items-center gap-2">
               {/* Ícono SVG de puerta cerrada */}
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={open > 0 ? 'text-orange-500' : 'text-slate-400'}>
-                <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5"/>
-                <rect x="7" y="3" width="10" height="18" rx="1" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-                <circle cx="15" cy="12" r="1.2" fill="currentColor"/>
+                <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                <rect x="7" y="3" width="10" height="18" rx="1" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                <circle cx="15" cy="12" r="1.2" fill="currentColor" />
               </svg>
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                 Puertas Cerradas
@@ -391,7 +389,6 @@ export default function Accessibility() {
               {open === 0 ? '¡Sin accesos bloqueados!' : 'accesos bloqueados'}
             </p>
             <p className="text-[10px] text-slate-300 italic mt-auto">
-              Barreras que aún impiden el acceso a todos los usuarios
             </p>
           </div>
 
@@ -402,11 +399,11 @@ export default function Accessibility() {
             <div className="flex items-center gap-2">
               {/* Ícono SVG de rampa/ruta */}
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={resolved > 0 ? 'text-emerald-600' : 'text-slate-400'}>
-                <path d="M3 20 L21 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M21 4 L21 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                <path d="M21 4 L15 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                <circle cx="7" cy="16" r="1.5" fill="currentColor" opacity="0.6"/>
-                <circle cx="13" cy="10" r="1.5" fill="currentColor" opacity="0.6"/>
+                <path d="M3 20 L21 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <path d="M21 4 L21 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M21 4 L15 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <circle cx="7" cy="16" r="1.5" fill="currentColor" opacity="0.6" />
+                <circle cx="13" cy="10" r="1.5" fill="currentColor" opacity="0.6" />
               </svg>
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                 Rutas Habilitadas
@@ -439,7 +436,6 @@ export default function Accessibility() {
               <p className="text-[11px] text-slate-400">accesos desbloqueados</p>
             )}
             <p className="text-[10px] text-slate-300 italic mt-auto">
-              Rampas construidas — acceso garantizado para todos
             </p>
           </div>
 
@@ -457,9 +453,9 @@ export default function Accessibility() {
             <div className="flex items-center gap-2">
               {/* Ícono SVG de señal de alerta */}
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={critical > 0 ? 'text-red-500' : 'text-slate-400'}>
-                <path d="M12 3 L22 20 H2 Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
-                <line x1="12" y1="10" x2="12" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                <circle cx="12" cy="18" r="1" fill="currentColor"/>
+                <path d="M12 3 L22 20 H2 Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+                <line x1="12" y1="10" x2="12" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <circle cx="12" cy="18" r="1" fill="currentColor" />
               </svg>
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                 Alertas Activas
@@ -475,7 +471,7 @@ export default function Accessibility() {
               {critical === 0 ? '¡Vía despejada!' : 'bloqueos críticos activos'}
             </p>
             <p className="text-[10px] text-slate-300 italic mt-auto">
-              Señales de peligro que requieren acción inmediata
+
             </p>
           </div>
         </div>
@@ -512,11 +508,10 @@ export default function Accessibility() {
                   </div>
                   <div className="h-1.5 bg-white/60 rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all duration-700 ${
-                        g.tool === 'WAVE' ? 'bg-blue-500' :
+                      className={`h-full rounded-full transition-all duration-700 ${g.tool === 'WAVE' ? 'bg-blue-500' :
                         g.tool === 'Lighthouse' ? 'bg-amber-500' :
-                        g.tool === 'Stark' ? 'bg-purple-500' : 'bg-emerald-500'
-                      }`}
+                          g.tool === 'Stark' ? 'bg-purple-500' : 'bg-emerald-500'
+                        }`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -539,11 +534,10 @@ export default function Accessibility() {
               <button
                 key={t || 'all-tools'}
                 onClick={() => setFilterTool(t)}
-                className={`text-[12px] px-3 py-1.5 rounded-full border transition-all font-medium ${
-                  filterTool === t
-                    ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
-                    : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
-                }`}
+                className={`text-[12px] px-3 py-1.5 rounded-full border transition-all font-medium ${filterTool === t
+                  ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                  : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                  }`}
                 aria-pressed={filterTool === t}
                 aria-label={`Filtrar por herramienta: ${t || 'Todas'}`}
               >
@@ -561,11 +555,10 @@ export default function Accessibility() {
               <button
                 key={s || 'all-sev'}
                 onClick={() => setFilterSev(s)}
-                className={`text-[12px] px-3 py-1.5 rounded-full border transition-all font-medium ${
-                  filterSev === s
-                    ? 'bg-slate-800 border-slate-800 text-white shadow-sm'
-                    : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
-                }`}
+                className={`text-[12px] px-3 py-1.5 rounded-full border transition-all font-medium ${filterSev === s
+                  ? 'bg-slate-800 border-slate-800 text-white shadow-sm'
+                  : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                  }`}
                 aria-pressed={filterSev === s}
                 aria-label={`Filtrar por severidad: ${s || 'Todas'}`}
               >
@@ -588,107 +581,107 @@ export default function Accessibility() {
 
       ) : !activePlanId ? null
 
-      : findings.length === 0 ? (
-        <div className="bg-gradient-to-br from-slate-50 to-indigo-50 rounded-2xl border-2 border-dashed border-slate-200 p-14 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-100 to-blue-100 border border-indigo-200 flex items-center justify-center mx-auto mb-4">
-            <ShieldCheck size={28} className="text-indigo-400" aria-hidden="true" />
+        : findings.length === 0 ? (
+          <div className="bg-gradient-to-br from-slate-50 to-indigo-50 rounded-2xl border-2 border-dashed border-slate-200 p-14 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-100 to-blue-100 border border-indigo-200 flex items-center justify-center mx-auto mb-4">
+              <ShieldCheck size={28} className="text-indigo-400" aria-hidden="true" />
+            </div>
+            <h3 className="text-[16px] font-semibold text-slate-700 mb-1">Sin auditorías registradas</h3>
+            <p className="text-[13px] text-slate-500 max-w-sm mx-auto">
+              Corra WAVE, Lighthouse o Stark sobre el proyecto evaluado y registre los hallazgos aquí.
+            </p>
+            {!isReadOnly && (
+              <button onClick={openCreate} className="btn btn-primary mt-5 mx-auto">
+                <Plus size={14} aria-hidden="true" /> Primera auditoría
+              </button>
+            )}
           </div>
-          <h3 className="text-[16px] font-semibold text-slate-700 mb-1">Sin auditorías registradas</h3>
-          <p className="text-[13px] text-slate-500 max-w-sm mx-auto">
-            Corra WAVE, Lighthouse o Stark sobre el proyecto evaluado y registre los hallazgos aquí.
-          </p>
-          {!isReadOnly && (
-            <button onClick={openCreate} className="btn btn-primary mt-5 mx-auto">
-              <Plus size={14} aria-hidden="true" /> Primera auditoría
+
+        ) : filtered.length === 0 ? (
+          <div className="bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-10 text-center">
+            <p className="text-[14px] text-slate-500">No hay hallazgos que coincidan con los filtros seleccionados.</p>
+            <button
+              onClick={() => { setFilterTool(''); setFilterSev('') }}
+              className="mt-3 text-[13px] text-blue-600 hover:underline font-medium"
+            >
+              Limpiar filtros
             </button>
-          )}
-        </div>
+          </div>
 
-      ) : filtered.length === 0 ? (
-        <div className="bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-10 text-center">
-          <p className="text-[14px] text-slate-500">No hay hallazgos que coincidan con los filtros seleccionados.</p>
-          <button
-            onClick={() => { setFilterTool(''); setFilterSev('') }}
-            className="mt-3 text-[13px] text-blue-600 hover:underline font-medium"
-          >
-            Limpiar filtros
-          </button>
-        </div>
-
-      ) : (
-        <section aria-label="Lista de hallazgos de accesibilidad">
-          {/* Vista agrupada por herramienta si no hay filtro de herramienta */}
-          {!filterTool ? (
-            <div className="flex flex-col gap-4">
-              {ACCESSIBILITY_TOOLS.filter(t => filtered.some(f => f.tool === t)).map(tool => {
-                const meta    = TOOL_META[tool] ?? TOOL_META['Observación manual']
-                const toolFindings = filtered.filter(f => f.tool === tool)
-                const isExpanded   = expandedTool === null || expandedTool === tool
-                return (
-                  <div key={tool} className={`rounded-2xl border overflow-hidden ${meta.border}`}>
-                    {/* Tool header */}
-                    <button
-                      className={`w-full flex items-center justify-between px-5 py-3.5 ${meta.bg} hover:brightness-95 transition-all`}
-                      onClick={() => setExpandedTool(expandedTool === tool ? null : tool)}
-                      aria-expanded={isExpanded}
-                      aria-controls={`section-${tool}`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className={meta.color} aria-hidden="true">{meta.icon}</span>
-                        <span className={`text-[14px] font-bold ${meta.color}`}>{tool}</span>
-                        <span className="text-[12px] font-medium bg-white/70 px-2 py-0.5 rounded-full text-slate-600 border border-white/80">
-                          {toolFindings.length} hallazgo{toolFindings.length !== 1 ? 's' : ''}
-                        </span>
-                        {toolFindings.filter(f => f.status === 'Resolved' || f.status === 'Closed').length > 0 && (
-                          <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
-                            ✓ {toolFindings.filter(f => f.status === 'Resolved' || f.status === 'Closed').length} corregido{toolFindings.filter(f => f.status === 'Resolved').length !== 1 ? 's' : ''}
+        ) : (
+          <section aria-label="Lista de hallazgos de accesibilidad">
+            {/* Vista agrupada por herramienta si no hay filtro de herramienta */}
+            {!filterTool ? (
+              <div className="flex flex-col gap-4">
+                {ACCESSIBILITY_TOOLS.filter(t => filtered.some(f => f.tool === t)).map(tool => {
+                  const meta = TOOL_META[tool] ?? TOOL_META['Observación manual']
+                  const toolFindings = filtered.filter(f => f.tool === tool)
+                  const isExpanded = expandedTool === null || expandedTool === tool
+                  return (
+                    <div key={tool} className={`rounded-2xl border overflow-hidden ${meta.border}`}>
+                      {/* Tool header */}
+                      <button
+                        className={`w-full flex items-center justify-between px-5 py-3.5 ${meta.bg} hover:brightness-95 transition-all`}
+                        onClick={() => setExpandedTool(expandedTool === tool ? null : tool)}
+                        aria-expanded={isExpanded}
+                        aria-controls={`section-${tool}`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className={meta.color} aria-hidden="true">{meta.icon}</span>
+                          <span className={`text-[14px] font-bold ${meta.color}`}>{tool}</span>
+                          <span className="text-[12px] font-medium bg-white/70 px-2 py-0.5 rounded-full text-slate-600 border border-white/80">
+                            {toolFindings.length} hallazgo{toolFindings.length !== 1 ? 's' : ''}
                           </span>
-                        )}
-                      </div>
-                      {isExpanded
-                        ? <ChevronUp size={16} className={meta.color} aria-hidden="true" />
-                        : <ChevronDown size={16} className={meta.color} aria-hidden="true" />
-                      }
-                    </button>
+                          {toolFindings.filter(f => f.status === 'Resolved' || f.status === 'Closed').length > 0 && (
+                            <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+                              ✓ {toolFindings.filter(f => f.status === 'Resolved' || f.status === 'Closed').length} corregido{toolFindings.filter(f => f.status === 'Resolved').length !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </div>
+                        {isExpanded
+                          ? <ChevronUp size={16} className={meta.color} aria-hidden="true" />
+                          : <ChevronDown size={16} className={meta.color} aria-hidden="true" />
+                        }
+                      </button>
 
-                    {/* Tool findings */}
-                    {isExpanded && (
-                      <div id={`section-${tool}`} className="divide-y divide-slate-100">
-                        {toolFindings.map(f => (
-                          <FindingRow
-                            key={f.id}
-                            finding={f}
-                            isReadOnly={isReadOnly}
-                            onEdit={() => openEdit(f)}
-                            onDelete={() => setDeleteTarget(f)}
-                            onMarkResolved={() => handleMarkResolved(f)}
-                            onMarkOpen={() => handleMarkOpen(f)}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            /* Vista plana cuando hay filtro */
-            <div className="flex flex-col gap-3">
-              {filtered.map(f => (
-                <FindingRow
-                  key={f.id}
-                  finding={f}
-                  isReadOnly={isReadOnly}
-                  onEdit={() => openEdit(f)}
-                  onDelete={() => setDeleteTarget(f)}
-                  onMarkResolved={() => handleMarkResolved(f)}
-                  onMarkOpen={() => handleMarkOpen(f)}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-      )}
+                      {/* Tool findings */}
+                      {isExpanded && (
+                        <div id={`section-${tool}`} className="divide-y divide-slate-100">
+                          {toolFindings.map(f => (
+                            <FindingRow
+                              key={f.id}
+                              finding={f}
+                              isReadOnly={isReadOnly}
+                              onEdit={() => openEdit(f)}
+                              onDelete={() => setDeleteTarget(f)}
+                              onMarkResolved={() => handleMarkResolved(f)}
+                              onMarkOpen={() => handleMarkOpen(f)}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              /* Vista plana cuando hay filtro */
+              <div className="flex flex-col gap-3">
+                {filtered.map(f => (
+                  <FindingRow
+                    key={f.id}
+                    finding={f}
+                    isReadOnly={isReadOnly}
+                    onEdit={() => openEdit(f)}
+                    onDelete={() => setDeleteTarget(f)}
+                    onMarkResolved={() => handleMarkResolved(f)}
+                    onMarkOpen={() => handleMarkOpen(f)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
       {/* ══ Modal: Formulario de hallazgo de accesibilidad ══ */}
       <Modal isOpen={showForm} onClose={resetForm} title={editId ? 'Editar Hallazgo de Accesibilidad' : 'Nuevo Hallazgo de Accesibilidad'}>
@@ -901,15 +894,14 @@ interface FindingRowProps {
 }
 
 function FindingRow({ finding: f, isReadOnly, onEdit, onDelete, onMarkResolved, onMarkOpen }: FindingRowProps) {
-  const sev  = SEVERITY_STYLES[f.severity] ?? SEVERITY_STYLES.Medium
+  const sev = SEVERITY_STYLES[f.severity] ?? SEVERITY_STYLES.Medium
   const isDone = f.status === 'Resolved' || f.status === 'Closed'
-  const meta   = TOOL_META[f.tool] ?? TOOL_META['Observación manual']
+  const meta = TOOL_META[f.tool] ?? TOOL_META['Observación manual']
 
   return (
     <article
-      className={`p-4 flex flex-col sm:flex-row sm:items-start gap-3 transition-colors ${
-        isDone ? 'bg-emerald-50/40' : 'bg-white hover:bg-slate-50/70'
-      }`}
+      className={`p-4 flex flex-col sm:flex-row sm:items-start gap-3 transition-colors ${isDone ? 'bg-emerald-50/40' : 'bg-white hover:bg-slate-50/70'
+        }`}
       aria-label={`Hallazgo: ${f.description}`}
     >
       {/* Barra lateral de severidad */}
