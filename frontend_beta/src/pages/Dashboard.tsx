@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { dashboardApi, findingsApi } from '../api'
 import { usePlan } from '../context/PlanContext'
-import { BarChart2, CheckCircle2, Clock, AlertCircle, AlertTriangle, Lightbulb, TrendingUp, Flame, PieChart as PieChartIcon } from 'lucide-react'
+import { BarChart2, CheckCircle2, Clock, AlertCircle, AlertTriangle, Lightbulb, TrendingUp, Flame, PieChart as PieChartIcon, Users, MessageSquareText, ListChecks, CalendarRange, Eye, Search, ArrowRight, Lock, Check, Zap } from 'lucide-react'
 import { PieChart } from '../components/PieChart'
 
 interface Stats {
@@ -44,8 +45,113 @@ function KPICard({ icon, value, label, iconBg, valueColor = 'text-gray-900', del
     )
 }
 
+/* ── Phase Stepper Component ── */
+function PhaseStepper({ sectionDone, canAccessPhase2, canAccessPhase3 }: {
+    sectionDone: Record<string, boolean>
+    canAccessPhase2: boolean
+    canAccessPhase3: boolean
+}) {
+    const phase1Done = sectionDone.guion && sectionDone.participantes
+    const phase1Count = (sectionDone.guion ? 1 : 0) + (sectionDone.participantes ? 1 : 0)
+    const phase2Done = sectionDone.tareas && sectionDone.sesiones && sectionDone.observaciones
+    const phase2Count = (sectionDone.tareas ? 1 : 0) + (sectionDone.sesiones ? 1 : 0) + (sectionDone.observaciones ? 1 : 0)
+    const phase3Done = sectionDone.hallazgos && sectionDone.mejoras
+    const phase3Count = (sectionDone.hallazgos ? 1 : 0) + (sectionDone.mejoras ? 1 : 0)
+
+    const steps = [
+        { label: 'Preparación', subtitle: `${phase1Count}/2 secciones`, done: phase1Done, active: !phase1Done, locked: false },
+        { label: 'Ejecución', subtitle: `${phase2Count}/3 secciones`, done: phase2Done, active: phase1Done && !phase2Done && canAccessPhase2, locked: !canAccessPhase2 },
+        { label: 'Análisis', subtitle: `${phase3Count}/2 secciones`, done: phase3Done, active: phase2Done && !phase3Done && canAccessPhase3, locked: !canAccessPhase3 },
+    ]
+
+    return (
+        <div className="phase-stepper" role="list" aria-label="Progreso por fases">
+            {steps.map((step, i) => (
+                <div key={i} className="phase-stepper-item" role="listitem">
+                    {i > 0 && (
+                        <div className={`phase-stepper-line ${steps[i - 1].done ? 'is-done' : ''}`} aria-hidden="true" />
+                    )}
+                    <div className={`phase-stepper-circle ${
+                        step.done ? 'is-done' : step.active ? 'is-active' : 'is-locked'
+                    }`}>
+                        {step.done ? (
+                            <Check size={16} strokeWidth={3} />
+                        ) : step.locked ? (
+                            <Lock size={14} />
+                        ) : (
+                            <span className="phase-stepper-dot" />
+                        )}
+                    </div>
+                    <div className="phase-stepper-label">
+                        <span className={`text-[13px] font-bold ${
+                            step.done ? 'text-emerald-700' : step.active ? 'text-blue-700' : 'text-slate-400'
+                        }`}>{step.label}</span>
+                        <span className={`text-[11px] ${
+                            step.done ? 'text-emerald-500' : step.active ? 'text-blue-500' : 'text-slate-400'
+                        }`}>{step.subtitle}</span>
+                    </div>
+                </div>
+            ))}
+        </div>
+    )
+}
+
+/* ── Quick Actions Component ── */
+function QuickActions({ sectionDone, canAccessPhase2, canAccessPhase3 }: {
+    sectionDone: Record<string, boolean>
+    canAccessPhase2: boolean
+    canAccessPhase3: boolean
+}) {
+    const navigate = useNavigate()
+
+    const actions = [
+        { key: 'plan_de_prueba', label: 'Crear Plan de Prueba', desc: 'Define objetivos, alcance y metodología', icon: Zap, to: '/planes', phase: 0 },
+        { key: 'guion', label: 'Guión del Moderador', desc: 'Prepara las instrucciones para las sesiones', icon: MessageSquareText, to: '/guion', phase: 1 },
+        { key: 'participantes', label: 'Registrar Participantes', desc: 'Agrega usuarios para las pruebas', icon: Users, to: '/participantes', phase: 1 },
+        { key: 'tareas', label: 'Definir Tareas', desc: 'Crea escenarios y criterios de éxito', icon: ListChecks, to: '/tareas', phase: 2, locked: !canAccessPhase2 },
+        { key: 'sesiones', label: 'Programar Sesiones', desc: 'Agenda las sesiones de prueba', icon: CalendarRange, to: '/sesiones', phase: 2, locked: !canAccessPhase2 },
+        { key: 'observaciones', label: 'Registrar Observaciones', desc: 'Documenta resultados de las sesiones', icon: Eye, to: '/observaciones', phase: 2, locked: !canAccessPhase2 },
+        { key: 'hallazgos', label: 'Documentar Hallazgos', desc: 'Sintetiza los problemas encontrados', icon: Search, to: '/hallazgos', phase: 3, locked: !canAccessPhase3 },
+        { key: 'mejoras', label: 'Acciones de Mejora', desc: 'Define el plan de mejoras', icon: Lightbulb, to: '/mejoras', phase: 3, locked: !canAccessPhase3 },
+    ]
+
+    // Show only the first 3 pending actions
+    const pending = actions.filter(a => !sectionDone[a.key] && !a.locked).slice(0, 3)
+
+    if (pending.length === 0) return null
+
+    return (
+        <section className="animate-rise">
+            <div className="flex items-center gap-2 mb-4">
+                <Zap size={18} className="text-amber-500" aria-hidden="true" />
+                <h3 className="text-[16px] font-bold text-slate-900">Acciones Rápidas</h3>
+                <span className="text-[11px] text-slate-400 ml-auto">Siguientes pasos sugeridos</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {pending.map(action => (
+                    <button
+                        key={action.key}
+                        onClick={() => navigate(action.to)}
+                        className="quick-action group"
+                        aria-label={`Ir a ${action.label}`}
+                    >
+                        <div className="quick-action-icon">
+                            <action.icon size={20} />
+                        </div>
+                        <div className="flex-1 min-w-0 text-left">
+                            <div className="text-[13px] font-semibold text-slate-800 group-hover:text-blue-700 transition-colors">{action.label}</div>
+                            <div className="text-[11px] text-slate-500 mt-0.5 truncate">{action.desc}</div>
+                        </div>
+                        <ArrowRight size={16} className="text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all flex-shrink-0" aria-hidden="true" />
+                    </button>
+                ))}
+            </div>
+        </section>
+    )
+}
+
 export default function Dashboard() {
-    const { plans, activePlanId } = usePlan()
+    const { plans, activePlanId, sectionDone, canAccessPhase2, canAccessPhase3 } = usePlan()
 
     const [stats, setStats] = useState<Stats | null>(null)
     const [findings, setFindings] = useState<any[]>([])
@@ -103,8 +209,38 @@ export default function Dashboard() {
     const effectiveCompleted = stats.completedActions + (stats.closedActions ?? 0)
     const effectiveTotal = stats.totalActions
 
+    // Global progress calculation
+    const totalSections = 7 // guion, participantes, tareas, sesiones, observaciones, hallazgos, mejoras
+    const completedSections = ['guion', 'participantes', 'tareas', 'sesiones', 'observaciones', 'hallazgos', 'mejoras'].filter(k => sectionDone[k]).length
+    const globalProgress = Math.round((completedSections / totalSections) * 100)
+
     return (
         <div className="flex flex-col gap-8">
+            {/* Phase Stepper */}
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-lg p-4 sm:p-6 animate-rise">
+                <div className="flex items-center gap-2 mb-5">
+                    <h3 className="text-[15px] font-bold text-slate-900">Progreso del Plan de Usabilidad</h3>
+                    <span className="ml-auto text-[12px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">{globalProgress}% completado</span>
+                </div>
+                <PhaseStepper sectionDone={sectionDone} canAccessPhase2={canAccessPhase2} canAccessPhase3={canAccessPhase3} />
+                {/* Global Progress Bar */}
+                <div className="mt-5">
+                    <div className="h-3 rounded-full bg-slate-100 overflow-hidden shadow-inner">
+                        <div
+                            className="h-full rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500 transition-all duration-700 ease-out shadow-md"
+                            style={{ width: `${globalProgress}%` }}
+                        />
+                    </div>
+                    <div className="flex justify-between mt-2 text-[11px] text-slate-400 font-medium">
+                        <span>{completedSections} de {totalSections} secciones</span>
+                        <span>{globalProgress === 100 ? '🎉 ¡Plan completado!' : 'En progreso...'}</span>
+                    </div>
+                </div>
+            </section>
+
+            {/* Quick Actions */}
+            <QuickActions sectionDone={sectionDone} canAccessPhase2={canAccessPhase2} canAccessPhase3={canAccessPhase3} />
+
             {/* Hero Banner */}
             <section className="rounded-2xl sm:rounded-3xl border-2 border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-900 px-4 py-5 sm:px-8 sm:py-7 text-white animate-rise shadow-2xl overflow-hidden relative">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full -mr-48 -mt-48" />

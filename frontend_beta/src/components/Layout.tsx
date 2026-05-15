@@ -327,11 +327,45 @@ export default function Layout() {
         {/* ACCESIBILIDAD: id="main-content" como destino del skip link (WCAG 2.4.1) */}
         <main id="main-content" className="glass-panel flex-1 flex flex-col min-h-0 overflow-hidden relative z-0" role="main">
           <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-md border-b border-slate-200 px-3 py-2.5 sm:px-4 sm:py-3 md:px-6 shadow-sm flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-[12px] text-slate-500">
-              <span className="text-slate-400">Dashboard</span>
-              <ChevronRight size={12} aria-hidden="true" />
-              <span className="font-semibold text-slate-700">{activeLabel}</span>
-            </div>
+            <nav aria-label="Ruta de navegación" className="flex items-center gap-1.5 text-[12px] text-slate-500">
+              {location.pathname === '/' ? (
+                <span className="font-semibold text-slate-700">Dashboard</span>
+              ) : (
+                <>
+                  <NavLink to="/" className="text-slate-400 hover:text-blue-600 transition-colors">Inicio</NavLink>
+                  {(() => {
+                    for (const phase of phases) {
+                      for (const item of phase.items) {
+                        if (location.pathname.startsWith(item.to)) {
+                          return (
+                            <>
+                              <ChevronRight size={12} aria-hidden="true" />
+                              <span className="text-slate-400">{phase.title}</span>
+                              <ChevronRight size={12} aria-hidden="true" />
+                              <span className="font-semibold text-slate-700">{item.label}</span>
+                            </>
+                          )
+                        }
+                      }
+                    }
+                    if (location.pathname.startsWith('/planes')) {
+                      return (
+                        <>
+                          <ChevronRight size={12} aria-hidden="true" />
+                          <span className="font-semibold text-slate-700">{planItem.label}</span>
+                        </>
+                      )
+                    }
+                    return (
+                      <>
+                        <ChevronRight size={12} aria-hidden="true" />
+                        <span className="font-semibold text-slate-700">{activeLabel}</span>
+                      </>
+                    )
+                  })()}
+                </>
+              )}
+            </nav>
           </div>
           <div className="flex-1 overflow-y-auto soft-scrollbar p-3 sm:p-4 md:p-6 bg-slate-50/30">
             <Outlet />

@@ -495,3 +495,187 @@ aside .text-slate-400 {
 .drawer-content {
   box-shadow: 0 25px 60px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(255,255,255,0.15);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   FASE 4 — IMPLEMENTACIÓN UX: Stepper, Quick Actions, Validaciones
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Phase Stepper ── */
+.phase-stepper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  position: relative;
+}
+
+.phase-stepper-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.phase-stepper-line {
+  position: absolute;
+  top: 20px;
+  right: 50%;
+  width: 100%;
+  height: 3px;
+  background: #e2e8f0;
+  z-index: 0;
+  transition: background 500ms ease;
+}
+
+.phase-stepper-line.is-done {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.phase-stepper-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  transition: all 300ms ease;
+  font-weight: 700;
+}
+
+.phase-stepper-circle.is-done {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+
+.phase-stepper-circle.is-active {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+  animation: stepper-pulse 2s ease-in-out infinite;
+}
+
+.phase-stepper-circle.is-locked {
+  background: #f1f5f9;
+  color: #94a3b8;
+  border: 2px solid #e2e8f0;
+}
+
+.phase-stepper-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: white;
+}
+
+.phase-stepper-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: 10px;
+  text-align: center;
+}
+
+@keyframes stepper-pulse {
+  0%, 100% { box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35); }
+  50% { box-shadow: 0 4px 24px rgba(59, 130, 246, 0.55); }
+}
+
+/* ── Quick Action Cards ── */
+.quick-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 200ms ease;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.quick-action:hover {
+  border-color: #93b4ed;
+  background: #f8fbff;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.12);
+  transform: translateY(-2px);
+}
+
+.quick-action:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.quick-action-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  color: #3b82f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 200ms ease;
+}
+
+.quick-action:hover .quick-action-icon {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* ── Form Field Validation States ── */
+.field-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+
+.field-success {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+}
+
+.field-hint {
+  font-size: 12px;
+  margin-top: 4px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.field-hint.is-error {
+  color: #ef4444;
+}
+
+.field-hint.is-success {
+  color: #10b981;
+}
+
+/* ── Responsive: Stepper en mobile ── */
+@media (max-width: 640px) {
+  .phase-stepper {
+    gap: 8px;
+  }
+  .phase-stepper-circle {
+    width: 32px;
+    height: 32px;
+  }
+  .phase-stepper-line {
+    top: 16px;
+  }
+  .phase-stepper-label span {
+    font-size: 11px !important;
+  }
+  .quick-action {
+    padding: 12px;
+  }
+}
+
