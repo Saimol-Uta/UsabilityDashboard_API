@@ -1,8 +1,16 @@
 # Evaluacion Heuristica
 
+Autor: Josue Fiallos
+Duracion: 2 horas
+
 ## Alcance
 Pantallas evaluadas: Login, Dashboard, Formularios, Navegacion, Reportes.
 Heuristicas base: Nielsen (visibilidad, control, consistencia, prevencion de errores, etc.).
+
+## Metodo
+- Tipo: Evaluacion heuristica experta.
+- Criterio: 10 heuristicas de Nielsen.
+- Evidencia: observacion directa de la UI y flujo de tareas.
 
 ## Hallazgos (minimo 10)
 | ID | Area | Heuristica | Problema detectado | Severidad | Impacto | Recomendacion |
@@ -20,6 +28,15 @@ Heuristicas base: Nielsen (visibilidad, control, consistencia, prevencion de err
 | H-11 | Dashboard | Diseño estetico | Paneles con exceso de informacion sin agrupacion. | Moderado | Sobrecarga cognitiva. | Agrupar por bloques con titulos claros. |
 | H-12 | Formularios | Ayuda y documentacion | No hay ejemplos para campos complejos. | Leve | Llenado lento. | Agregar ejemplos y microcopy. |
 
+## Resumen por area
+| Area | Hallazgos | Severidad predominante |
+| --- | --- | --- |
+| Login | H-01, H-02 | Moderado/Critico |
+| Dashboard | H-03, H-04, H-11 | Moderado |
+| Formularios | H-05, H-06, H-12 | Leve/Moderado |
+| Navegacion | H-07, H-08 | Leve/Moderado |
+| Reportes | H-09, H-10 | Leve/Moderado |
+
 ## Resumen de severidad
 - Criticos: 1
 - Moderados: 7
@@ -32,6 +49,13 @@ Heuristicas base: Nielsen (visibilidad, control, consistencia, prevencion de err
 - Reconocimiento mejor que recuerdo: H-10
 - Estetica y diseno minimalista: H-11
 
+## Escala de severidad
+| Nivel | Descripcion | Accion sugerida |
+| --- | --- | --- |
+| Critico | Bloquea la tarea o provoca errores graves | Corregir de inmediato |
+| Moderado | Afecta productividad o genera confusion | Corregir en el sprint |
+| Leve | Mejora deseable sin bloqueo | Planificar mejora |
+
 ## Severidad
 - Critico: bloquea la tarea o genera error grave.
 - Moderado: afecta el rendimiento o aumenta la friccion.
@@ -41,4 +65,9 @@ Heuristicas base: Nielsen (visibilidad, control, consistencia, prevencion de err
 1) H-02 (Critico)
 2) H-03, H-04, H-06, H-08, H-10, H-11 (Moderados)
 3) H-01, H-05, H-07, H-09, H-12 (Leves)
+
+## Acciones recomendadas (resumen)
+- Implementar breadcrumbs dinamicos (H-04).
+- Resaltar KPIs clave (H-03).
+- Validacion en tiempo real en formularios (H-06).
 
