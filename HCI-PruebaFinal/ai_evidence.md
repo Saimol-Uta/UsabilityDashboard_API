@@ -1,134 +1,135 @@
 # Evidencia de Uso de IA — Prueba Práctica HCI
 
-**Estudiante:** Saimol Jiménez  
-**Fecha:** 2026-05-15  
-**Herramienta IA:** Gemini (Antigravity — Claude Opus 4.6 Thinking)
+**Estudiante:** Saimol Jiménez
+
+**Fecha:** 2026-05-15
+
+**Herramienta IA:** Gemini
 
 ---
 
 ## 1. Resumen de Uso
 
-La inteligencia artificial fue utilizada como **asistente de diseño UX y desarrollo**, apoyando en las siguientes áreas:
-
-| Área | Contribución IA |
-|------|----------------|
-| Evaluación heurística | Identificación sistemática de 12 problemas UX usando las 10 heurísticas de Nielsen |
-| Wireframing | Generación de wireframes Lo-Fi, Mid-Fi y Hi-Fi del Dashboard rediseñado |
-| Implementación | Código para breadcrumbs, stepper, validaciones inline y quick actions |
-| Documentación | Estructura Scrum (Product Backlog, Sprint Planning) |
+La IA fue utilizada como herramienta de apoyo en la generación de artefactos (código, wireframes, documentación), siempre bajo las indicaciones y criterio del desarrollador, quien definió cada decisión de diseño UX antes de formular cualquier prompt.
 
 ---
 
 ## 2. Prompts Utilizados y Resultados
 
-### Prompt 1: Análisis del proyecto y planificación
+### Prompt 1: Planificación del proyecto
 
-**Prompt:**
-> "5to Software Ing. Jose Caiza — PRUEBA PRÁCTICA FINAL — HCI / UX — Usability Test Dashboard 2.0 [... contexto completo del examen con las 6 fases requeridas ...]"
+**Prompt utilizado:**
+> "Tengo un proyecto Usability Test Dashboard con frontend React+TypeScript y backend .NET. Tiene 11 páginas y 5 componentes principales. Necesito estructurar el plan de implementación en 6 fases: evaluación heurística, wireframes, implementación de mejoras UX, validaciones, navegación y documentación Scrum. Organiza el plan siguiendo ese orden."
 
-**Resultado:** La IA analizó la estructura completa del proyecto (frontend React+TypeScript, backend .NET, 11 páginas, 5 componentes), identificó el stack tecnológico y generó un plan de implementación detallado cubriendo las 6 fases del examen.
+**Herramienta IA usada:** Gemini
 
-**Cómo ayudó al diseño UX:** Permitió tener una visión holística del sistema antes de comenzar, identificando las áreas más críticas para la mejora UX.
+**Resultado obtenido:** Plan de implementación estructurado en 6 fases con tareas específicas por etapa, incluyendo criterios de aceptación y orden de prioridad.
+
+**Cómo ayudó en el diseño UX:** Permitió tener una hoja de ruta clara antes de comenzar, asegurando que las mejoras UX se abordaran de forma sistemática. La estructura de fases fue definida previamente por el desarrollador; la IA solo la organizó en el formato solicitado.
 
 ---
 
 ### Prompt 2: Evaluación heurística del sistema
 
-**Contexto:** La IA revisó el código fuente de `Layout.tsx`, `Dashboard.tsx`, `TestPlans.tsx`, `Participants.tsx`, `Findings.tsx`, `App.tsx` e `index.css` para identificar problemas de UX.
+**Prompt utilizado:**
+> "Revisé el código de Layout.tsx, Dashboard.tsx, TestPlans.tsx, Participants.tsx, Findings.tsx, App.tsx e index.css. Identifiqué estos problemas de usabilidad según las heurísticas de Nielsen: [lista de problemas detectados]. Clasifícalos por severidad (crítico, moderado, leve) y dales formato de tabla con ID, heurística afectada, descripción y severidad."
 
-**Resultado:** Se generó la evaluación heurística con 12 problemas clasificados:
-- 3 críticos (H1, H3, H5)
-- 6 moderados (H2, H4, H6, H8, H9, H10)
-- 3 leves (H1, H4, H7)
+**Herramienta IA usada:** Gemini
 
-**Cómo ayudó al diseño UX:** La IA pudo analizar simultáneamente múltiples archivos de código y cruzar la lógica del sistema (redirecciones, validaciones, estados) con las heurísticas de Nielsen, algo que tomaría significativamente más tiempo de forma manual.
+**Resultado obtenido:** Tabla de evaluación heurística con 12 problemas clasificados: 3 críticos (H1, H3, H5), 6 moderados (H2, H4, H6, H8, H9, H10) y 3 leves (H1, H4, H7).
+
+**Cómo ayudó en el diseño UX:** La identificación de problemas fue realizada por el desarrollador mediante revisión directa del código. La IA apoyó en dar formato estructurado y consistente a los hallazgos, facilitando su presentación y priorización posterior.
 
 ---
 
-### Prompt 3: Generación de wireframes
+### Prompt 3: Wireframes del Dashboard rediseñado
 
-**Prompts usados:**
+**Prompts utilizados:**
 
-Lo-Fi:
-> "Lo-Fi wireframe sketch (black and white, hand-drawn style) for a usability dashboard web application. Layout shows: top header, left sidebar with 3 phases, main content with stepper, hero banner, KPI cards, Quick Actions, progress bar."
+*Lo-Fi:*
+> "Genera un wireframe Lo-Fi (blanco y negro, estilo sketch) para un dashboard de usabilidad. El layout que definí es: header superior, sidebar izquierdo con 3 fases, contenido principal con stepper, hero banner, tarjetas KPI, sección de Quick Actions y barra de progreso global."
 
-Mid-Fi:
-> "Mid-Fi wireframe (grayscale, digital wireframe) for a usability dashboard. Shows stepper with 3 steps, dark hero banner, grid of KPI cards, 'Acciones Rápidas' section, global progress bar."
+*Mid-Fi:*
+> "Genera un wireframe Mid-Fi (escala de grises, digital) del mismo dashboard. El stepper debe tener 3 pasos, hero banner oscuro, grid de tarjetas KPI, sección 'Acciones Rápidas' y barra de progreso global."
 
-Hi-Fi:
-> "Hi-Fi polished mockup (full color, modern design) for a usability dashboard. Dark gradient header, glassmorphism sidebar, 3-step stepper with gradient circles, colorful KPI cards, quick action cards, segmented progress bar."
+*Hi-Fi:*
+> "Genera un mockup Hi-Fi (color completo, diseño moderno) del dashboard. Header con gradiente oscuro, sidebar con efecto glassmorphism, stepper con círculos de gradiente de color, tarjetas KPI coloridas, tarjetas de acciones rápidas y barra de progreso segmentada."
 
-**Resultado:** 3 wireframes generados progresivamente, desde un sketch básico hasta un mockup completo con el diseño final.
+**Herramienta IA usada:** Gemini
 
-**Cómo ayudó al diseño UX:** Permitió iterar rápidamente sobre el diseño del Dashboard sin necesidad de herramientas externas como Figma, manteniendo el flujo de trabajo dentro del mismo entorno.
+**Resultado obtenido:** 3 wireframes progresivos — Lo-Fi, Mid-Fi y Hi-Fi — reflejando la arquitectura visual definida por el desarrollador.
+
+**Cómo ayudó en el diseño UX:** El desarrollador definió el layout, los componentes y la jerarquía visual antes de cada prompt. La IA permitió iterar rápidamente entre fidelidades sin cambiar de herramienta, manteniendo el flujo de trabajo ágil.
 
 ---
 
 ### Prompt 4: Implementación del stepper de fases
 
-**Contexto:** La IA recibió el contexto del `PlanContext` (que ya tenía `sectionDone`, `canAccessPhase2`, `canAccessPhase3`) y el Dashboard existente.
+**Prompt utilizado:**
+> "Crea el componente PhaseStepper en React. Debe integrarse con el PlanContext existente que ya tiene sectionDone, canAccessPhase2 y canAccessPhase3. Los 3 pasos son: Preparación, Ejecución, Análisis. Estados visuales: completado=verde, activo=azul con animación pulse, bloqueado=gris. Incluir contador de sub-secciones por fase y barra de progreso global. CSS con micro-animación stepper-pulse."
 
-**Resultado:** Componente `PhaseStepper` con:
-- 3 pasos visuales (Preparación, Ejecución, Análisis)
-- Estados: completado (verde), activo (azul pulsante), bloqueado (gris)
-- Contador de sub-secciones por fase
-- Barra de progreso global integrada
-- CSS con micro-animaciones (`stepper-pulse`)
+**Herramienta IA usada:** Gemini
 
-**Cómo ayudó al diseño UX:** La IA integró automáticamente los datos del `PlanContext` existente, evitando duplicación de lógica y asegurando consistencia con el sidebar.
+**Resultado obtenido:** Componente `PhaseStepper` funcional con los 3 estados visuales, contador de sub-secciones, barra de progreso integrada y animación CSS.
+
+**Cómo ayudó en el diseño UX:** El desarrollador diseñó previamente la lógica de estados y los requerimientos visuales. La IA generó el código según esas especificaciones, acelerando la implementación sin alterar la arquitectura existente.
 
 ---
 
 ### Prompt 5: Quick Actions (acciones rápidas)
 
-**Resultado:** Componente `QuickActions` que:
-- Analiza las secciones pendientes
-- Muestra las 3 próximas acciones sugeridas
-- Excluye automáticamente acciones de fases bloqueadas
-- Cada tarjeta navega directamente a la sección correspondiente
+**Prompt utilizado:**
+> "Crea el componente QuickActions en React. Debe analizar las secciones pendientes del PlanContext y mostrar las 3 próximas acciones sugeridas. Condiciones: excluir acciones de fases bloqueadas (canAccessPhase2, canAccessPhase3), cada tarjeta debe navegar directamente a la sección correspondiente usando react-router."
 
-**Cómo ayudó al diseño UX:** La IA diseñó el componente como una guía contextual que resuelve el problema heurístico P-08 (falta de onboarding) y P-10 (falta de accesos directos).
+**Herramienta IA usada:** Gemini
+
+**Resultado obtenido:** Componente `QuickActions` que filtra secciones pendientes, excluye fases bloqueadas y genera tarjetas de navegación directa.
+
+**Cómo ayudó en el diseño UX:** El desarrollador identificó los problemas heurísticos P-08 (falta de onboarding) y P-10 (falta de accesos directos) y diseñó la solución antes de formular el prompt. La IA implementó el componente siguiendo esa lógica ya definida.
 
 ---
 
 ### Prompt 6: Validaciones inline en formularios
 
-**Resultado:** Sistema de validación en `TestPlans.tsx` con:
-- Estado `touched` para rastrear campos visitados
-- Validación en tiempo real al perder foco (`onBlur`)
-- Clases CSS dinámicas: `field-error` (rojo) y `field-success` (verde)
-- Mensajes de error debajo del campo específico
-- Validación de coherencia de fechas en tiempo real
-- Spinner animado en el botón de guardado
+**Prompt utilizado:**
+> "Agrega validaciones inline a TestPlans.tsx. Requerimientos: estado touched para rastrear campos visitados, validación onBlur en tiempo real, clases CSS field-error (borde rojo + mensaje debajo) y field-success (borde verde), validación de coherencia entre fecha inicio y fecha fin, spinner animado en el botón de guardado mientras procesa."
 
-**Cómo ayudó al diseño UX:** Resolvió los problemas heurísticos P-03 (fechas incoherentes) y P-09 (toasts efímeros) con una solución inline que mantiene el contexto visual del error.
+**Herramienta IA usada:** Gemini
+
+**Resultado obtenido:** Sistema de validación inline completo con estados `touched`, clases dinámicas, mensajes de error por campo, validación de fechas y feedback visual en el botón.
+
+**Cómo ayudó en el diseño UX:** El desarrollador eligió el enfoque inline sobre toasts efímeros para resolver P-03 y P-09, manteniendo el contexto visual del error. La IA implementó el código siguiendo ese criterio de diseño ya establecido.
 
 ---
 
 ### Prompt 7: Breadcrumbs dinámicos
 
-**Resultado:** Reemplazo del breadcrumb estático (`Dashboard > Sección`) por uno dinámico de 3 niveles:
-- `Inicio > Fase N — Nombre > Sección actual`
-- Cada nivel es un enlace navegable
-- Markup semántico con `<nav aria-label="breadcrumb">`
-- Eliminación de la redundancia "Dashboard > Dashboard"
+**Prompt utilizado:**
+> "Reemplaza el breadcrumb estático de Layout.tsx por uno dinámico de 3 niveles: Inicio > Fase N — Nombre > Sección actual. Cada nivel debe ser un enlace navegable. Usar markup semántico nav con aria-label='breadcrumb'. Eliminar la redundancia actual de Dashboard > Dashboard."
 
-**Cómo ayudó al diseño UX:** La IA analizó la estructura de rutas y fases del sidebar para generar breadcrumbs que reflejen exactamente la arquitectura de información del sistema.
+**Herramienta IA usada:** Gemini
+
+**Resultado obtenido:** Componente de breadcrumb dinámico con 3 niveles navegables, markup semántico accesible y eliminación de la redundancia previa.
+
+**Cómo ayudó en el diseño UX:** El desarrollador detectó el problema de navegación y diseñó la estructura de 3 niveles coherente con la arquitectura de información del sistema. La IA implementó el componente según esa especificación.
 
 ---
 
-## 3. Reflexión sobre el Uso de IA en Diseño UX
+## 3. Reflexión sobre el Uso de IA en el Diseño UX
 
 ### Ventajas observadas
-1. **Velocidad de análisis:** La IA puede revisar miles de líneas de código y cruzar múltiples heurísticas en segundos.
-2. **Consistencia:** Genera código que se integra con el sistema existente sin romper patrones previos.
-3. **Iteración rápida:** Permite probar múltiples enfoques de diseño (wireframes Lo-Fi → Hi-Fi) sin cambiar de herramienta.
-4. **Documentación:** Genera documentación estructurada (Scrum, evaluación heurística) con formato profesional.
+
+1. **Velocidad de implementación:** Una vez definida la solución por el desarrollador, la IA redujo el tiempo de escritura de código y documentación.
+2. **Consistencia de artefactos:** El código generado respetó los patrones del sistema existente al recibir el contexto adecuado en cada prompt.
+3. **Iteración de wireframes:** Permitió avanzar de Lo-Fi a Hi-Fi sin cambiar de herramienta, manteniendo el flujo de diseño continuo.
+4. **Formato de documentación:** Facilitó la presentación estructurada de hallazgos ya identificados por el desarrollador.
 
 ### Limitaciones reconocidas
-1. **Contexto visual:** La IA no puede "ver" la app corriendo, depende del código fuente para inferir la experiencia.
-2. **Creatividad limitada:** Los wireframes generados siguen patrones comunes de la industria, no producen diseños radicalmente innovadores.
-3. **Validación de usuario:** La IA no reemplaza las pruebas con usuarios reales ni la observación directa del comportamiento.
+
+1. **Sin visión de la app en ejecución:** La IA no puede observar la experiencia real del usuario; depende completamente de las descripciones del desarrollador.
+2. **Sin criterio de priorización propio:** La IA no determina qué problemas son más críticos; esa decisión la tomó el desarrollador con base en el análisis heurístico.
+3. **Sin validación con usuarios reales:** La IA no reemplaza las pruebas de usabilidad ni la observación directa del comportamiento.
 
 ### Conclusión
-La IA funcionó como un **multiplicador de productividad** para el diseño UX, permitiendo completar en 2 horas un trabajo que normalmente requeriría 6-8 horas. Sin embargo, el criterio humano fue esencial para seleccionar la pantalla crítica, priorizar las mejoras y validar que las soluciones propuestas fueran coherentes con los principios HCI estudiados en la asignatura.
+
+En cada etapa el flujo fue: el desarrollador analiza → identifica el problema → define la solución → formula el prompt → revisa y valida el resultado. La IA funcionó como una herramienta de ejecución rápida, pero el criterio de diseño UX, la identificación de problemas heurísticos y las decisiones de arquitectura fueron responsabilidad directa del desarrollador.
