@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { useState, createContext, useContext, useCallback } from 'react'
+import { useState, createContext, useContext, useCallback, useEffect } from 'react'
 import { PlanProvider } from './context/PlanContext'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
@@ -31,6 +31,13 @@ let toastId = 0
 
 export default function App() {
   const [toasts, setToasts] = useState<Toast[]>([])
+  const [theme, setTheme] = useState<'hifi' | 'midfi' | 'lofi'>('hifi')
+
+  useEffect(() => {
+    document.body.classList.remove('theme-lofi', 'theme-midfi')
+    if (theme === 'lofi') document.body.classList.add('theme-lofi')
+    if (theme === 'midfi') document.body.classList.add('theme-midfi')
+  }, [theme])
 
   const addToast = useCallback((message: string, type: 'success' | 'error') => {
     const id = ++toastId
@@ -80,6 +87,29 @@ export default function App() {
           </Route>
         </Routes>
       </ToastContext.Provider>
+
+      {/* APE 4: Selector de Wireframes Flotante */}
+      <div className="fixed bottom-4 right-4 z-[9999] bg-white rounded-xl shadow-2xl border border-slate-200 p-2 flex gap-1 animate-rise">
+        <button 
+          onClick={() => setTheme('lofi')} 
+          className={`px-3 py-1.5 text-[11px] uppercase tracking-wider font-bold rounded-lg transition-colors ${theme === 'lofi' ? 'bg-black text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+        >
+          Lo-Fi
+        </button>
+        <button 
+          onClick={() => setTheme('midfi')} 
+          className={`px-3 py-1.5 text-[11px] uppercase tracking-wider font-bold rounded-lg transition-colors ${theme === 'midfi' ? 'bg-slate-500 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+        >
+          Mid-Fi
+        </button>
+        <button 
+          onClick={() => setTheme('hifi')} 
+          className={`px-3 py-1.5 text-[11px] uppercase tracking-wider font-bold rounded-lg transition-colors ${theme === 'hifi' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+        >
+          Hi-Fi
+        </button>
+      </div>
+
     </PlanProvider>
   )
 }

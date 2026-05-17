@@ -495,3 +495,121 @@ aside .text-slate-400 {
 .drawer-content {
   box-shadow: 0 25px 60px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(255,255,255,0.15);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   APE 4: SISTEMA DE WIREFRAMES GLOBALES (Lo-Fi & Mid-Fi)
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── MODO LO-FI (Boceto) ── */
+.theme-lofi {
+  font-family: 'Caveat', 'Comic Sans MS', cursive !important;
+  background: white !important;
+  color: black !important;
+}
+
+.theme-lofi * {
+  border-radius: 2px !important;
+  box-shadow: none !important;
+  background-image: none !important; /* Quita los gradientes */
+}
+
+/* Bordes y fondos forzados en Lo-Fi */
+.theme-lofi .glass-panel,
+.theme-lofi .kpi-card,
+.theme-lofi .nav-item,
+.theme-lofi .form-input,
+.theme-lofi .btn,
+.theme-lofi .modal-content,
+.theme-lofi .drawer-content,
+.theme-lofi header,
+.theme-lofi aside,
+.theme-lofi table th,
+.theme-lofi table td,
+.theme-lofi .bg-white {
+  background-color: white !important;
+  border: 2px solid black !important;
+  color: black !important;
+}
+
+/* Textos obligatoriamente negros */
+.theme-lofi p, .theme-lofi span, .theme-lofi h1, .theme-lofi h2, .theme-lofi h3, .theme-lofi h4, .theme-lofi div {
+  color: black !important;
+}
+
+/* Botones Lo-Fi */
+.theme-lofi .btn {
+  background-color: white !important;
+  border: 3px solid black !important;
+  box-shadow: 3px 3px 0 black !important;
+  font-weight: 800 !important;
+  text-transform: uppercase;
+}
+.theme-lofi .btn:hover {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 1px 1px 0 black !important;
+}
+
+/* Íconos (SVG) negros en Lo-Fi */
+.theme-lofi svg {
+  color: black !important;
+  stroke: black !important;
+}
+
+
+/* ── MODO MID-FI (Escala de Grises Estructurada) ── */
+.theme-midfi {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.theme-midfi * {
+  background-image: none !important; /* Quita gradientes coloridos */
+}
+
+/* Convertir fondos a grises */
+.theme-midfi .glass-panel,
+.theme-midfi .kpi-card,
+.theme-midfi .modal-content,
+.theme-midfi .drawer-content,
+.theme-midfi header,
+.theme-midfi aside,
+.theme-midfi .bg-white {
+  background-color: #ffffff !important;
+  border-color: #d1d5db !important;
+}
+
+/* Textos grises estándar */
+.theme-midfi p, .theme-midfi span, .theme-midfi h1, .theme-midfi h2, .theme-midfi h3, .theme-midfi h4, .theme-midfi div {
+  color: #4b5563 !important;
+}
+
+/* Botones Mid-Fi (Gris neutral) */
+.theme-midfi .btn-primary {
+  background-color: #6b7280 !important; /* gray-500 */
+  border: none !important;
+  color: white !important;
+}
+.theme-midfi .btn-secondary {
+  background-color: #e5e7eb !important; /* gray-200 */
+  border: 1px solid #d1d5db !important;
+  color: #374151 !important;
+}
+.theme-midfi .btn-danger {
+  background-color: #d1d5db !important;
+  color: #4b5563 !important;
+  border: 1px solid #9ca3af !important;
+}
+
+/* Insignias Mid-Fi (Gris oscuro) */
+.theme-midfi .badge {
+  background-color: #e5e7eb !important;
+  color: #374151 !important;
+  border: 1px solid #9ca3af !important;
+}
+
+/* Íconos (SVG) grises en Mid-Fi */
+.theme-midfi svg {
+  color: #6b7280 !important;
+  stroke: #6b7280 !important;
+}
