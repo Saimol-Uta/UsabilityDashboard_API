@@ -31,6 +31,7 @@ export default function TestPlans() {
     const [editId, setEditId] = useState<string | null>(null)
     const [saving, setSaving] = useState(false)
     const [form, setForm] = useState(emptyForm)
+    const [activeTab, setActiveTab] = useState(0)
     const { addToast } = useToast()
     const { refreshPlans, setActivePlanId } = usePlan()
 
@@ -49,6 +50,7 @@ export default function TestPlans() {
     const openCreate = () => {
         setForm(emptyForm)
         setEditId(null)
+        setActiveTab(0)
         setShowDrawer(true)
     }
 
@@ -68,6 +70,7 @@ export default function TestPlans() {
             scope: plan.scope || '',
             status: plan.status || 'Draft',
         })
+        setActiveTab(0)
         setShowDrawer(true)
     }
 
@@ -255,32 +258,33 @@ export default function TestPlans() {
 
             {/* Create/Edit Drawer */}
             <Modal isOpen={showDrawer} onClose={closeDrawer} title={editId ? 'Editar Plan de Prueba' : 'Nuevo Plan de Prueba'} drawer>
+                {/* Tabs UI */}
+                <div className="flex border-b border-slate-200 px-6 mt-2">
+                    <button type="button" onClick={() => setActiveTab(0)} className={`pb-3 px-4 text-[13px] font-semibold border-b-2 transition-colors ${activeTab === 0 ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>General</button>
+                    <button type="button" onClick={() => setActiveTab(1)} className={`pb-3 px-4 text-[13px] font-semibold border-b-2 transition-colors ${activeTab === 1 ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Metodología</button>
+                    <button type="button" onClick={() => setActiveTab(2)} className={`pb-3 px-4 text-[13px] font-semibold border-b-2 transition-colors ${activeTab === 2 ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Logística</button>
+                </div>
+
                 <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                    <div>
-                        <label htmlFor="drawerProjectName" className="form-label">Nombre del Proyecto <span className="text-red-500">*</span></label>
-                        <input id="drawerProjectName" value={form.projectName} onChange={e => setForm(f => ({ ...f, projectName: e.target.value }))} className="form-input" placeholder="Ej: Auditoría de Usabilidad: freeCodeCamp vs Coursera" required />
-                    </div>
-
-                    <div>
-                        <label htmlFor="drawerObjective" className="form-label">Objetivo <span className="text-red-500">*</span></label>
-                        <textarea id="drawerObjective" value={form.objective} onChange={e => setForm(f => ({ ...f, objective: e.target.value }))} className="form-input" rows={3} placeholder="Describe el objetivo principal del plan de prueba" required />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Tab 0: General */}
+                    <div className={activeTab === 0 ? 'block space-y-5 animate-fade' : 'hidden'}>
                         <div>
-                            <label htmlFor="drawerProduct" className="form-label">Producto <span className="text-red-500">*</span></label>
-                            <input id="drawerProduct" value={form.product} onChange={e => setForm(f => ({ ...f, product: e.target.value }))} className="form-input" placeholder="Ej: Plataforma e-learning" required />
+                            <label htmlFor="drawerProjectName" className="form-label">Nombre del Proyecto <span className="text-red-500">*</span></label>
+                            <input id="drawerProjectName" value={form.projectName} onChange={e => setForm(f => ({ ...f, projectName: e.target.value }))} className="form-input" placeholder="Ej: Auditoría de Usabilidad: freeCodeCamp vs Coursera" required={activeTab === 0} />
                         </div>
                         <div>
-                            <label htmlFor="drawerModule" className="form-label">Módulo evaluado <span className="text-red-500">*</span></label>
-                            <input id="drawerModule" value={form.evaluatedModule} onChange={e => setForm(f => ({ ...f, evaluatedModule: e.target.value }))} className="form-input" placeholder="Ej: Registro y pago" required />
+                            <label htmlFor="drawerObjective" className="form-label">Objetivo <span className="text-red-500">*</span></label>
+                            <textarea id="drawerObjective" value={form.objective} onChange={e => setForm(f => ({ ...f, objective: e.target.value }))} className="form-input" rows={3} placeholder="Describe el objetivo principal del plan de prueba" required={activeTab === 0} />
                         </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label htmlFor="drawerMethodology" className="form-label">Metodología <span className="text-red-500">*</span></label>
-                            <input id="drawerMethodology" value={form.methodology} onChange={e => setForm(f => ({ ...f, methodology: e.target.value }))} className="form-input" placeholder="Ej: Evaluación heurística + WAVE" required />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label htmlFor="drawerProduct" className="form-label">Producto <span className="text-red-500">*</span></label>
+                                <input id="drawerProduct" value={form.product} onChange={e => setForm(f => ({ ...f, product: e.target.value }))} className="form-input" placeholder="Ej: Plataforma e-learning" required={activeTab === 0} />
+                            </div>
+                            <div>
+                                <label htmlFor="drawerModule" className="form-label">Módulo evaluado <span className="text-red-500">*</span></label>
+                                <input id="drawerModule" value={form.evaluatedModule} onChange={e => setForm(f => ({ ...f, evaluatedModule: e.target.value }))} className="form-input" placeholder="Ej: Registro y pago" required={activeTab === 0} />
+                            </div>
                         </div>
                         {editId && (
                             <div>
@@ -295,35 +299,43 @@ export default function TestPlans() {
                         )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Tab 1: Metodología */}
+                    <div className={activeTab === 1 ? 'block space-y-5 animate-fade' : 'hidden'}>
                         <div>
-                            <label htmlFor="drawerStartDate" className="form-label">Fecha de Inicio <span className="text-red-500">*</span></label>
-                            <input id="drawerStartDate" type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className="form-input" required />
+                            <label htmlFor="drawerUserProfile" className="form-label">Perfil de Usuario <span className="text-red-500">*</span></label>
+                            <textarea id="drawerUserProfile" value={form.userProfile} onChange={e => setForm(f => ({ ...f, userProfile: e.target.value }))} className="form-input" rows={2} placeholder="Describe el perfil de los participantes" required={activeTab === 1} />
                         </div>
                         <div>
-                            <label htmlFor="drawerEndDate" className="form-label">Fecha de Fin <span className="text-red-500">*</span></label>
-                            <input id="drawerEndDate" type="date" min={form.startDate} value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className="form-input" required />
+                            <label htmlFor="drawerMethodology" className="form-label">Metodología <span className="text-red-500">*</span></label>
+                            <input id="drawerMethodology" value={form.methodology} onChange={e => setForm(f => ({ ...f, methodology: e.target.value }))} className="form-input" placeholder="Ej: Evaluación heurística + WAVE" required={activeTab === 1} />
+                        </div>
+                        <div>
+                            <label htmlFor="drawerScope" className="form-label">Alcance</label>
+                            <textarea id="drawerScope" value={form.scope} onChange={e => setForm(f => ({ ...f, scope: e.target.value }))} className="form-input" rows={2} placeholder="Define el alcance de las pruebas" />
                         </div>
                     </div>
 
-                    <div>
-                        <label htmlFor="drawerUserProfile" className="form-label">Perfil de Usuario <span className="text-red-500">*</span></label>
-                        <textarea id="drawerUserProfile" value={form.userProfile} onChange={e => setForm(f => ({ ...f, userProfile: e.target.value }))} className="form-input" rows={2} placeholder="Describe el perfil de los participantes" required />
-                    </div>
-
-                    <div>
-                        <label htmlFor="drawerScope" className="form-label">Alcance</label>
-                        <textarea id="drawerScope" value={form.scope} onChange={e => setForm(f => ({ ...f, scope: e.target.value }))} className="form-input" rows={2} placeholder="Define el alcance de las pruebas" />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label htmlFor="drawerLocation" className="form-label">Ubicación</label>
-                            <input id="drawerLocation" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} className="form-input" placeholder="Ej: Laboratorio 2 / Remoto" />
+                    {/* Tab 2: Logística */}
+                    <div className={activeTab === 2 ? 'block space-y-5 animate-fade' : 'hidden'}>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label htmlFor="drawerStartDate" className="form-label">Fecha de Inicio <span className="text-red-500">*</span></label>
+                                <input id="drawerStartDate" type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className="form-input" required={activeTab === 2} />
+                            </div>
+                            <div>
+                                <label htmlFor="drawerEndDate" className="form-label">Fecha de Fin <span className="text-red-500">*</span></label>
+                                <input id="drawerEndDate" type="date" min={form.startDate} value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className="form-input" required={activeTab === 2} />
+                            </div>
                         </div>
-                        <div>
-                            <label htmlFor="drawerDuration" className="form-label">Duración estimada (minutos) <span className="text-red-500">*</span></label>
-                            <input id="drawerDuration" type="number" min="1" value={form.estimatedDuration} onChange={e => setForm(f => ({ ...f, estimatedDuration: e.target.value }))} className="form-input" placeholder="Ej: 45" required />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label htmlFor="drawerLocation" className="form-label">Ubicación</label>
+                                <input id="drawerLocation" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} className="form-input" placeholder="Ej: Laboratorio 2 / Remoto" />
+                            </div>
+                            <div>
+                                <label htmlFor="drawerDuration" className="form-label">Duración estimada (minutos) <span className="text-red-500">*</span></label>
+                                <input id="drawerDuration" type="number" min="1" value={form.estimatedDuration} onChange={e => setForm(f => ({ ...f, estimatedDuration: e.target.value }))} className="form-input" placeholder="Ej: 45" required={activeTab === 2} />
+                            </div>
                         </div>
                     </div>
 

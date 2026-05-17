@@ -294,10 +294,17 @@ export default function Observations() {
             {loading ? (
                 <div className="flex justify-center py-12"><div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" /></div>
             ) : logs.length === 0 ? (
-                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl border-2 border-dashed border-slate-300 p-12 text-center shadow-inner">
-                    <Eye size={48} className="text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-[18px] font-semibold text-slate-700 mb-2">Sin registros de observación</h3>
-                    <p className="text-[14px] text-slate-500">Comienza a registrar observaciones de las sesiones de prueba.</p>
+                <div className="bg-white rounded-3xl border border-dashed border-blue-200 p-16 text-center shadow-sm animate-rise max-w-2xl mx-auto mt-8">
+                    <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Eye size={48} className="text-blue-500" />
+                    </div>
+                    <h3 className="text-[22px] font-bold text-slate-800 mb-3">Aún no hay observaciones</h3>
+                    <p className="text-[15px] text-slate-500 mb-8 max-w-md mx-auto leading-relaxed">
+                        Las observaciones te permiten registrar qué hizo el usuario durante la tarea, si tuvo éxito y los problemas detectados en tiempo real.
+                    </p>
+                    <button onClick={() => setShowForm(true)} disabled={isReadOnly || sessions.length === 0 || tasks.length === 0} className="btn btn-primary px-6 py-3 text-[14px] shadow-lg shadow-blue-500/30">
+                        <Plus size={18} /> Registrar Primera Observación
+                    </button>
                 </div>
             ) : (
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden animate-rise">
