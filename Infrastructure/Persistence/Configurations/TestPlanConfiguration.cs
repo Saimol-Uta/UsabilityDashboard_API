@@ -1,4 +1,4 @@
-﻿using Domain.Entities;
+using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
@@ -32,6 +32,11 @@ namespace Infrastructure.Persistence.Configurations
             builder.HasOne(x => x.ModeratorScript)
                 .WithOne(x => x.TestPlan)
                 .HasForeignKey<ModeratorScript>(x => x.TestPlanId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(x => x.SprintBacklog)
+                .WithOne(x => x.TestPlan)
+                .HasForeignKey<SprintBacklog>(x => x.TestPlanId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasMany(x => x.Tasks)

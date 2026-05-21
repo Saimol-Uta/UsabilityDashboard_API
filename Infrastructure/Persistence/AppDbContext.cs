@@ -1,4 +1,4 @@
-﻿using Domain.Common;
+using Domain.Common;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
     public DbSet<ObservationLog> ObservationLogs => Set<ObservationLog>();
     public DbSet<Finding> Findings => Set<Finding>();
     public DbSet<ImprovementAction> ImprovementActions => Set<ImprovementAction>();
+    public DbSet<SprintBacklog> SprintBacklogs => Set<SprintBacklog>();
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

@@ -87,4 +87,11 @@ export const dashboardApi = {
     getStats: (testPlanId?: Guid) => api.get('/Dashboard/stats', { params: { testPlanId } }),
 };
 
+// ── SprintBacklog ──
+export const sprintBacklogApi = {
+    getByPlan: (planId: Guid) => api.get(`/SprintBacklog/by-plan/${planId}`),
+    generate: (data: { testPlanId: Guid; userApiKey?: string }) => api.post('/SprintBacklog/generate', data),
+    save: (planId: Guid, data: { sprintName: string; sprintGoal: string; contentJson: string; rawMarkdown: string }) => api.post(`/SprintBacklog/save/${planId}`, data),
+};
+
 export default api;

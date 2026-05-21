@@ -30,5 +30,6 @@ namespace Domain.Entities
         public ICollection<TestTask> Tasks { get; set; }
         public ICollection<TestSession> Sessions { get; set; } 
         public ICollection<Finding> Findings { get; set; }
+        public SprintBacklog? SprintBacklog { get; set; }
     }
 }
