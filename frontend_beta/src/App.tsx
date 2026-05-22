@@ -13,6 +13,7 @@ import Participants from './pages/Participants'
 import TestSessions from './pages/TestSessions'
 import SessionRunner from './pages/SessionRunner'
 import Accessibility from './pages/Accessibility'
+import SprintBacklog from './pages/SprintBacklog'
 
 interface Toast {
   id: number
@@ -76,6 +77,7 @@ export default function App() {
             <Route path="hallazgos" element={<Findings />} />
             <Route path="mejoras" element={<ImprovementActions />} />
             <Route path="accesibilidad" element={<Accessibility />} />
+            <Route path="backlog" element={<SprintBacklog />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
