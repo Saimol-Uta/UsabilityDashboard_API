@@ -256,8 +256,8 @@ export default function TestPlans() {
                                     </div>
                                     <button 
                                         onClick={() => togglePlanStatus(plan.id, plan.status)} 
-                                        className={`btn text-sm flex items-center gap-1.5 border transition-colors ${plan.status === 'Completed' ? 'text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100' : 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100'}`}
-                                        style={{ padding: 'var(--space-1.5) var(--space-3)' }}
+                                        className={plan.status === 'Completed' ? 'btn btn-secondary text-sm' : 'btn btn-success text-sm'}
+                                        style={{ padding: 'var(--space-1.5) var(--space-3)', height: 'auto', minHeight: 'unset', display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1.5)' }}
                                     >
                                         {plan.status === 'Completed' ? (
                                             <><PlayCircle size={14} /> Reactivar</>
