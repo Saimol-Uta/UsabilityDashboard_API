@@ -13,7 +13,6 @@ import Participants from './pages/Participants'
 import TestSessions from './pages/TestSessions'
 import SessionRunner from './pages/SessionRunner'
 import Accessibility from './pages/Accessibility'
-import SprintBacklog from './pages/SprintBacklog'
 
 interface Toast {
   id: number
@@ -42,11 +41,9 @@ export default function App() {
   return (
     <PlanProvider>
       <ToastContext.Provider value={{ addToast }}>
-        {/* ACCESIBILIDAD: Skip link para navegación por teclado (WCAG 2.4.1) */}
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:bg-blue-700 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-semibold focus:shadow-lg"
-        >
+        {/* ACCESIBILIDAD: Skip link para navegación por teclado (WCAG 2.4.1)
+            Clase CSS nativa .skip-link — visible solo al recibir foco */}
+        <a href="#main-content" className="skip-link">
           Saltar al contenido principal
         </a>
 
@@ -77,7 +74,6 @@ export default function App() {
             <Route path="hallazgos" element={<Findings />} />
             <Route path="mejoras" element={<ImprovementActions />} />
             <Route path="accesibilidad" element={<Accessibility />} />
-            <Route path="backlog" element={<SprintBacklog />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
