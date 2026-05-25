@@ -4,7 +4,7 @@ import { useToast } from '../App'
 import { usePlan } from '../context/PlanContext'
 import { extractErrorMessage } from '../hooks/useApiError'
 import Modal from '../components/Modal'
-import { Plus, Save, Trash2, Search, AlertCircle, AlertTriangle, ArrowRight, Filter } from 'lucide-react'
+import { Plus, Save, Trash2, Search, AlertCircle, AlertTriangle, ArrowRight, Filter, XCircle, CheckCircle2 } from 'lucide-react'
 
 export default function Findings() {
     const [findings, setFindings] = useState<any[]>([])
@@ -115,60 +115,55 @@ export default function Findings() {
     )
 
     return (
-        <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="page-container">
+            <div className="page-header">
                 <div>
-                    <h2 className="text-[20px] font-semibold text-slate-900">Síntesis de Hallazgos</h2>
-                    <p className="text-[13px] text-slate-500 mt-1">Problemas de usabilidad detectados con frecuencia, severidad y recomendaciones</p>
+                    <h2 className="page-header-title">Síntesis de Hallazgos</h2>
+                    <p className="page-header-subtitle">Problemas de usabilidad detectados con frecuencia, severidad y recomendaciones</p>
                 </div>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-                    <button onClick={() => { setEditId(null); setForm({ ...emptyForm, testPlanId: activePlanId }); setShowForm(true) }}
-                        className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={!activePlanId || isReadOnly}
-                        aria-label="Nuevo Hallazgo">
-                        <Plus size={14} aria-hidden="true" /> Nuevo Hallazgo
-                    </button>
-                </div>
+                <button onClick={() => { setEditId(null); setForm({ ...emptyForm, testPlanId: activePlanId }); setShowForm(true) }}
+                    className="btn btn-primary"
+                    disabled={!activePlanId || isReadOnly}
+                    aria-label="Nuevo Hallazgo">
+                    <Plus size={18} aria-hidden="true" /> Nuevo Hallazgo
+                </button>
             </div>
 
             {/* GLB-04: Read-only banner */}
             {isReadOnly && activePlan && (
-                <div className="readonly-banner">
-                    <AlertTriangle size={16} className="flex-shrink-0" />
+                <div className="readonly-banner" role="status">
+                    <AlertTriangle size={16} className="flex-shrink-0" aria-hidden="true" />
                     <span>El plan "<strong>{activePlan.projectName}</strong>" está {activePlan.status === 'Completed' ? 'completado' : 'cancelado'}. No se pueden crear ni modificar hallazgos.</span>
                 </div>
             )}
 
-
-
             {/* Filter */}
-            <div className="flex items-center gap-2 flex-wrap">
-                <Filter size={14} className="text-slate-400" aria-hidden="true" />
-                <span className="text-[12px] text-slate-400 font-semibold">Severidad:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                <Filter size={14} style={{ color: 'var(--text-disabled)' }} aria-hidden="true" />
+                <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', fontWeight: 'var(--font-weight-semibold)' }}>Severidad:</span>
                 {['', 'Critical', 'High', 'Medium', 'Low'].map(s => (
                     <button key={s} onClick={() => setFilter(s)}
-                        className={`text-[13px] px-4 py-2 rounded-full border transition-all duration-200 font-medium ${filter === s ? 'bg-gradient-to-r from-blue-200 to-blue-100 border-blue-300 text-blue-700 shadow-md scale-105' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'}`}
+                        className={`tab-pill ${filter === s ? 'is-active' : ''}`}
                         aria-label={`Filtrar por severidad: ${s === '' ? 'Todas' : s === 'Critical' ? 'Crítica' : s === 'High' ? 'Alta' : s === 'Medium' ? 'Media' : 'Baja'}`}>
                         {s === '' ? 'Todas' : s === 'Critical' ? 'Crítica' : s === 'High' ? 'Alta' : s === 'Medium' ? 'Media' : 'Baja'}
                     </button>
                 ))}
-                <span className="text-[11px] text-slate-400 ml-auto">{filtered.length} de {findings.length} hallazgos</span>
+                <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-disabled)', marginLeft: 'auto' }}>{filtered.length} de {findings.length} hallazgos</span>
             </div>
 
             {/* Form Modal */}
             <Modal isOpen={showForm} onClose={resetForm} title={editId ? 'Editar Hallazgo' : 'Nuevo Hallazgo'}>
-                <form onSubmit={handleSubmit} className="p-6 space-y-5" noValidate aria-label={editId ? 'Formulario de edición de hallazgo' : 'Formulario de nuevo hallazgo'}>
+                <form onSubmit={handleSubmit} className="form-layout" noValidate aria-label={editId ? 'Formulario de edición de hallazgo' : 'Formulario de nuevo hallazgo'}>
                     {/* Plan as read-only text */}
                     <div>
-                        {/* ACCESIBILIDAD: label sin htmlFor → uso de aria-label en el div (WCAG 1.3.1) */}
                         <p className="form-label" id="label-plan">Plan asignado</p>
-                        <div className="form-input bg-slate-50 text-slate-700 cursor-not-allowed" aria-labelledby="label-plan" tabIndex={-1}>
+                        <div className="form-input form-input--disabled" style={{ cursor: 'not-allowed', background: 'var(--neutral-100)', color: 'var(--text-muted)' }} aria-labelledby="label-plan" tabIndex={-1}>
                             {activePlan?.projectName || 'Sin plan seleccionado'}
                         </div>
                     </div>
                     <div>
                         <label htmlFor="findingDescription" className="form-label">
-                            Descripción <span className="text-red-500" aria-hidden="true">*</span>
+                            Descripción <span style={{ color: 'var(--color-error)' }} aria-hidden="true">*</span>
                             <span className="sr-only">(requerido)</span>
                         </label>
                         <textarea
@@ -183,12 +178,12 @@ export default function Findings() {
                     </div>
 
                     {/* ACCESIBILIDAD: fieldset agrupa campos relacionados semánticamente (WCAG 1.3.1) */}
-                    <fieldset className="border-0 p-0 m-0">
-                        <legend className="form-label mb-3">Clasificación del hallazgo</legend>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
+                        <legend className="form-label" style={{ marginBottom: 'var(--space-3)' }}>Clasificación del hallazgo</legend>
+                        <div className="form-grid-4">
                             <div>
                                 <label htmlFor="findingSeverity" className="form-label">
-                                    Severidad <span className="text-red-500" aria-hidden="true">*</span>
+                                    Severidad <span style={{ color: 'var(--color-error)' }} aria-hidden="true">*</span>
                                     <span className="sr-only">(requerido)</span>
                                 </label>
                                 <select id="findingSeverity" value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value }))} className="form-input" required aria-required="true">
@@ -200,7 +195,7 @@ export default function Findings() {
                             </div>
                             <div>
                                 <label htmlFor="findingPriority" className="form-label">
-                                    Prioridad <span className="text-red-500" aria-hidden="true">*</span>
+                                    Prioridad <span style={{ color: 'var(--color-error)' }} aria-hidden="true">*</span>
                                     <span className="sr-only">(requerido)</span>
                                 </label>
                                 <select id="findingPriority" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="form-input" required aria-required="true">
@@ -211,7 +206,7 @@ export default function Findings() {
                             </div>
                             <div>
                                 <label htmlFor="findingStatus" className="form-label">
-                                    Estado <span className="text-red-500" aria-hidden="true">*</span>
+                                    Estado <span style={{ color: 'var(--color-error)' }} aria-hidden="true">*</span>
                                     <span className="sr-only">(requerido)</span>
                                 </label>
                                 <select id="findingStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="form-input" required aria-required="true">
@@ -227,7 +222,7 @@ export default function Findings() {
                         </div>
                     </fieldset>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="form-grid-2">
                         <div>
                             <label htmlFor="findingCategory" className="form-label">Categoría</label>
                             <input id="findingCategory" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className="form-input" placeholder="Ej: Formularios" />
@@ -247,7 +242,7 @@ export default function Findings() {
                         <label htmlFor="findingRecommendation" className="form-label">Recomendación</label>
                         <textarea id="findingRecommendation" value={form.recommendation} onChange={e => setForm(f => ({ ...f, recommendation: e.target.value }))} className="form-input" rows={3} />
                     </div>
-                    <div className="flex items-center gap-3 pt-3">
+                    <div className="form-actions">
                         <button type="submit" className="btn btn-primary" disabled={isSubmitting} aria-busy={isSubmitting}>
                             <Save size={16} aria-hidden="true" /> {isSubmitting ? 'Guardando...' : (editId ? 'Actualizar' : 'Guardar')}
                         </button>
@@ -260,52 +255,55 @@ export default function Findings() {
 
             {/* Findings Cards */}
             {loading ? (
-                <div className="flex justify-center py-12"><div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" /></div>
+                <div className="dashboard-loader">
+                    <div className="dashboard-spinner" aria-label="Cargando..." />
+                </div>
             ) : filtered.length === 0 ? (
-                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl border-2 border-dashed border-slate-300 p-12 text-center shadow-inner">
-                    <Search size={48} className="text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-[18px] font-semibold text-slate-700 mb-2">Sin hallazgos</h3>
-                    <p className="text-[14px] text-slate-500">No se encontraron hallazgos que coincidan con el filtro seleccionado.</p>
+                <div className="empty-state-card">
+                    <Search size={48} className="empty-state-icon" aria-hidden="true" />
+                    <h3 className="empty-state-title">Sin hallazgos</h3>
+                    <p className="empty-state-subtitle">No se encontraron hallazgos que coincidan con el filtro seleccionado.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="page-grid-2">
                     {filtered.map((finding: any) => (
-                        <div key={finding.id} className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group">
-                            <div className={`h-2 w-full ${finding.severity === 'Critical' ? 'bg-gradient-to-r from-red-600 to-red-500' : finding.severity === 'High' ? 'bg-gradient-to-r from-orange-500 to-red-400' : finding.severity === 'Medium' ? 'bg-gradient-to-r from-yellow-500 to-orange-400' : 'bg-gradient-to-r from-green-500 to-emerald-400'}`} />
-                            <div className="p-5">
-                                <div className="flex items-start justify-between gap-2">
-                                    <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                                        {/* HAL-02: Removed finding.id display */}
-                                        {finding.category && <span className="text-[11px] font-medium bg-blue-100 text-blue-800 px-2 py-1 rounded-md border border-blue-200 shadow-sm">{finding.category}</span>}
-                                        <span className="text-[11px] font-medium bg-purple-100 text-purple-800 px-2 py-1 rounded-md border border-purple-200 shadow-sm">{finding.tool}</span>
+                        <div key={finding.id} className="finding-card">
+                            <div className={`finding-card-bar finding-card-bar--${finding.severity === 'Critical' ? 'critical' : finding.severity === 'High' ? 'high' : finding.severity === 'Medium' ? 'medium' : 'low'}`} />
+                            <div className="finding-card-body">
+                                <div className="finding-card-header">
+                                    <div className="finding-card-meta-list">
+                                        {finding.category && <span className="finding-card-meta-pill finding-card-meta-pill--blue">{finding.category}</span>}
+                                        <span className="finding-card-meta-pill finding-card-meta-pill--purple">{finding.tool}</span>
                                     </div>
-                                    <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold shadow-md ${finding.severity === 'Critical' ? 'bg-red-100 text-red-800 border border-red-300' : finding.severity === 'High' ? 'bg-orange-100 text-orange-800 border border-orange-300' : finding.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' : 'bg-green-100 text-green-800 border border-green-300'}`}>
-                                        {finding.severity === 'Critical' || finding.severity === 'High' ? <AlertCircle size={12} /> : <AlertTriangle size={12} />}
-                                        {finding.severity === 'Critical' ? 'Crítica' : finding.severity === 'High' ? 'Alta' : finding.severity === 'Medium' ? 'Media' : 'Baja'}
+                                    <span className={`badge ${finding.severity === 'Critical' ? 'badge-critica' : finding.severity === 'High' ? 'badge-alta' : finding.severity === 'Medium' ? 'badge-media' : 'badge-baja'}`}>
+                                        {finding.severity === 'Critical' && <XCircle size={12} aria-hidden="true" style={{ color: '#991b1b' }} />}
+                                        {finding.severity === 'High' && <AlertCircle size={12} aria-hidden="true" style={{ color: 'var(--color-error-text)' }} />}
+                                        {finding.severity === 'Medium' && <AlertTriangle size={12} aria-hidden="true" style={{ color: 'var(--color-primary-hover)' }} />}
+                                        {finding.severity === 'Low' && <CheckCircle2 size={12} aria-hidden="true" style={{ color: 'var(--color-success-text)' }} />}
+                                        <span>{finding.severity === 'Critical' ? 'Crítica' : finding.severity === 'High' ? 'Alta' : finding.severity === 'Medium' ? 'Media' : 'Baja'}</span>
                                     </span>
                                 </div>
-                                <p className="text-[15px] font-semibold text-gray-900 mb-3 leading-relaxed">{finding.description}</p>
+                                <h3 className="finding-card-title">{finding.description}</h3>
                                 {finding.recommendation && (
-                                    <div className="mb-4 flex items-start gap-3 text-[13px] text-slate-700 bg-slate-50 p-3 rounded-lg border-l-4 border-blue-400">
+                                    <div className="finding-card-recommendation">
                                         <ArrowRight size={14} className="text-blue-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
-                                        <span className="font-medium">{finding.recommendation}</span>
+                                        <span style={{ fontWeight: 'var(--font-weight-semibold)' }}>{finding.recommendation}</span>
                                     </div>
                                 )}
-                                <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
-                                    <div className="flex items-center gap-3 text-[11px] text-slate-500">
-                                        {finding.frequency && <span className="bg-slate-100 px-2 py-1 rounded-md">Frecuencia: {finding.frequency}</span>}
-                                        <span className="bg-slate-100 px-2 py-1 rounded-md">Prioridad: {finding.priority === 'High' ? 'Alta' : finding.priority === 'Medium' ? 'Media' : 'Baja'}</span>
+                                <div className="finding-card-footer">
+                                    <div className="finding-card-details-row">
+                                        {finding.frequency && <span className="finding-card-details-pill">Frecuencia: {finding.frequency}</span>}
+                                        <span className="finding-card-details-pill">Prioridad: {finding.priority === 'High' ? 'Alta' : finding.priority === 'Medium' ? 'Media' : 'Baja'}</span>
                                         {finding.improvementActions?.length > 0 && (
-                                            <span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded-md font-semibold">{finding.improvementActions.length} acciones</span>
+                                            <span className="finding-card-details-pill finding-card-details-pill--emerald">{finding.improvementActions.length} acciones</span>
                                         )}
                                     </div>
-                                    <div className="flex gap-2">
-                                        {/* HAL-01: aria-labels on all buttons */}
-                                        <button onClick={() => handleEdit(finding)} className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-blue-200" aria-label={`Editar hallazgo: ${finding.description?.substring(0, 40)}`} disabled={isReadOnly}>
+                                    <div className="finding-card-actions">
+                                        <button onClick={() => handleEdit(finding)} className="btn btn-secondary" style={{ fontSize: 11, padding: '6px 12px', height: 'auto', minHeight: 'unset' }} aria-label={`Editar hallazgo: ${finding.description?.substring(0, 40)}`} disabled={isReadOnly}>
                                             Editar
                                         </button>
-                                        <button onClick={() => setFindingToDelete(finding)} className="bg-red-50 hover:bg-red-100 text-red-700 text-[11px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-red-200" aria-label={`Eliminar hallazgo: ${finding.description?.substring(0, 40)}`} disabled={isReadOnly}>
-                                            <Trash2 size={12} />
+                                        <button onClick={() => setFindingToDelete(finding)} className="btn btn-danger" style={{ fontSize: 11, padding: '6px 12px', height: 'auto', minHeight: 'unset' }} aria-label={`Eliminar hallazgo: ${finding.description?.substring(0, 40)}`} disabled={isReadOnly}>
+                                            <Trash2 size={12} aria-hidden="true" />
                                         </button>
                                     </div>
                                 </div>
@@ -317,13 +315,13 @@ export default function Findings() {
 
             {/* Delete confirmation */}
             <Modal isOpen={!!findingToDelete} onClose={() => setFindingToDelete(null)} title="Eliminar Hallazgo" maxWidth="480px">
-                <div className="p-5">
-                    <p className="text-[14px] text-slate-600 mb-5">
+                <div className="modal-body">
+                    <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--line-height)' }}>
                         ¿Estás seguro de que deseas eliminar este hallazgo? Esta acción no se puede deshacer.
                     </p>
-                    <div className="flex justify-end gap-3">
+                    <div className="modal-footer">
                         <button type="button" onClick={() => setFindingToDelete(null)} className="btn btn-secondary">Cancelar</button>
-                        <button type="button" onClick={() => findingToDelete && confirmDelete(findingToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
+                        <button type="button" onClick={() => findingToDelete && confirmDelete(findingToDelete.id)} className="btn btn-danger">Eliminar</button>
                     </div>
                 </div>
             </Modal>

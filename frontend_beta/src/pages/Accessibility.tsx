@@ -37,40 +37,40 @@ const ACCESSIBILITY_TOOLS = ['WAVE', 'Lighthouse', 'Stark', 'Observación manual
 
 const TOOL_META: Record<string, { color: string; bg: string; border: string; icon: React.ReactNode; desc: string }> = {
   WAVE: {
-    color: 'text-blue-700',
-    bg: 'bg-blue-50',
-    border: 'border-blue-200',
+    color: 'tool-wave-color',
+    bg: 'tool-wave-bg',
+    border: 'tool-wave-border',
     icon: <Eye size={18} />,
     desc: 'Errores estructurales y ARIA'
   },
   Lighthouse: {
-    color: 'text-amber-700',
-    bg: 'bg-amber-50',
-    border: 'border-amber-200',
+    color: 'tool-lighthouse-color',
+    bg: 'tool-lighthouse-bg',
+    border: 'tool-lighthouse-border',
     icon: <Zap size={18} />,
     desc: 'Score de accesibilidad (0-100)'
   },
   Stark: {
-    color: 'text-purple-700',
-    bg: 'bg-purple-50',
-    border: 'border-purple-200',
+    color: 'tool-stark-color',
+    bg: 'tool-stark-bg',
+    border: 'tool-stark-border',
     icon: <Palette size={18} />,
     desc: 'Contraste y daltonismo'
   },
   'Observación manual': {
-    color: 'text-emerald-700',
-    bg: 'bg-emerald-50',
-    border: 'border-emerald-200',
+    color: 'tool-manual-color',
+    bg: 'tool-manual-bg',
+    border: 'tool-manual-border',
     icon: <BookCheck size={18} />,
     desc: 'Navegación por teclado y lector de pantalla'
   }
 }
 
 const SEVERITY_STYLES: Record<string, { badge: string; bar: string; label: string }> = {
-  Critical: { badge: 'bg-red-100 text-red-800 border-red-300', bar: 'bg-red-500', label: 'Crítica' },
-  High:     { badge: 'bg-orange-100 text-orange-800 border-orange-300', bar: 'bg-orange-500', label: 'Alta' },
-  Medium:   { badge: 'bg-yellow-100 text-yellow-800 border-yellow-300', bar: 'bg-yellow-500', label: 'Media' },
-  Low:      { badge: 'bg-green-100 text-green-800 border-green-300', bar: 'bg-green-500', label: 'Baja' },
+  Critical: { badge: 'badge-critica', bar: 'acc-row-bar--critical', label: 'Crítica' },
+  High:     { badge: 'badge-alta', bar: 'acc-row-bar--high', label: 'Alta' },
+  Medium:   { badge: 'badge-media', bar: 'acc-row-bar--medium', label: 'Media' },
+  Low:      { badge: 'badge-baja', bar: 'acc-row-bar--low', label: 'Baja' },
 }
 
 const WCAG_LEVELS = ['A', 'AA', 'AAA', 'N/A']
@@ -272,31 +272,31 @@ export default function Accessibility() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col gap-6 animate-rise">
+    <div className="page-container animate-rise" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
       {/* ── Encabezado ── */}
-      <div className="flex items-start justify-between flex-wrap gap-3">
+      <div className="page-header">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-md">
-              <ShieldCheck size={16} className="text-white" aria-hidden="true" />
+          <div className="page-header-title-container">
+            <div className="page-header-icon-box">
+              <ShieldCheck size={20} className="page-header-icon text-white" aria-hidden="true" />
             </div>
-            <h2 className="text-[20px] font-semibold text-slate-900">
+            <h2 className="page-header-title">
               Módulo de Accesibilidad
             </h2>
           </div>
-          <p className="text-[13px] text-slate-500 ml-10">
+          <p className="page-header-subtitle">
             Auditorías con WAVE, Lighthouse y Stark — seguimiento de hallazgos y correcciones
           </p>
         </div>
         <button
           onClick={openCreate}
-          className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          className="btn btn-primary"
           disabled={!activePlanId || isReadOnly}
           aria-label="Registrar nueva auditoría de accesibilidad"
         >
-          <Plus size={14} aria-hidden="true" />
-          Nueva Auditoría
+          <Plus size={16} aria-hidden="true" />
+          <span>Nueva Auditoría</span>
         </button>
       </div>
 
@@ -314,181 +314,169 @@ export default function Accessibility() {
 
       {/* ── Banner sin plan ── */}
       {!activePlanId && !loading && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center">
-          <ShieldCheck size={32} className="text-blue-400 mx-auto mb-3" aria-hidden="true" />
-          <p className="text-[14px] text-blue-700 font-medium">
+        <div className="warning-banner text-center" style={{ backgroundColor: 'var(--color-primary-light)', borderColor: 'var(--color-primary-border)', padding: 'var(--space-6)', borderRadius: 'var(--radius-xl)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <ShieldCheck size={32} className="mx-auto mb-3" aria-hidden="true" style={{ color: 'var(--color-primary)' }} />
+          <p style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-primary)', fontWeight: 'var(--font-weight-medium)' }}>
             Selecciona un plan de prueba para ver y registrar auditorías de accesibilidad
           </p>
         </div>
       )}
 
       {/* ── KPI Cards con Metáforas ── */}
-      {/* METÁFORA GLOBAL: El módulo es un "Centro de Control de Acceso" —
-          cada KPI representa un aspecto de la vigilancia de barreras del sistema */}
       {activePlanId && (
         <div
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+          className="dashboard-kpi-row"
           role="region"
           aria-label="Resumen de auditorías de accesibilidad"
         >
-          {/* KPI 1 — METÁFORA: Radar de Barreras
-              El radar detecta obstáculos ocultos; igual que las herramientas
-              de accesibilidad detectan barreras invisibles para el usuario promedio */}
-          <div className="kpi-card p-4 flex flex-col gap-2 relative overflow-hidden">
+          {/* KPI 1 — Radar de Barreras */}
+          <div className="kpi-card kpi-card-meta">
             {/* Decoración de radar animado */}
-            <div className="absolute top-2 right-2 w-10 h-10 opacity-10">
-              <div className="w-10 h-10 rounded-full border-2 border-slate-400 animate-ping absolute" />
-              <div className="w-6 h-6 rounded-full border-2 border-slate-400 absolute top-2 left-2" />
+            <div className="radar-container">
+              <div className="radar-ring-outer radar-ping" />
+              <div className="radar-ring-inner" />
             </div>
-            <div className="flex items-center gap-2">
-              {/* Ícono SVG de radar */}
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="text-slate-500">
+            <div className="kpi-card-meta-header">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="kpi-card-meta-icon">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 2"/>
                 <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 2"/>
                 <circle cx="12" cy="12" r="2" fill="currentColor"/>
                 <line x1="12" y1="2" x2="12" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.5"/>
               </svg>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <p className="kpi-card-meta-title">
                 Radar de Barreras
               </p>
             </div>
             <p
-              className="text-[32px] font-bold text-slate-900 leading-none"
+              className="kpi-card-meta-value"
               aria-label={`${total} hallazgos de accesibilidad registrados en total`}
             >
               {total}
             </p>
-            <p className="text-[11px] text-slate-400">
+            <p className="kpi-card-meta-sublabel">
               barreras detectadas
             </p>
-            <p className="text-[10px] text-slate-300 italic mt-auto">
+            <p className="kpi-card-meta-footnote">
               Como un radar, las herramientas revelan obstáculos ocultos
             </p>
           </div>
 
-          {/* KPI 2 — METÁFORA: Puertas Cerradas
-              Una puerta cerrada = una barrera que impide el acceso a personas
-              con discapacidad. Cada hallazgo pendiente es una puerta sin rampa */}
-          <div className={`kpi-card p-4 flex flex-col gap-2 relative overflow-hidden ${open > 0 ? 'border-l-4 border-orange-400' : ''}`}>
-            <div className="flex items-center gap-2">
-              {/* Ícono SVG de puerta cerrada */}
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={open > 0 ? 'text-orange-500' : 'text-slate-400'}>
+          {/* KPI 2 — Puertas Cerradas */}
+          <div className={`kpi-card kpi-card-meta ${open > 0 ? 'kpi-card-meta--alert-open' : ''}`}>
+            <div className="kpi-card-meta-header">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="kpi-card-meta-icon" style={open > 0 ? { color: 'var(--color-warning)' } : undefined}>
                 <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5"/>
                 <rect x="7" y="3" width="10" height="18" rx="1" stroke="currentColor" strokeWidth="1.5" fill="none"/>
                 <circle cx="15" cy="12" r="1.2" fill="currentColor"/>
               </svg>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <p className="kpi-card-meta-title">
                 Puertas Cerradas
               </p>
             </div>
             <p
-              className={`text-[32px] font-bold leading-none ${open > 0 ? 'text-orange-600' : 'text-slate-900'}`}
+              className="kpi-card-meta-value"
               aria-label={`${open} hallazgos de accesibilidad pendientes de corrección`}
+              style={open > 0 ? { color: 'var(--color-warning-text)' } : undefined}
             >
               {open}
             </p>
-            <p className="text-[11px] text-slate-400">
+            <p className="kpi-card-meta-sublabel">
               {open === 0 ? '¡Sin accesos bloqueados!' : 'accesos bloqueados'}
             </p>
-            <p className="text-[10px] text-slate-300 italic mt-auto">
+            <p className="kpi-card-meta-footnote">
               Barreras que aún impiden el acceso a todos los usuarios
             </p>
           </div>
 
-          {/* KPI 3 — METÁFORA: Rutas Habilitadas
-              Una rampa o ruta accesible = barrera eliminada. Cada hallazgo corregido
-              es un camino que ahora pueden usar personas con discapacidad */}
-          <div className={`kpi-card p-4 flex flex-col gap-2 relative overflow-hidden ${resolved > 0 ? 'border-l-4 border-emerald-400' : ''}`}>
-            <div className="flex items-center gap-2">
-              {/* Ícono SVG de rampa/ruta */}
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={resolved > 0 ? 'text-emerald-600' : 'text-slate-400'}>
+          {/* KPI 3 — Rutas Habilitadas */}
+          <div className={`kpi-card kpi-card-meta ${resolved > 0 ? 'kpi-card-meta--alert-resolved' : ''}`}>
+            <div className="kpi-card-meta-header">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="kpi-card-meta-icon" style={resolved > 0 ? { color: 'var(--color-success)' } : undefined}>
                 <path d="M3 20 L21 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 <path d="M21 4 L21 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                 <path d="M21 4 L15 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                 <circle cx="7" cy="16" r="1.5" fill="currentColor" opacity="0.6"/>
                 <circle cx="13" cy="10" r="1.5" fill="currentColor" opacity="0.6"/>
               </svg>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <p className="kpi-card-meta-title">
                 Rutas Habilitadas
               </p>
             </div>
-            <p
-              className={`text-[32px] font-bold leading-none ${resolved > 0 ? 'text-emerald-600' : 'text-slate-900'}`}
-              aria-label={`${resolved} hallazgos corregidos de ${total} totales`}
-            >
-              {resolved}
-            </p>
-            {total > 0 ? (
-              <div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-1">
-                  <div
-                    className="h-full bg-emerald-400 rounded-full transition-all duration-700"
-                    style={{ width: `${Math.round((resolved / total) * 100)}%` }}
-                    role="progressbar"
-                    aria-valuenow={Math.round((resolved / total) * 100)}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label="Porcentaje de barreras eliminadas"
-                  />
+            <div className="flex-1" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', width: '100%' }}>
+              <p
+                className="kpi-card-meta-value"
+                aria-label={`${resolved} hallazgos corregidos de ${total} totales`}
+                style={resolved > 0 ? { color: 'var(--color-success-text)' } : undefined}
+              >
+                {resolved}
+              </p>
+              {total > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
+                  <div style={{ height: '8px', backgroundColor: 'var(--neutral-100)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+                    <div
+                      style={{ height: '100%', backgroundColor: 'var(--color-success)', borderRadius: 'var(--radius-full)', width: `${Math.round((resolved / total) * 100)}%`, transition: 'width 0.7s ease' }}
+                      role="progressbar"
+                      aria-valuenow={Math.round((resolved / total) * 100)}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label="Porcentaje de barreras eliminadas"
+                    />
+                  </div>
+                  <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-success-text)', fontWeight: 'var(--font-weight-semibold)', margin: 0 }}>
+                    {Math.round((resolved / total) * 100)}% del camino habilitado
+                  </p>
                 </div>
-                <p className="text-[11px] text-emerald-600 font-semibold">
-                  {Math.round((resolved / total) * 100)}% del camino habilitado
-                </p>
-              </div>
-            ) : (
-              <p className="text-[11px] text-slate-400">accesos desbloqueados</p>
-            )}
-            <p className="text-[10px] text-slate-300 italic mt-auto">
+              ) : (
+                <p className="kpi-card-meta-sublabel">accesos desbloqueados</p>
+              )}
+            </div>
+            <p className="kpi-card-meta-footnote">
               Rampas construidas — acceso garantizado para todos
             </p>
           </div>
 
-          {/* KPI 4 — METÁFORA: Señales de Alerta
-              Una señal roja en la vía = peligro que no puede ignorarse.
-              Los hallazgos críticos son las barreras más severas del sistema */}
-          <div className={`kpi-card p-4 flex flex-col gap-2 relative overflow-hidden ${critical > 0 ? 'border-l-4 border-red-500' : ''}`}>
-            {/* Destello pulsante si hay críticos */}
+          {/* KPI 4 — Señales de Alerta */}
+          <div className={`kpi-card kpi-card-meta ${critical > 0 ? 'kpi-card-meta--alert-critical' : ''}`}>
             {critical > 0 && (
-              <div className="absolute top-3 right-3 w-3 h-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+              <div className="absolute top-3 right-3 w-3 h-3" style={{ position: 'absolute', top: '12px', right: '12px', width: '12px', height: '12px' }}>
+                <span className="radar-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" style={{ position: 'absolute', display: 'inline-flex', height: '100%', width: '100%', borderRadius: 'var(--radius-full)', backgroundColor: 'var(--color-error)', opacity: 0.75 }} />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" style={{ position: 'relative', display: 'inline-flex', borderRadius: 'var(--radius-full)', height: '12px', width: '12px', backgroundColor: 'var(--color-error)' }} />
               </div>
             )}
-            <div className="flex items-center gap-2">
-              {/* Ícono SVG de señal de alerta */}
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={critical > 0 ? 'text-red-500' : 'text-slate-400'}>
+            <div className="kpi-card-meta-header">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="kpi-card-meta-icon" style={critical > 0 ? { color: 'var(--color-error)' } : undefined}>
                 <path d="M12 3 L22 20 H2 Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
                 <line x1="12" y1="10" x2="12" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 <circle cx="12" cy="18" r="1" fill="currentColor"/>
               </svg>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <p className="kpi-card-meta-title">
                 Alertas Activas
               </p>
             </div>
             <p
-              className={`text-[32px] font-bold leading-none ${critical > 0 ? 'text-red-600' : 'text-slate-900'}`}
+              className="kpi-card-meta-value"
               aria-label={`${critical} hallazgos críticos de accesibilidad sin corregir`}
+              style={critical > 0 ? { color: 'var(--color-error-text)' } : undefined}
             >
               {critical}
             </p>
-            <p className="text-[11px] text-slate-400">
+            <p className="kpi-card-meta-sublabel">
               {critical === 0 ? '¡Vía despejada!' : 'bloqueos críticos activos'}
             </p>
-            <p className="text-[10px] text-slate-300 italic mt-auto">
+            <p className="kpi-card-meta-footnote">
               Señales de peligro que requieren acción inmediata
             </p>
           </div>
         </div>
       )}
 
-
       {/* ── Resumen por herramienta ── */}
-      {auditGroups.length > 0 && (
-        <section aria-label="Resumen por herramienta">
-          <h3 className="text-[13px] font-semibold text-slate-600 uppercase tracking-wider mb-3">
+      {activePlanId && auditGroups.length > 0 && (
+        <section aria-label="Resumen por herramienta" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          <h3 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
             Cobertura por herramienta
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+          <div className="form-grid-4">
             {auditGroups.map(g => {
               const meta = TOOL_META[g.tool] ?? TOOL_META['Observación manual']
               const pct = g.findings.length > 0
@@ -497,27 +485,32 @@ export default function Accessibility() {
               return (
                 <div
                   key={g.tool}
-                  className={`rounded-xl border p-4 flex flex-col gap-2 ${meta.bg} ${meta.border}`}
+                  className={`card-layout ${meta.bg} ${meta.border}`}
+                  style={{ borderWidth: '1px', borderStyle: 'solid', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', padding: 'var(--space-4)', borderRadius: 'var(--radius-xl)' }}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className={meta.color} aria-hidden="true">{meta.icon}</span>
-                    <span className={`text-[13px] font-bold ${meta.color}`}>{g.tool}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                    <span className={meta.color} aria-hidden="true" style={{ display: 'inline-flex', alignItems: 'center' }}>{meta.icon}</span>
+                    <span className={meta.color} style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-bold)' }}>{g.tool}</span>
                   </div>
-                  <p className="text-[11px] text-slate-500">{meta.desc}</p>
-                  <div className="flex items-end justify-between mt-1">
-                    <span className="text-[22px] font-bold text-slate-800">{g.findings.length}</span>
-                    <span className={`text-[12px] font-semibold ${meta.color}`}>
+                  <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', margin: 0 }}>{meta.desc}</p>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 'var(--space-1)' }}>
+                    <span style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 'var(--font-weight-bold)', color: 'var(--text-primary)' }}>{g.findings.length}</span>
+                    <span className={meta.color} style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-semibold)' }}>
                       {g.resolved}/{g.findings.length} corregidos
                     </span>
                   </div>
-                  <div className="h-1.5 bg-white/60 rounded-full overflow-hidden">
+                  <div style={{ height: '6px', backgroundColor: 'rgba(255, 255, 255, 0.6)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
                     <div
-                      className={`h-full rounded-full transition-all duration-700 ${
-                        g.tool === 'WAVE' ? 'bg-blue-500' :
-                        g.tool === 'Lighthouse' ? 'bg-amber-500' :
-                        g.tool === 'Stark' ? 'bg-purple-500' : 'bg-emerald-500'
-                      }`}
-                      style={{ width: `${pct}%` }}
+                      style={{
+                        height: '100%',
+                        borderRadius: 'var(--radius-full)',
+                        transition: 'width 0.7s ease',
+                        width: `${pct}%`,
+                        backgroundColor:
+                          g.tool === 'WAVE' ? 'var(--color-primary)' :
+                          g.tool === 'Lighthouse' ? 'var(--color-warning)' :
+                          g.tool === 'Stark' ? '#6b21a8' : 'var(--color-success)'
+                      }}
                     />
                   </div>
                 </div>
@@ -529,52 +522,45 @@ export default function Accessibility() {
 
       {/* ── Filtros ── */}
       {activePlanId && findings.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap" role="toolbar" aria-label="Filtros de hallazgos">
-          <Filter size={13} className="text-slate-400" aria-hidden="true" />
-
-          {/* filtro por herramienta */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] text-slate-400 font-semibold">Herramienta:</span>
-            {['', ...ACCESSIBILITY_TOOLS].map(t => (
-              <button
-                key={t || 'all-tools'}
-                onClick={() => setFilterTool(t)}
-                className={`text-[12px] px-3 py-1.5 rounded-full border transition-all font-medium ${
-                  filterTool === t
-                    ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
-                    : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
-                }`}
-                aria-pressed={filterTool === t}
-                aria-label={`Filtrar por herramienta: ${t || 'Todas'}`}
-              >
-                {t || 'Todas'}
-              </button>
-            ))}
+        <div className="card-layout" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap', padding: 'var(--space-3) var(--space-4)' }} role="toolbar" aria-label="Filtros de hallazgos">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+            <Filter size={14} className="text-slate-400" aria-hidden="true" />
+            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', fontWeight: 'var(--font-weight-semibold)' }}>Herramienta:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', flexWrap: 'wrap' }}>
+              {['', ...ACCESSIBILITY_TOOLS].map(t => (
+                <button
+                  key={t || 'all-tools'}
+                  onClick={() => setFilterTool(t)}
+                  className={`btn ${filterTool === t ? 'btn-primary' : 'btn-secondary'} btn-sm`}
+                  style={{ borderRadius: 'var(--radius-full)', padding: 'var(--space-1) var(--space-3)' }}
+                  aria-pressed={filterTool === t}
+                  aria-label={`Filtrar por herramienta: ${t || 'Todas'}`}
+                >
+                  {t || 'Todas'}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <span className="text-slate-200 hidden sm:block">|</span>
-
-          {/* filtro por severidad */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] text-slate-400 font-semibold">Severidad:</span>
-            {['', 'Critical', 'High', 'Medium', 'Low'].map(s => (
-              <button
-                key={s || 'all-sev'}
-                onClick={() => setFilterSev(s)}
-                className={`text-[12px] px-3 py-1.5 rounded-full border transition-all font-medium ${
-                  filterSev === s
-                    ? 'bg-slate-800 border-slate-800 text-white shadow-sm'
-                    : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
-                }`}
-                aria-pressed={filterSev === s}
-                aria-label={`Filtrar por severidad: ${s || 'Todas'}`}
-              >
-                {s === '' ? 'Todas' : s === 'Critical' ? 'Crítica' : s === 'High' ? 'Alta' : s === 'Medium' ? 'Media' : 'Baja'}
-              </button>
-            ))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', fontWeight: 'var(--font-weight-semibold)' }}>Severidad:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', flexWrap: 'wrap' }}>
+              {['', 'Critical', 'High', 'Medium', 'Low'].map(s => (
+                <button
+                  key={s || 'all-sev'}
+                  onClick={() => setFilterSev(s)}
+                  className={`btn ${filterSev === s ? 'btn-primary' : 'btn-secondary'} btn-sm`}
+                  style={{ borderRadius: 'var(--radius-full)', padding: 'var(--space-1) var(--space-3)' }}
+                  aria-pressed={filterSev === s}
+                  aria-label={`Filtrar por severidad: ${s || 'Todas'}`}
+                >
+                  {s === '' ? 'Todas' : s === 'Critical' ? 'Crítica' : s === 'High' ? 'Alta' : s === 'Medium' ? 'Media' : 'Baja'}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <span className="text-[11px] text-slate-400 ml-auto">
+          <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginLeft: 'auto' }}>
             {filtered.length} de {findings.length} hallazgos
           </span>
         </div>
@@ -582,78 +568,80 @@ export default function Accessibility() {
 
       {/* ── Lista de hallazgos ── */}
       {loading ? (
-        <div className="flex justify-center py-14" aria-label="Cargando hallazgos de accesibilidad">
-          <div className="w-8 h-8 border-[3px] border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-12) 0' }} aria-label="Cargando hallazgos de accesibilidad">
+          <div style={{ width: '32px', height: '32px', border: '3px solid var(--color-primary-light)', borderTopColor: 'var(--color-primary)', borderRadius: 'var(--radius-full)', animation: 'spin 1s linear infinite' }} />
         </div>
 
       ) : !activePlanId ? null
 
       : findings.length === 0 ? (
-        <div className="bg-gradient-to-br from-slate-50 to-indigo-50 rounded-2xl border-2 border-dashed border-slate-200 p-14 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-100 to-blue-100 border border-indigo-200 flex items-center justify-center mx-auto mb-4">
-            <ShieldCheck size={28} className="text-indigo-400" aria-hidden="true" />
+        <div className="card-layout" style={{ borderStyle: 'dashed', borderWidth: '2px', padding: 'var(--space-12) var(--space-6)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '56px', height: '56px', borderRadius: 'var(--radius-2xl)', background: 'var(--color-primary-light)', border: '1px solid var(--color-primary-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'var(--space-4)' }}>
+            <ShieldCheck size={28} style={{ color: 'var(--color-primary)' }} aria-hidden="true" />
           </div>
-          <h3 className="text-[16px] font-semibold text-slate-700 mb-1">Sin auditorías registradas</h3>
-          <p className="text-[13px] text-slate-500 max-w-sm mx-auto">
+          <h3 style={{ fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--text-primary)', marginBottom: 'var(--space-2)', marginTop: 0 }}>Sin auditorías registradas</h3>
+          <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', maxWidth: '400px', textAlign: 'center', marginBottom: 'var(--space-4)', marginTop: 0 }}>
             Corra WAVE, Lighthouse o Stark sobre el proyecto evaluado y registre los hallazgos aquí.
           </p>
           {!isReadOnly && (
-            <button onClick={openCreate} className="btn btn-primary mt-5 mx-auto">
-              <Plus size={14} aria-hidden="true" /> Primera auditoría
+            <button onClick={openCreate} className="btn btn-primary">
+              <Plus size={16} aria-hidden="true" />
+              <span>Primera auditoría</span>
             </button>
           )}
         </div>
-
       ) : filtered.length === 0 ? (
-        <div className="bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-10 text-center">
-          <p className="text-[14px] text-slate-500">No hay hallazgos que coincidan con los filtros seleccionados.</p>
+        <div className="card-layout" style={{ borderStyle: 'dashed', borderWidth: '1px', padding: 'var(--space-8)', textAlign: 'center' }}>
+          <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', margin: 0 }}>No hay hallazgos que coincidan con los filtros seleccionados.</p>
           <button
             onClick={() => { setFilterTool(''); setFilterSev('') }}
-            className="mt-3 text-[13px] text-blue-600 hover:underline font-medium"
+            className="btn btn-link btn-sm"
+            style={{ marginTop: 'var(--space-2)', color: 'var(--color-primary)' }}
           >
             Limpiar filtros
           </button>
         </div>
 
       ) : (
-        <section aria-label="Lista de hallazgos de accesibilidad">
+        <section aria-label="Lista de hallazgos de accesibilidad" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           {/* Vista agrupada por herramienta si no hay filtro de herramienta */}
           {!filterTool ? (
-            <div className="flex flex-col gap-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
               {ACCESSIBILITY_TOOLS.filter(t => filtered.some(f => f.tool === t)).map(tool => {
                 const meta    = TOOL_META[tool] ?? TOOL_META['Observación manual']
                 const toolFindings = filtered.filter(f => f.tool === tool)
                 const isExpanded   = expandedTool === null || expandedTool === tool
                 return (
-                  <div key={tool} className={`rounded-2xl border overflow-hidden ${meta.border}`}>
+                  <div key={tool} className={`card-layout ${meta.border}`} style={{ borderWidth: '1px', borderStyle: 'solid', overflow: 'hidden', padding: 0 }}>
                     {/* Tool header */}
                     <button
-                      className={`w-full flex items-center justify-between px-5 py-3.5 ${meta.bg} hover:brightness-95 transition-all`}
+                      className={`${meta.bg} ${meta.color}`}
+                      style={{ width: '100%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-4) var(--space-5)', cursor: 'pointer', textAlign: 'left', fontWeight: 'bold' }}
                       onClick={() => setExpandedTool(expandedTool === tool ? null : tool)}
                       aria-expanded={isExpanded}
-                      aria-controls={`section-${tool}`}
+                      aria-controls={`section-${tool.replace(/\s+/g, '-')}`}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <span className={meta.color} aria-hidden="true">{meta.icon}</span>
-                        <span className={`text-[14px] font-bold ${meta.color}`}>{tool}</span>
-                        <span className="text-[12px] font-medium bg-white/70 px-2 py-0.5 rounded-full text-slate-600 border border-white/80">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+                        <span aria-hidden="true" style={{ display: 'inline-flex', alignItems: 'center' }}>{meta.icon}</span>
+                        <span style={{ fontSize: 'var(--font-size-sm)' }}>{tool}</span>
+                        <span className="badge badge-pendiente" style={{ border: '1px solid rgba(0,0,0,0.1)' }}>
                           {toolFindings.length} hallazgo{toolFindings.length !== 1 ? 's' : ''}
                         </span>
                         {toolFindings.filter(f => f.status === 'Resolved' || f.status === 'Closed').length > 0 && (
-                          <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+                          <span className="badge badge-completada">
                             ✓ {toolFindings.filter(f => f.status === 'Resolved' || f.status === 'Closed').length} corregido{toolFindings.filter(f => f.status === 'Resolved').length !== 1 ? 's' : ''}
                           </span>
                         )}
                       </div>
                       {isExpanded
-                        ? <ChevronUp size={16} className={meta.color} aria-hidden="true" />
-                        : <ChevronDown size={16} className={meta.color} aria-hidden="true" />
+                        ? <ChevronUp size={16} aria-hidden="true" />
+                        : <ChevronDown size={16} aria-hidden="true" />
                       }
                     </button>
 
                     {/* Tool findings */}
                     {isExpanded && (
-                      <div id={`section-${tool}`} className="divide-y divide-slate-100">
+                      <div id={`section-${tool.replace(/\s+/g, '-')}`} style={{ display: 'flex', flexDirection: 'column' }} className="divide-y">
                         {toolFindings.map(f => (
                           <FindingRow
                             key={f.id}
@@ -673,7 +661,7 @@ export default function Accessibility() {
             </div>
           ) : (
             /* Vista plana cuando hay filtro */
-            <div className="flex flex-col gap-3">
+            <div className="card-layout divide-y" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               {filtered.map(f => (
                 <FindingRow
                   key={f.id}
@@ -694,150 +682,153 @@ export default function Accessibility() {
       <Modal isOpen={showForm} onClose={resetForm} title={editId ? 'Editar Hallazgo de Accesibilidad' : 'Nuevo Hallazgo de Accesibilidad'}>
         <form
           onSubmit={handleSubmit}
-          className="p-6 space-y-5"
+          className="form-layout"
           noValidate
           aria-label={editId ? 'Formulario de edición de hallazgo de accesibilidad' : 'Formulario de nuevo hallazgo de accesibilidad'}
         >
-          {/* Plan (solo lectura) */}
-          <div>
-            <p className="form-label" id="label-plan-acc">Plan asignado</p>
-            <div
-              className="form-input bg-slate-50 text-slate-700 cursor-not-allowed"
-              aria-labelledby="label-plan-acc"
-              tabIndex={-1}
-            >
-              {activePlan?.projectName || 'Sin plan seleccionado'}
-            </div>
-          </div>
-
-          {/* Herramienta y nivel WCAG */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="acc-tool" className="form-label">
-                Herramienta <span className="text-red-500" aria-hidden="true">*</span>
-                <span className="sr-only">(requerido)</span>
-              </label>
-              <select
-                id="acc-tool"
-                value={form.tool}
-                onChange={e => setForm(f => ({ ...f, tool: e.target.value }))}
+          <div className="modal-body">
+            {/* Plan (solo lectura) */}
+            <div className="form-group">
+              <p className="form-label" id="label-plan-acc">Plan asignado</p>
+              <div
                 className="form-input"
-                required
-                aria-required="true"
+                aria-labelledby="label-plan-acc"
+                tabIndex={-1}
+                style={{ backgroundColor: 'var(--neutral-50)', color: 'var(--text-secondary)', cursor: 'not-allowed' }}
               >
-                {ACCESSIBILITY_TOOLS.map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="acc-wcag" className="form-label">Criterio WCAG</label>
-              <select
-                id="acc-wcag"
-                value={(form as any).wcagLevel ?? 'AA'}
-                onChange={e => setForm(f => ({ ...f, wcagLevel: e.target.value }))}
-                className="form-input"
-              >
-                {WCAG_LEVELS.map(l => (
-                  <option key={l} value={l}>Nivel {l}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Descripción */}
-          <div>
-            <label htmlFor="acc-description" className="form-label">
-              Descripción del hallazgo <span className="text-red-500" aria-hidden="true">*</span>
-              <span className="sr-only">(requerido)</span>
-            </label>
-            <textarea
-              id="acc-description"
-              value={form.description}
-              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              className="form-input"
-              rows={3}
-              required
-              aria-required="true"
-              placeholder="Ej: El botón &quot;Guardar&quot; tiene contraste insuficiente (ratio 2.1:1 sobre fondo blanco)"
-            />
-          </div>
-
-          {/* Clasificación */}
-          <fieldset className="border-0 p-0 m-0">
-            <legend className="form-label mb-3">Clasificación del hallazgo</legend>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label htmlFor="acc-category" className="form-label">Categoría</label>
-                <select
-                  id="acc-category"
-                  value={form.category}
-                  onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                  className="form-input"
-                >
-                  {WCAG_CATEGORIES.map(c => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
+                {activePlan?.projectName || 'Sin plan seleccionado'}
               </div>
-              <div>
-                <label htmlFor="acc-severity" className="form-label">
-                  Severidad <span className="text-red-500" aria-hidden="true">*</span>
+            </div>
+
+            {/* Herramienta y nivel WCAG */}
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label htmlFor="acc-tool" className="form-label">
+                  Herramienta <span className="text-red-500" aria-hidden="true">*</span>
                   <span className="sr-only">(requerido)</span>
                 </label>
                 <select
-                  id="acc-severity"
-                  value={form.severity}
-                  onChange={e => setForm(f => ({ ...f, severity: e.target.value }))}
+                  id="acc-tool"
+                  value={form.tool}
+                  onChange={e => setForm(f => ({ ...f, tool: e.target.value }))}
                   className="form-input"
                   required
                   aria-required="true"
                 >
-                  <option value="Critical">Crítica</option>
-                  <option value="High">Alta</option>
-                  <option value="Medium">Media</option>
-                  <option value="Low">Baja</option>
+                  {ACCESSIBILITY_TOOLS.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
                 </select>
               </div>
-              <div>
-                <label htmlFor="acc-status" className="form-label">Estado</label>
+              <div className="form-group">
+                <label htmlFor="acc-wcag" className="form-label">Criterio WCAG</label>
                 <select
-                  id="acc-status"
-                  value={form.status}
-                  onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
+                  id="acc-wcag"
+                  value={(form as any).wcagLevel ?? 'AA'}
+                  onChange={e => setForm(f => ({ ...f, wcagLevel: e.target.value }))}
                   className="form-input"
                 >
-                  <option value="Open">Abierta</option>
-                  <option value="Resolved">Resuelta / Corregida</option>
-                  <option value="Closed">Cerrada</option>
+                  {WCAG_LEVELS.map(l => (
+                    <option key={l} value={l}>Nivel {l}</option>
+                  ))}
                 </select>
               </div>
             </div>
-          </fieldset>
 
-          {/* Recomendación */}
-          <div>
-            <label htmlFor="acc-recommendation" className="form-label">Corrección recomendada</label>
-            <textarea
-              id="acc-recommendation"
-              value={form.recommendation}
-              onChange={e => setForm(f => ({ ...f, recommendation: e.target.value }))}
-              className="form-input"
-              rows={2}
-              placeholder="Ej: Cambiar color de texto a #1e40af para alcanzar ratio 7:1"
-            />
+            {/* Descripción */}
+            <div className="form-group">
+              <label htmlFor="acc-description" className="form-label">
+                Descripción del hallazgo <span className="text-red-500" aria-hidden="true">*</span>
+                <span className="sr-only">(requerido)</span>
+              </label>
+              <textarea
+                id="acc-description"
+                value={form.description}
+                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                className="form-input"
+                rows={3}
+                required
+                aria-required="true"
+                placeholder="Ej: El botón Guardar tiene contraste insuficiente (ratio 2.1:1 sobre fondo blanco)"
+              />
+            </div>
+
+            {/* Clasificación */}
+            <fieldset className="form-fieldset" style={{ border: 'none', padding: 0, margin: 0 }}>
+              <legend className="form-label" style={{ marginBottom: 'var(--space-2)' }}>Clasificación del hallazgo</legend>
+              <div className="form-grid-3-acc">
+                <div className="form-group">
+                  <label htmlFor="acc-category" className="form-label">Categoría</label>
+                  <select
+                    id="acc-category"
+                    value={form.category}
+                    onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                    className="form-input"
+                  >
+                    {WCAG_CATEGORIES.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="acc-severity" className="form-label">
+                    Severidad <span className="text-red-500" aria-hidden="true">*</span>
+                    <span className="sr-only">(requerido)</span>
+                  </label>
+                  <select
+                    id="acc-severity"
+                    value={form.severity}
+                    onChange={e => setForm(f => ({ ...f, severity: e.target.value }))}
+                    className="form-input"
+                    required
+                    aria-required="true"
+                  >
+                    <option value="Critical">Crítica</option>
+                    <option value="High">Alta</option>
+                    <option value="Medium">Media</option>
+                    <option value="Low">Baja</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="acc-status" className="form-label">Estado</label>
+                  <select
+                    id="acc-status"
+                    value={form.status}
+                    onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
+                    className="form-input"
+                  >
+                    <option value="Open">Abierta</option>
+                    <option value="Resolved">Resuelta / Corregida</option>
+                    <option value="Closed">Cerrada</option>
+                  </select>
+                </div>
+              </div>
+            </fieldset>
+
+            {/* Recomendación */}
+            <div className="form-group">
+              <label htmlFor="acc-recommendation" className="form-label">Corrección recomendada</label>
+              <textarea
+                id="acc-recommendation"
+                value={form.recommendation}
+                onChange={e => setForm(f => ({ ...f, recommendation: e.target.value }))}
+                className="form-input"
+                rows={2}
+                placeholder="Ej: Cambiar color de texto a #1e40af para alcanzar ratio 7:1"
+              />
+            </div>
           </div>
 
           {/* Acciones */}
-          <div className="flex items-center gap-3 pt-2">
+          <div className="modal-footer">
             <button
               type="submit"
               className="btn btn-primary"
               disabled={isSubmitting}
               aria-busy={isSubmitting}
             >
-              <Save size={14} aria-hidden="true" />
-              {isSubmitting ? 'Guardando...' : (editId ? 'Actualizar' : 'Guardar hallazgo')}
+              <Save size={16} aria-hidden="true" />
+              <span>{isSubmitting ? 'Guardando...' : (editId ? 'Actualizar' : 'Guardar hallazgo')}</span>
             </button>
             <button
               type="button"
@@ -858,31 +849,32 @@ export default function Accessibility() {
         title="Eliminar Hallazgo"
         maxWidth="480px"
       >
-        <div className="p-5">
-          <p className="text-[14px] text-slate-600 mb-5">
+        <div className="modal-body">
+          <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--space-4)', marginTop: 0 }}>
             ¿Estás seguro de que deseas eliminar este hallazgo de accesibilidad? Esta acción no se puede deshacer.
           </p>
           {deleteTarget && (
-            <p className="text-[13px] bg-slate-50 rounded-lg px-3 py-2 text-slate-700 border border-slate-200 mb-5 italic">
+            <p style={{ fontSize: 'var(--font-size-xs)', backgroundColor: 'var(--neutral-50)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-2) var(--space-3)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', marginBottom: 'var(--space-4)', fontStyle: 'italic', marginTop: 0 }}>
               "{deleteTarget.description}"
             </p>
           )}
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setDeleteTarget(null)}
-              className="btn btn-secondary"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={() => deleteTarget && handleDelete(deleteTarget.id)}
-              className="btn btn-danger"
-            >
-              <Trash2 size={14} aria-hidden="true" /> Eliminar
-            </button>
-          </div>
+        </div>
+        <div className="modal-footer">
+          <button
+            type="button"
+            onClick={() => setDeleteTarget(null)}
+            className="btn btn-secondary"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={() => deleteTarget && handleDelete(deleteTarget.id)}
+            className="btn btn-danger"
+          >
+            <Trash2 size={16} aria-hidden="true" />
+            <span>Eliminar</span>
+          </button>
         </div>
       </Modal>
     </div>
@@ -907,63 +899,67 @@ function FindingRow({ finding: f, isReadOnly, onEdit, onDelete, onMarkResolved, 
 
   return (
     <article
-      className={`p-4 flex flex-col sm:flex-row sm:items-start gap-3 transition-colors ${
-        isDone ? 'bg-emerald-50/40' : 'bg-white hover:bg-slate-50/70'
+      className={`acc-finding-article ${
+        isDone ? 'acc-finding-article--resolved' : 'acc-finding-article--pending'
       }`}
       aria-label={`Hallazgo: ${f.description}`}
     >
       {/* Barra lateral de severidad */}
       <div
-        className={`w-1.5 rounded-full flex-shrink-0 self-stretch hidden sm:block ${sev.bar}`}
+        className={`acc-row-bar ${sev.bar}`}
         aria-hidden="true"
       />
 
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
         {/* Badges */}
-        <div className="flex items-center gap-2 flex-wrap mb-2">
-          <span className={`badge border text-[10px] ${sev.badge}`}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+          <span className={`badge ${sev.badge}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' }}>
             {f.severity === 'Critical' || f.severity === 'High'
               ? <AlertCircle size={10} aria-hidden="true" />
               : <AlertTriangle size={10} aria-hidden="true" />
             }
-            {sev.label}
+            <span>{sev.label}</span>
           </span>
           {f.category && (
-            <span className="badge bg-slate-100 text-slate-600 border border-slate-200 text-[10px]">
+            <span className="badge badge-pendiente">
               {f.category}
             </span>
           )}
           {isDone && (
-            <span className="badge bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px]">
-              <CheckCircle2 size={10} aria-hidden="true" /> Corregido
+            <span className="badge badge-completada" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+              <CheckCircle2 size={10} aria-hidden="true" />
+              <span>Corregido</span>
             </span>
           )}
-          <span className={`badge text-[10px] ${meta.bg} ${meta.color} ${meta.border} border`}>
+          <span className={`badge ${meta.bg} ${meta.color} ${meta.border}`} style={{ borderWidth: '1px', borderStyle: 'solid' }}>
             {f.tool}
           </span>
         </div>
 
         {/* Descripción */}
-        <p className={`text-[14px] font-medium leading-snug mb-1 ${isDone ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
+        <p
+          style={{ fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-medium)', lineHeight: 1.5, margin: 0 }}
+          className={isDone ? 'text-slate-400 line-through' : 'text-slate-800'}
+        >
           {f.description}
         </p>
 
         {/* Recomendación */}
         {f.recommendation && (
-          <p className="text-[12px] text-slate-500 mt-1 flex items-start gap-1.5">
-            <span className="text-blue-400 flex-shrink-0 mt-0.5" aria-hidden="true">→</span>
-            {f.recommendation}
+          <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', margin: 0, display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)' }}>
+            <span style={{ color: 'var(--color-primary)', flexShrink: 0 }} aria-hidden="true">→</span>
+            <span>{f.recommendation}</span>
           </p>
         )}
       </div>
 
       {/* Acciones */}
       {!isReadOnly && (
-        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
+        <div className="acc-finding-actions">
           {isDone ? (
             <button
               onClick={onMarkOpen}
-              className="text-[11px] px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all font-medium"
+              className="btn btn-secondary btn-sm"
               aria-label={`Reabrir hallazgo: ${f.description.substring(0, 40)}`}
             >
               Reabrir
@@ -971,22 +967,25 @@ function FindingRow({ finding: f, isReadOnly, onEdit, onDelete, onMarkResolved, 
           ) : (
             <button
               onClick={onMarkResolved}
-              className="text-[11px] px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all font-semibold flex items-center gap-1"
+              className="btn btn-success btn-sm"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' }}
               aria-label={`Marcar como corregido: ${f.description.substring(0, 40)}`}
             >
-              <CheckCircle2 size={12} aria-hidden="true" /> Corregido
+              <CheckCircle2 size={12} aria-hidden="true" />
+              <span>Corregido</span>
             </button>
           )}
           <button
             onClick={onEdit}
-            className="text-[11px] px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all font-medium"
+            className="btn btn-primary btn-sm"
             aria-label={`Editar hallazgo: ${f.description.substring(0, 40)}`}
           >
             Editar
           </button>
           <button
             onClick={onDelete}
-            className="text-[11px] p-1.5 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-all"
+            className="btn btn-danger btn-sm"
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
             aria-label={`Eliminar hallazgo: ${f.description.substring(0, 40)}`}
           >
             <XIcon size={13} aria-hidden="true" />

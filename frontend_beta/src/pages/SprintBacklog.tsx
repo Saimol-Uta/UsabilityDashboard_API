@@ -6,8 +6,8 @@ import { extractErrorMessage } from '../hooks/useApiError'
 import { 
   Sparkles, Save, FileText, Printer, Plus, Trash2, 
   AlertCircle, Key, Cpu, CheckSquare, Layers, 
-  Hourglass, Eye, ClipboardList, CheckCircle2,
-  Lock, Edit3, X, HelpCircle
+  Hourglass, ClipboardList, CheckCircle2,
+  HelpCircle
 } from 'lucide-react'
 
 interface TechnicalTask {

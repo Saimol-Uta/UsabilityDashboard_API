@@ -61,13 +61,7 @@ interface PlanSelectorProps {
 
 /*
  * Estilos de react-select consumiendo tokens del Design System.
- * Se reemplazan todos los valores hardcodeados (#hex) por variables CSS
- * leídas desde getComputedStyle para mantener consistencia.
  */
-const getTokenValue = (token: string): string => {
-  if (typeof window === 'undefined') return ''
-  return getComputedStyle(document.documentElement).getPropertyValue(token).trim()
-}
 
 const selectStyles = {
   control: (base: any, state: any) => ({

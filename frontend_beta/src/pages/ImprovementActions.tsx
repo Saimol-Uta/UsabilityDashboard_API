@@ -4,7 +4,7 @@ import { useToast } from '../App'
 import { usePlan } from '../context/PlanContext'
 import { extractErrorMessage } from '../hooks/useApiError'
 import Modal from '../components/Modal'
-import { Plus, Save, Trash2, Lightbulb, CheckCircle2, Clock, Circle, AlertTriangle } from 'lucide-react'
+import { Plus, Save, Trash2, Lightbulb, CheckCircle2, Clock, Circle, AlertTriangle, AlertCircle } from 'lucide-react'
 
 const statusConfig: Record<string, { label: string; badge: string; icon: typeof CheckCircle2 }> = {
     Closed: { label: 'Cerrada', badge: 'badge-completada', icon: CheckCircle2 },
@@ -13,7 +13,6 @@ const statusConfig: Record<string, { label: string; badge: string; icon: typeof 
     Open: { label: 'Abierta', badge: 'badge-pendiente', icon: Circle },
 }
 
-// GLB-06 + ACM-01: Status labels in Spanish for user-facing messages
 const statusLabelEs: Record<string, string> = {
     Open: 'Abierta',
     InProgress: 'En Progreso',
@@ -21,7 +20,6 @@ const statusLabelEs: Record<string, string> = {
     Closed: 'Cerrada',
 }
 
-// ACM-01: Next action labels in Spanish
 const nextActionLabel: Record<string, string> = {
     Open: 'Iniciar',
     InProgress: 'Resolver',
@@ -51,16 +49,12 @@ export default function ImprovementActions() {
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const fetchData = async (planId: string) => {
-        // Clear previous plan's data immediately so stale data never shows
         setActions([])
         setFindingsList([])
 
         if (!planId) { setLoading(false); return }
 
         setLoading(true)
-
-        // Cancellation flag: if the plan changes again before this fetch
-        // completes, ignore the stale response
         let cancelled = false
 
         try {
@@ -134,7 +128,6 @@ export default function ImprovementActions() {
         }
     }
 
-    // ACM-01: Confirm status change with Spanish message
     const handleStatusChangeRequest = (id: string, currentStatus: string) => {
         const newSt = nextStatus[currentStatus]
         if (newSt) {
@@ -146,7 +139,6 @@ export default function ImprovementActions() {
         if (!statusChangeConfirm) return
         try {
             await improvementActionsApi.updateStatus(statusChangeConfirm.id, statusChangeConfirm.newStatus)
-            // GLB-06: Spanish status message
             addToast(`Estado actualizado a ${statusLabelEs[statusChangeConfirm.newStatus] || statusChangeConfirm.newStatus}`, 'success')
             if (activePlanId) fetchData(activePlanId)
         } catch (err) {
@@ -175,55 +167,51 @@ export default function ImprovementActions() {
     const pendingCount = actions.filter(a => a.status === 'Open').length
 
     return (
-        <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="page-container">
+            <div className="page-header">
                 <div>
-                    <h2 className="text-[22px] font-bold text-slate-900">Acciones de Mejora</h2>
-                    <p className="text-[13px] text-slate-500 mt-1">Seguimiento de las acciones correctivas derivadas de los hallazgos</p>
+                    <h2 className="page-header-title">Acciones de Mejora</h2>
+                    <p className="page-header-subtitle">Seguimiento de las acciones correctivas derivadas de los hallazgos</p>
                 </div>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-                    <button
-                        className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                        onClick={() => { setEditId(null); setForm({ ...emptyForm, findingId: findingsList[0]?.id ?? '' }); setShowForm(true) }}
-                        disabled={!activePlanId || isReadOnly || findingsList.length === 0}
-                        aria-label="Nueva Acción de Mejora"
-                    >
-                        <Plus size={14} aria-hidden="true" /> Nueva Acción
-                    </button>
-                </div>
+                <button
+                    className="btn btn-primary"
+                    onClick={() => { setEditId(null); setForm({ ...emptyForm, findingId: findingsList[0]?.id ?? '' }); setShowForm(true) }}
+                    disabled={!activePlanId || isReadOnly || findingsList.length === 0}
+                    aria-label="Nueva Acción de Mejora"
+                >
+                    <Plus size={18} aria-hidden="true" /> Nueva Acción
+                </button>
             </div>
 
             {/* GLB-04: Read-only banner */}
             {isReadOnly && activePlan && (
-                <div className="readonly-banner">
-                    <AlertTriangle size={16} className="flex-shrink-0" />
+                <div className="readonly-banner" role="status">
+                    <AlertTriangle size={16} className="flex-shrink-0" aria-hidden="true" />
                     <span>El plan "<strong>{activePlan.projectName}</strong>" está {activePlan.status === 'Completed' ? 'completado' : 'cancelado'}. No se pueden crear ni modificar acciones de mejora.</span>
                 </div>
             )}
 
-
-
-            {/* Status Summary */}
+            {/* Status Summary KPIs */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="kpi-card p-6 text-center rounded-3xl shadow-lg bg-emerald-50 border-2 border-emerald-300 transform hover:-translate-y-1 transition-transform hover:shadow-xl animate-pop">
-                    <div className="text-3xl font-extrabold text-emerald-700">{completedCount}</div>
-                    <div className="text-sm text-emerald-600 mt-1 uppercase tracking-wider">Completadas</div>
+                <div className="kpi-card kpi-card--emerald" style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
+                    <div className="kpi-value" style={{ fontSize: 32, fontWeight: 'var(--font-weight-extrabold)' }}>{completedCount}</div>
+                    <div className="kpi-label" style={{ fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-1)', textTransform: 'uppercase', letterSpacing: 'var(--letter-spacing-wider)', fontWeight: 'var(--font-weight-bold)' }}>Completadas</div>
                 </div>
-                <div className="kpi-card p-6 text-center rounded-3xl shadow-lg bg-amber-50 border-2 border-amber-300 transform hover:-translate-y-1 transition-transform hover:shadow-xl animate-pop delay-1">
-                    <div className="text-3xl font-extrabold text-amber-700">{inProgressCount}</div>
-                    <div className="text-sm text-amber-600 mt-1 uppercase tracking-wider">En Progreso</div>
+                <div className="kpi-card kpi-card--amber" style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
+                    <div className="kpi-value" style={{ fontSize: 32, fontWeight: 'var(--font-weight-extrabold)' }}>{inProgressCount}</div>
+                    <div className="kpi-label" style={{ fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-1)', textTransform: 'uppercase', letterSpacing: 'var(--letter-spacing-wider)', fontWeight: 'var(--font-weight-bold)' }}>En Progreso</div>
                 </div>
-                <div className="kpi-card p-6 text-center rounded-3xl shadow-lg bg-slate-100 border-2 border-slate-300 transform hover:-translate-y-1 transition-transform hover:shadow-xl animate-pop delay-2">
-                    <div className="text-3xl font-extrabold text-slate-700">{pendingCount}</div>
-                    <div className="text-sm text-slate-500 mt-1 uppercase tracking-wider">Pendientes</div>
+                <div className="kpi-card kpi-card--slate" style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
+                    <div className="kpi-value" style={{ fontSize: 32, fontWeight: 'var(--font-weight-extrabold)' }}>{pendingCount}</div>
+                    <div className="kpi-label" style={{ fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-1)', textTransform: 'uppercase', letterSpacing: 'var(--letter-spacing-wider)', fontWeight: 'var(--font-weight-bold)' }}>Pendientes</div>
                 </div>
             </div>
 
             {/* Filter */}
-            <div className="flex items-center gap-2 flex-wrap">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
                 {['', 'Resolved', 'InProgress', 'Open', 'Closed'].map(s => (
                     <button key={s} onClick={() => setFilter(s)}
-                        className={`text-[12px] px-3 py-1.5 rounded-full border transition-all ${filter === s ? 'bg-blue-50 border-blue-300 text-blue-700 font-semibold' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}
+                        className={`tab-pill ${filter === s ? 'is-active' : ''}`}
                         aria-label={`Filtrar por estado: ${s === '' ? 'Todas' : statusLabelEs[s] || s}`}>
                         {s === '' ? 'Todas' : statusConfig[s]?.label || s}
                     </button>
@@ -232,24 +220,32 @@ export default function ImprovementActions() {
 
             {/* Form Modal */}
             <Modal isOpen={showForm} onClose={resetForm} title={editId ? 'Editar Acción' : 'Nueva Acción'}>
-                <form onSubmit={handleSubmit} className="p-5 space-y-4">
+                <form onSubmit={handleSubmit} className="form-layout">
                     <div>
                         <label className="form-label">Evaluación / Plan asignado</label>
-                        <div className="form-input bg-slate-50 text-slate-700 cursor-not-allowed">{activePlan?.projectName || 'Sin plan'}</div>
+                        <div className="form-input form-input--disabled" style={{ cursor: 'not-allowed', background: 'var(--neutral-100)', color: 'var(--text-muted)' }}>
+                            {activePlan?.projectName || 'Sin plan'}
+                        </div>
                     </div>
                     <div>
-                        <label htmlFor="actionFindingId" className="form-label">Hallazgo asociado <span className="text-red-500">*</span></label>
+                        <label htmlFor="actionFindingId" className="form-label">
+                            Hallazgo asociado <span style={{ color: 'var(--color-error)' }}>*</span>
+                        </label>
                         <select id="actionFindingId" value={form.findingId} onChange={e => setForm(f => ({ ...f, findingId: e.target.value }))} className="form-input" required>
                             {findingsList.map((f: any) => <option key={f.id} value={f.id}>{f.description.length > 80 ? f.description.substring(0, 80) + '...' : f.description}</option>)}
                         </select>
                     </div>
                     <div>
-                        <label htmlFor="actionDescription" className="form-label">Descripción <span className="text-red-500">*</span></label>
+                        <label htmlFor="actionDescription" className="form-label">
+                            Descripción <span style={{ color: 'var(--color-error)' }}>*</span>
+                        </label>
                         <textarea id="actionDescription" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="form-input" rows={3} required />
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="form-grid-2">
                         <div>
-                            <label htmlFor="actionStatus" className="form-label">Estado <span className="text-red-500">*</span></label>
+                            <label htmlFor="actionStatus" className="form-label">
+                                Estado <span style={{ color: 'var(--color-error)' }}>*</span>
+                            </label>
                             <select id="actionStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="form-input" required>
                                 <option value="Open">Abierta</option>
                                 <option value="InProgress">En Progreso</option>
@@ -258,7 +254,9 @@ export default function ImprovementActions() {
                             </select>
                         </div>
                         <div>
-                            <label htmlFor="actionPriority" className="form-label">Prioridad <span className="text-red-500">*</span></label>
+                            <label htmlFor="actionPriority" className="form-label">
+                                Prioridad <span style={{ color: 'var(--color-error)' }}>*</span>
+                            </label>
                             <select id="actionPriority" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="form-input" required>
                                 <option value="High">Alta</option>
                                 <option value="Medium">Media</option>
@@ -266,9 +264,9 @@ export default function ImprovementActions() {
                             </select>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3 pt-3">
+                    <div className="form-actions">
                         <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                            <Save size={16} /> {isSubmitting ? 'Guardando...' : (editId ? 'Actualizar' : 'Guardar')}
+                            <Save size={16} aria-hidden="true" /> {isSubmitting ? 'Guardando...' : (editId ? 'Actualizar' : 'Guardar')}
                         </button>
                         <button type="button" onClick={resetForm} className="btn btn-secondary text-center" disabled={isSubmitting}>
                             Cancelar
@@ -279,56 +277,65 @@ export default function ImprovementActions() {
 
             {/* Actions List */}
             {loading ? (
-                <div className="flex justify-center py-12"><div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" /></div>
+                <div className="dashboard-loader">
+                    <div className="dashboard-spinner" aria-label="Cargando..." />
+                </div>
             ) : filtered.length === 0 ? (
-                <div className="bg-white rounded-2xl border-2 border-dashed border-slate-300 p-12 text-center">
-                    <Lightbulb size={40} className="text-slate-300 mx-auto" />
-                    <h3 className="mt-3 text-[15px] font-semibold text-slate-600">Sin acciones de mejora</h3>
+                <div className="empty-state-card">
+                    <Lightbulb size={40} className="empty-state-icon" aria-hidden="true" />
+                    <h3 className="empty-state-title">Sin acciones de mejora</h3>
+                    <p className="empty-state-subtitle">Crea una nueva acción para realizar su seguimiento</p>
                 </div>
             ) : (
-                <div className="space-y-4">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                     {filtered.map((action: any) => {
                         const config = statusConfig[action.status] || statusConfig.Open
                         const Icon = config.icon
+                        const isResolved = action.status === 'Resolved' || action.status === 'Closed'
+                        const isInProgress = action.status === 'InProgress'
+
                         return (
-                            <div key={action.id} className="bg-white rounded-2xl border border-slate-200 shadow-md p-5 transform hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
-                                <div className="flex items-start gap-3 sm:gap-4 flex-col sm:flex-row">
-                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0
-                                        ${action.status === 'Resolved' || action.status === 'Closed' ? 'bg-emerald-100 border-2 border-emerald-400 text-emerald-700' :
-                                        action.status === 'InProgress' ? 'bg-amber-100 border-2 border-amber-400 text-amber-700' :
-                                        'bg-slate-200 border-2 border-slate-400 text-slate-600'}`}>
-                                        <Icon size={20} />
+                            <div key={action.id} className="action-card">
+                                <div className="action-card-layout">
+                                    <div className={`action-card-status-box ${isResolved ? 'action-card-status-box--success' : isInProgress ? 'action-card-status-box--warning' : 'action-card-status-box--pending'}`}>
+                                        <Icon size={20} aria-hidden="true" />
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap">
+                                    <div className="action-card-body">
+                                        <div className="action-card-meta-row">
                                             <span className={`badge ${config.badge} font-bold`}>{config.label}</span>
-                                            <span className={`badge ${action.priority === 'High' ? 'badge-alta' : action.priority === 'Medium' ? 'badge-media' : 'badge-baja'} font-semibold`}>
-                                                Prioridad: {action.priority === 'High' ? 'Alta' : action.priority === 'Medium' ? 'Media' : 'Baja'}
+                                            <span className={`badge ${action.priority === 'High' ? 'badge-alta' : action.priority === 'Medium' ? 'badge-media' : 'badge-baja'}`}>
+                                                {action.priority === 'High' && <AlertCircle size={11} aria-hidden="true" />}
+                                                {action.priority === 'Medium' && <AlertTriangle size={11} aria-hidden="true" />}
+                                                {action.priority === 'Low' && <CheckCircle2 size={11} aria-hidden="true" />}
+                                                <span>Prioridad: {action.priority === 'High' ? 'Alta' : action.priority === 'Medium' ? 'Media' : 'Baja'}</span>
                                             </span>
                                         </div>
-                                        <p className="text-[14px] font-semibold text-slate-900 mt-2">{action.description}</p>
-                                        <p className="text-[11px] text-slate-400 mt-1 italic">
+                                        <p className="action-card-title">{action.description}</p>
+                                        <p className="action-card-sub">
                                             Hallazgo: {findingsList.find((f: any) => f.id === action.findingId)?.description || 'Desconocido'}
                                         </p>
                                         {action.implementedDate && (
-                                            <p className="text-[11px] text-emerald-600 mt-1">✓ Implementado: {new Date(action.implementedDate).toLocaleDateString()}</p>
+                                            <p className="action-card-sub action-card-sub--resolved">
+                                                ✓ Implementado: {new Date(action.implementedDate).toLocaleDateString()}
+                                            </p>
                                         )}
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-2 mt-3 sm:mt-0">
+                                    <div className="action-card-actions">
                                         {action.status !== 'Closed' && !isReadOnly && (
                                             <button
                                                 onClick={() => handleStatusChangeRequest(action.id, action.status)}
-                                                className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[11px] py-1.5 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-emerald-200"
+                                                className="btn btn-primary"
+                                                style={{ fontSize: 11, padding: '6px 12px', height: 'auto', minHeight: 'unset' }}
                                                 aria-label={`${nextActionLabel[action.status] || 'Avanzar'} acción: ${action.description?.substring(0, 30)}`}
                                             >
                                                 {nextActionLabel[action.status] || 'Avanzar'}
                                             </button>
                                         )}
-                                        <button onClick={() => handleEdit(action)} className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] py-1.5 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-blue-200" aria-label={`Editar acción: ${action.description?.substring(0, 30)}`} disabled={isReadOnly}>
+                                        <button onClick={() => handleEdit(action)} className="btn btn-secondary" style={{ fontSize: 11, padding: '6px 12px', height: 'auto', minHeight: 'unset' }} aria-label={`Editar acción: ${action.description?.substring(0, 30)}`} disabled={isReadOnly}>
                                             Editar
                                         </button>
-                                        <button onClick={() => setActionToDelete(action)} className="bg-red-50 hover:bg-red-100 text-red-700 text-[11px] py-1.5 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-red-200" aria-label={`Eliminar acción: ${action.description?.substring(0, 30)}`} disabled={isReadOnly}>
-                                            <Trash2 size={12} />
+                                        <button onClick={() => setActionToDelete(action)} className="btn btn-danger" style={{ fontSize: 11, padding: '6px 12px', height: 'auto', minHeight: 'unset' }} aria-label={`Eliminar acción: ${action.description?.substring(0, 30)}`} disabled={isReadOnly}>
+                                            <Trash2 size={12} aria-hidden="true" />
                                         </button>
                                     </div>
                                 </div>
@@ -340,26 +347,26 @@ export default function ImprovementActions() {
 
             {/* ACM-01: Status change confirmation in Spanish */}
             <Modal isOpen={!!statusChangeConfirm} onClose={() => setStatusChangeConfirm(null)} title="Confirmar Cambio de Estado" maxWidth="480px">
-                <div className="p-5">
-                    <p className="text-[14px] text-slate-600 mb-5">
+                <div className="modal-body">
+                    <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--line-height)' }}>
                         ¿Confirma cambiar el estado a <strong>{statusChangeConfirm ? statusLabelEs[statusChangeConfirm.newStatus] : ''}</strong>?
                     </p>
-                    <div className="flex justify-end gap-3">
+                    <div className="modal-footer">
                         <button type="button" onClick={() => setStatusChangeConfirm(null)} className="btn btn-secondary">Cancelar</button>
-                        <button type="button" onClick={confirmStatusChange} className="btn btn-primary px-4">Confirmar</button>
+                        <button type="button" onClick={confirmStatusChange} className="btn btn-primary">Confirmar</button>
                     </div>
                 </div>
             </Modal>
 
             {/* Delete confirmation */}
             <Modal isOpen={!!actionToDelete} onClose={() => setActionToDelete(null)} title="Eliminar Acción de Mejora" maxWidth="480px">
-                <div className="p-5">
-                    <p className="text-[14px] text-slate-600 mb-5">
+                <div className="modal-body">
+                    <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--line-height)' }}>
                         ¿Estás seguro de que deseas eliminar esta acción de mejora? Esta acción no se puede deshacer.
                     </p>
-                    <div className="flex justify-end gap-3">
-                        <button type="button" onClick={() => setActionToDelete(null)} className="btn btn-secondary text-center">Cancelar</button>
-                        <button type="button" onClick={() => actionToDelete && confirmDelete(actionToDelete.id)} className="btn btn-danger px-4 text-center">Eliminar</button>
+                    <div className="modal-footer">
+                        <button type="button" onClick={() => setActionToDelete(null)} className="btn btn-secondary">Cancelar</button>
+                        <button type="button" onClick={() => actionToDelete && confirmDelete(actionToDelete.id)} className="btn btn-danger">Eliminar</button>
                     </div>
                 </div>
             </Modal>

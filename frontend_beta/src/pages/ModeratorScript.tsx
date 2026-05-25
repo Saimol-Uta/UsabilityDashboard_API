@@ -120,30 +120,36 @@ export default function ModeratorScript() {
     }
 
     if (loading) {
-        return <div className="flex justify-center py-20"><div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" /></div>
+        return (
+            <div className="dashboard-loader-container">
+                <div className="dashboard-spinner" />
+            </div>
+        )
     }
 
     return (
-        <div className="max-w-5xl mx-auto flex flex-col gap-6">
-            <div>
-                <h2 className="text-[24px] font-extrabold text-slate-900">Guión del Moderador</h2>
-                <p className="text-[13px] text-slate-500 mt-1">Define las instrucciones para guiar la sesión de prueba de usabilidad</p>
+        <div className="page-container" style={{ maxWidth: 1024, margin: '0 auto', width: '100%' }}>
+            <div className="page-header">
+                <div>
+                    <h2 className="page-header-title">Guión del Moderador</h2>
+                    <p className="page-header-subtitle">Define las instrucciones para guiar la sesión de prueba de usabilidad</p>
+                </div>
             </div>
 
-            {/* GLB-04: Read-only banner */}
+            {/* Read-only banner */}
             {isReadOnly && activePlan && (
                 <div className="readonly-banner">
-                    <AlertTriangle size={16} className="flex-shrink-0" />
+                    <AlertTriangle size={16} className="flex-shrink-0" aria-hidden="true" />
                     <span>El plan "<strong>{activePlan.projectName}</strong>" está {activePlan.status === 'Completed' ? 'completado' : 'cancelado'}. No se puede modificar el guión.</span>
                 </div>
             )}
 
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-rise">
-                <div className="h-1.5 w-full bg-gradient-to-r from-slate-800 to-blue-600" />
-                <div className="p-5 flex flex-col md:flex-row md:items-end gap-4">
-                    <div className="min-w-0 flex-1">
-                        <h3 className="text-[14px] font-bold text-slate-800">Plan de prueba activo</h3>
-                        <div className="mt-1 text-[14px] font-semibold text-slate-800 bg-slate-50 px-3 py-2 rounded border border-slate-200">
+            <div className="script-plan-card">
+                <div className="testplan-card-bar" />
+                <div className="script-plan-body">
+                    <div>
+                        <h3 className="script-plan-title">Plan de prueba activo</h3>
+                        <div className="script-plan-name">
                             {activePlan ? activePlan.projectName : 'Seleccione en el menú principal'}
                         </div>
                     </div>
@@ -151,47 +157,49 @@ export default function ModeratorScript() {
             </div>
 
             {!script ? (
-                <div className="bg-white rounded-2xl border-2 border-dashed border-slate-300 p-12 text-center animate-rise">
-                    <MessageSquareText size={40} className="text-slate-300 mx-auto" />
-                    <h3 className="mt-3 text-[15px] font-semibold text-slate-600">Sin guión para este plan</h3>
-                    <p className="text-[13px] text-slate-400 mt-1">Crea el guión del moderador para iniciar las sesiones.</p>
-                    <button type="button" onClick={openCreateModal} className="btn btn-primary mt-4 disabled:opacity-50 disabled:cursor-not-allowed" disabled={!activePlanId || isReadOnly}>
+                <div className="empty-state-card">
+                    <MessageSquareText size={40} className="empty-state-icon" aria-hidden="true" />
+                    <h3 className="empty-state-title">Sin guión para este plan</h3>
+                    <p className="empty-state-subtitle">Crea el guión del moderador para iniciar las sesiones.</p>
+                    <button type="button" onClick={openCreateModal} className="btn btn-primary" style={{ marginTop: 'var(--space-4)' }} disabled={!activePlanId || isReadOnly}>
                         <Plus size={16} aria-hidden="true" /> Nuevo Guión
                     </button>
                 </div>
             ) : (
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-rise">
-                    <div className="h-1.5 w-full bg-gradient-to-r from-slate-800 to-blue-600" />
-                    <div className="p-5">
-                        <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                                <h3 className="text-[16px] font-semibold text-slate-900">{activePlan?.projectName || 'Plan'}</h3>
-                                <p className="text-[12px] text-slate-500 mt-1">Guión del moderador activo</p>
+                <div className="script-plan-card">
+                    <div className="testplan-card-bar" />
+                    <div className="script-plan-body">
+                        <div className="testplan-card-header">
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                                <h3 className="testplan-card-title">{activePlan?.projectName || 'Plan'}</h3>
+                                <p className="testplan-card-objective" style={{ marginTop: '2px' }}>Guión del moderador activo</p>
                             </div>
                         </div>
 
-                        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
-                                <h4 className="text-[12px] font-semibold text-blue-900 mb-1">Introducción</h4>
-                                <p className="text-[12px] text-slate-700 line-clamp-4">{script.introduction}</p>
+                        <div className="script-columns-grid">
+                            <div className="script-column-card script-column-card--blue">
+                                <h4 className="script-column-title script-column-title--blue">Introducción</h4>
+                                <p className="script-column-text">{script.introduction}</p>
                             </div>
-                            <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
-                                <h4 className="text-[12px] font-semibold text-amber-900 mb-1">Preguntas</h4>
-                                <p className="text-[12px] text-slate-700 line-clamp-4 whitespace-pre-line">{script.followUpQuestions}</p>
+                            <div className="script-column-card script-column-card--amber">
+                                <h4 className="script-column-title script-column-title--amber">Preguntas</h4>
+                                <p className="script-column-text">{script.followUpQuestions}</p>
                             </div>
-                            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
-                                <h4 className="text-[12px] font-semibold text-emerald-900 mb-1">Cierre</h4>
-                                <p className="text-[12px] text-slate-700 line-clamp-4">{script.closingInstructions}</p>
+                            <div className="script-column-card script-column-card--emerald">
+                                <h4 className="script-column-title script-column-title--emerald">Cierre</h4>
+                                <p className="script-column-text">{script.closingInstructions}</p>
                             </div>
                         </div>
 
-                        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
-                            <button type="button" onClick={openEditModal} className="btn btn-secondary text-[12px] py-2 px-3" disabled={isReadOnly} aria-label="Editar guión">
-                                <Edit3 size={14} aria-hidden="true" /> Editar
-                            </button>
-                            <button type="button" onClick={() => setScriptToDelete(script)} className="btn btn-danger text-[12px] py-2 px-3" disabled={isReadOnly} aria-label="Eliminar guión">
-                                <Trash2 size={14} aria-hidden="true" /> Eliminar
-                            </button>
+                        <div className="testplan-card-footer" style={{ marginTop: 'var(--space-4)', paddingTop: 'var(--space-3)' }}>
+                            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                                <button type="button" onClick={openEditModal} className="btn btn-secondary text-sm" style={{ padding: 'var(--space-1.5) var(--space-3)' }} disabled={isReadOnly} aria-label="Editar guión">
+                                    <Edit3 size={14} aria-hidden="true" /> Editar
+                                </button>
+                                <button type="button" onClick={() => setScriptToDelete(script)} className="btn btn-danger text-sm" style={{ padding: 'var(--space-1.5) var(--space-3)' }} disabled={isReadOnly} aria-label="Eliminar guión">
+                                    <Trash2 size={14} aria-hidden="true" /> Eliminar
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -199,28 +207,28 @@ export default function ModeratorScript() {
 
             {/* Form Modal */}
             <Modal isOpen={showForm} onClose={resetForm} title={editId ? 'Editar Guión del Moderador' : 'Nuevo Guión del Moderador'}>
-                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                <form onSubmit={handleSubmit} className="form-layout">
                     <div>
                         <label className="form-label">Plan asignado</label>
-                        <div className="form-input bg-slate-50 text-slate-700 cursor-not-allowed">{activePlan?.projectName || 'Sin plan seleccionado'}</div>
+                        <div className="form-input bg-slate-50 text-slate-700 cursor-not-allowed" style={{ background: 'var(--neutral-50)', color: 'var(--text-secondary)' }}>{activePlan?.projectName || 'Sin plan seleccionado'}</div>
                     </div>
 
                     <div>
-                        <label htmlFor="introduction" className="form-label">Introducción <span className="text-red-500">*</span></label>
-                        <textarea id="introduction" value={form.introduction} onChange={e => setForm(f => ({ ...f, introduction: e.target.value }))} className="form-input" rows={4} required />
+                        <label htmlFor="introduction" className="form-label">Introducción <span style={{ color: 'var(--color-error)' }}>*</span></label>
+                        <textarea id="introduction" value={form.introduction} onChange={e => setForm(f => ({ ...f, introduction: e.target.value }))} className="form-input" rows={4} placeholder="Escribe el discurso de introducción y consentimiento informado..." required />
                     </div>
 
                     <div>
-                        <label htmlFor="followUpQuestions" className="form-label">Preguntas de Seguimiento <span className="text-red-500">*</span></label>
-                        <textarea id="followUpQuestions" value={form.followUpQuestions} onChange={e => setForm(f => ({ ...f, followUpQuestions: e.target.value }))} className="form-input" rows={4} required />
+                        <label htmlFor="followUpQuestions" className="form-label">Preguntas de Seguimiento <span style={{ color: 'var(--color-error)' }}>*</span></label>
+                        <textarea id="followUpQuestions" value={form.followUpQuestions} onChange={e => setForm(f => ({ ...f, followUpQuestions: e.target.value }))} className="form-input" rows={4} placeholder="Preguntas para realizar después de finalizar las tareas..." required />
                     </div>
 
                     <div>
-                        <label htmlFor="closingInstructions" className="form-label">Instrucciones de Cierre <span className="text-red-500">*</span></label>
-                        <textarea id="closingInstructions" value={form.closingInstructions} onChange={e => setForm(f => ({ ...f, closingInstructions: e.target.value }))} className="form-input" rows={4} required />
+                        <label htmlFor="closingInstructions" className="form-label">Instrucciones de Cierre <span style={{ color: 'var(--color-error)' }}>*</span></label>
+                        <textarea id="closingInstructions" value={form.closingInstructions} onChange={e => setForm(f => ({ ...f, closingInstructions: e.target.value }))} className="form-input" rows={4} placeholder="Instrucciones finales, agradecimiento y cierre de la sesión..." required />
                     </div>
 
-                    <div className="pt-3 flex items-center gap-3">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', paddingTop: 'var(--space-2)' }}>
                         <button type="submit" className="btn btn-primary flex items-center gap-2" disabled={saving}>
                             <Save size={16} aria-hidden="true" /> {saving ? 'Guardando...' : editId ? 'Actualizar Guión' : 'Crear Guión'}
                         </button>
@@ -231,11 +239,11 @@ export default function ModeratorScript() {
 
             {/* Delete confirmation */}
             <Modal isOpen={!!scriptToDelete} onClose={() => setScriptToDelete(null)} title="Eliminar Guión" maxWidth="480px">
-                <div className="p-5 space-y-4">
-                    <p className="text-[14px] text-slate-600">
+                <div style={{ padding: 'var(--space-5)' }}>
+                    <p className="text-[14px]" style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-5)' }}>
                         ¿Estás seguro de que deseas eliminar el guión del plan <strong>{activePlan?.projectName || ''}</strong>? Esta acción no se puede deshacer.
                     </p>
-                    <div className="flex justify-end gap-3">
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
                         <button type="button" onClick={() => setScriptToDelete(null)} className="btn btn-secondary">Cancelar</button>
                         <button type="button" onClick={() => scriptToDelete && confirmDelete(scriptToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
                     </div>
