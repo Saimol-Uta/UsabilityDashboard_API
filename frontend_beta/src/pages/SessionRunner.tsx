@@ -239,14 +239,14 @@ export default function SessionRunner() {
                     </div>
                 </div>
 
-                {/* Start button */}
                 <div className="runner-button-container">
                     <button
                         onClick={handleStartTest}
-                        className="btn-runner-start"
+                        className="btn btn-primary"
                         aria-label="Comenzar Prueba de Usabilidad"
+                        style={{ padding: 'var(--space-3) var(--space-6)', borderRadius: 'var(--radius-xl)', fontSize: 'var(--font-size-base)', display: 'inline-flex', alignItems: 'center', gap: 'var(--space-3)' }}
                     >
-                        <Play size={22} aria-hidden="true" />
+                        <Play size={20} aria-hidden="true" />
                         Comenzar Prueba
                         <ChevronRight size={18} aria-hidden="true" />
                     </button>

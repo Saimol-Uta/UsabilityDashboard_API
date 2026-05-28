@@ -3,7 +3,7 @@ import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
     LayoutDashboard, FileText, ListChecks, MessageSquareText,
     Eye, Search, Lightbulb, ChevronRight, FolderKanban, Sparkles, Users, CalendarRange,
-    Menu, X, Lock, ShieldCheck
+    Menu, X, Lock, ShieldCheck, ClipboardList
 } from 'lucide-react'
 import { usePlan } from '../context/PlanContext'
 import PlanSelector from './PlanSelector'
@@ -33,6 +33,7 @@ const phases = [
             { to: '/hallazgos', icon: Search, label: 'Hallazgos', detail: 'Síntesis de problemas', sectionKey: 'hallazgos' },
             { to: '/mejoras', icon: Lightbulb, label: 'Acciones de Mejora', detail: 'Plan de mejoras', sectionKey: 'mejoras' },
             { to: '/accesibilidad', icon: ShieldCheck, label: 'Accesibilidad', detail: 'Auditorías WAVE, Stark, Lighthouse', sectionKey: 'accesibilidad' },
+            { to: '/backlog', icon: ClipboardList, label: 'Sprint Backlog', detail: 'Backlog de desarrollo ágil', sectionKey: 'backlog' },
         ]
     }
 ]

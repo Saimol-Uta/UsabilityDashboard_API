@@ -230,8 +230,9 @@ export default function TestSessions() {
                                     onClick={() => navigate(`/sesiones/${session.id}/ejecutar`)}
                                     disabled={tasksCount === 0}
                                     title={tasksCount === 0 ? "Requiere crear tareas primero" : ""}
-                                    className="btn-start-session"
+                                    className="btn btn-primary"
                                     aria-label={`Iniciar sesión con ${getParticipantName(session.participantId)}`}
+                                    style={{ padding: 'var(--space-2) var(--space-4)', fontSize: 12, height: 'auto', minHeight: 'unset', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                                 >
                                     <Play size={12} aria-hidden="true" /> Iniciar Sesión
                                 </button>
