@@ -271,12 +271,9 @@ ol {
 html,
 body,
 #root {
-    min-height: 100%;
-}
-
-html,
-body {
-    overflow-x: hidden;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
 }
 
 body {
@@ -1439,7 +1436,10 @@ textarea:focus-visible,
 
 /* ── Shell raíz ── */
 .layout-shell {
-    min-height: 100vh;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 /* ── Header ── */
@@ -1448,6 +1448,7 @@ textarea:focus-visible,
     overflow: visible;
     position: relative;
     z-index: var(--z-overlay);
+    flex-shrink: 0;
 }
 
 .layout-header-bar {
@@ -1573,14 +1574,16 @@ textarea:focus-visible,
 
 /* ── Body area (sidebar + main) ── */
 .layout-body {
+    flex: 1;
+    min-height: 0;
     padding: var(--space-2);
     padding-bottom: var(--space-5);
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
-    min-height: calc(100vh - 100px);
     position: relative;
     z-index: var(--z-base);
+    overflow: hidden;
 }
 
 /* ── Sidebar overlay (mobile scrim) ── */
@@ -2065,19 +2068,22 @@ textarea:focus-visible,
     }
 
     .layout-body {
+        flex: 1;
+        min-height: 0;
         padding: var(--space-3);
-        padding-top: var(--space-3);
         flex-direction: row;
         gap: var(--space-3);
+        overflow: hidden;
     }
 
     .layout-sidebar {
         position: static;
         transform: translateX(0);
         z-index: auto;
-        height: auto;
+        height: 100%;
         width: 270px;
         flex-shrink: 0;
+        overflow-y: auto;
     }
 
     .layout-sidebar-mobile-header {
