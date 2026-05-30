@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { usePlan } from '../context/PlanContext'
 import PlanSelector from './PlanSelector'
+import AiCopilot from './AiCopilot'
 
 const dashboardItem = { to: '/', icon: LayoutDashboard, label: 'Dashboard', detail: 'Progreso y métricas' }
 const planItem = { to: '/planes', icon: FileText, label: 'Plan de Prueba', detail: 'Gestión de planes de test', sectionKey: 'plan_de_prueba' }
@@ -362,6 +363,7 @@ export default function Layout() {
                     </div>
                 </main>
             </div>
+            <AiCopilot />
         </div>
     )
 }
