@@ -56,6 +56,14 @@ export default function Participants() {
             } else {
                 await participantsApi.create({ ...form, age: ageNum })
                 addToast('Participante registrado', 'success')
+                
+                // Programar el disparador automático del Copilot (IHC trigger)
+                window.dispatchEvent(new CustomEvent('copilot-trigger', {
+                    detail: {
+                        action: 'participant-saved',
+                        participantName: form.name
+                    }
+                }))
             }
             resetForm()
             fetchParticipants()

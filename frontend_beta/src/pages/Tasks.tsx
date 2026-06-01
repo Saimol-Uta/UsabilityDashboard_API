@@ -4,7 +4,7 @@ import { useToast } from '../App'
 import { usePlan } from '../context/PlanContext'
 import { extractErrorMessage } from '../hooks/useApiError'
 import Modal from '../components/Modal'
-import { Plus, Save, Trash2, ListChecks, Clock, AlertTriangle } from 'lucide-react'
+import { Plus, Save, Trash2, ListChecks, Clock, AlertTriangle, Sparkles } from 'lucide-react'
 
 export default function Tasks() {
     const [tasks, setTasks] = useState<any[]>([])
@@ -32,6 +32,14 @@ export default function Tasks() {
             setTasks([])
             setLoading(false)
         }
+    }, [activePlanId])
+
+    useEffect(() => {
+        const handleTasksUpdated = () => {
+            if (activePlanId) fetchTasks(activePlanId)
+        }
+        window.addEventListener('tasks-updated', handleTasksUpdated)
+        return () => window.removeEventListener('tasks-updated', handleTasksUpdated)
     }, [activePlanId])
 
     const resetForm = () => {
@@ -104,14 +112,36 @@ export default function Tasks() {
                     <h2 className="page-header-title">Gestión de Tareas</h2>
                     <p className="page-header-subtitle">Define los escenarios de prueba que realizarán los participantes</p>
                 </div>
-                <button
-                    onClick={() => { setForm(f => ({ ...f, testPlanId: activePlanId, taskNumber: tasks.length + 1 })); setEditId(null); setShowForm(true) }}
-                    disabled={!activePlanId || isReadOnly}
-                    className="btn btn-primary"
-                    aria-label="Nueva Tarea"
-                >
-                    <Plus size={18} aria-hidden="true" /> Nueva Tarea
-                </button>
+                <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                    <button
+                        onClick={() => {
+                            window.dispatchEvent(new CustomEvent('copilot-trigger', { 
+                                detail: { 
+                                    action: 'suggest-tasks',
+                                    projectName: activePlan?.projectName,
+                                    product: activePlan?.product,
+                                    evaluatedModule: activePlan?.evaluatedModule,
+                                    objective: activePlan?.objective
+                                } 
+                            }))
+                        }}
+                        disabled={!activePlanId || isReadOnly}
+                        className="btn btn-secondary"
+                        style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}
+                        aria-label="Sugerir tareas con IA"
+                    >
+                        <Sparkles size={16} aria-hidden="true" style={{ color: 'var(--color-primary)' }} /> Sugerir tareas con IA
+                    </button>
+
+                    <button
+                        onClick={() => { setForm(f => ({ ...f, testPlanId: activePlanId, taskNumber: tasks.length + 1 })); setEditId(null); setShowForm(true) }}
+                        disabled={!activePlanId || isReadOnly}
+                        className="btn btn-primary"
+                        aria-label="Nueva Tarea"
+                    >
+                        <Plus size={18} aria-hidden="true" /> Nueva Tarea
+                    </button>
+                </div>
             </div>
 
             {/* Read-only banner */}

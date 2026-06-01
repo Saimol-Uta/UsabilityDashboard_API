@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { testPlansApi } from '../api'
 import { useToast } from '../App'
 import { usePlan } from '../context/PlanContext'
@@ -24,6 +25,7 @@ const emptyForm = {
 }
 
 export default function TestPlans() {
+    const navigate = useNavigate()
     const [plans, setPlans] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [planToDelete, setPlanToDelete] = useState<{ id: string, name: string } | null>(null)
@@ -143,14 +145,32 @@ export default function TestPlans() {
     }
 
     const togglePlanStatus = async (id: string, currentStatus: string) => {
-        const newStatus = currentStatus === 'Completed' ? 'InProgress' : 'Completed';
+        let newStatus = 'InProgress'
+        let message = 'Plan iniciado correctamente'
+        
+        if (currentStatus === 'Draft') {
+            newStatus = 'InProgress'
+            message = 'Plan iniciado correctamente'
+        } else if (currentStatus === 'InProgress') {
+            newStatus = 'Completed'
+            message = 'Plan finalizado correctamente'
+        } else if (currentStatus === 'Completed') {
+            newStatus = 'InProgress'
+            message = 'Plan reactivado correctamente'
+        }
+
         try {
-            await testPlansApi.updateStatus(id, newStatus);
-            addToast(`Plan ${newStatus === 'Completed' ? 'marcado como completado' : 'reactivado'} correctamente`, 'success');
-            fetchPlans();
-            refreshPlans();
+            await testPlansApi.updateStatus(id, newStatus)
+            addToast(message, 'success')
+            fetchPlans()
+            refreshPlans()
+            
+            // Redirect to guion moderator script page upon starting the draft plan
+            if (currentStatus === 'Draft') {
+                navigate('/guion')
+            }
         } catch (err) {
-            addToast(extractErrorMessage(err, 'Error al cambiar el estado del plan'), 'error');
+            addToast(extractErrorMessage(err, 'Error al cambiar el estado del plan'), 'error')
         }
     }
 
@@ -256,11 +276,13 @@ export default function TestPlans() {
                                     </div>
                                     <button 
                                         onClick={() => togglePlanStatus(plan.id, plan.status)} 
-                                        className={plan.status === 'Completed' ? 'btn btn-secondary text-sm' : 'btn btn-success text-sm'}
+                                        className={plan.status === 'Completed' ? 'btn btn-secondary text-sm' : plan.status === 'Draft' ? 'btn btn-primary text-sm' : 'btn btn-success text-sm'}
                                         style={{ padding: 'var(--space-1.5) var(--space-3)', height: 'auto', minHeight: 'unset', display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1.5)' }}
                                     >
                                         {plan.status === 'Completed' ? (
                                             <><PlayCircle size={14} /> Reactivar</>
+                                        ) : plan.status === 'Draft' ? (
+                                            <><PlayCircle size={14} /> Comenzar</>
                                         ) : (
                                             <><CheckCircle2 size={14} /> Finalizar</>
                                         )}

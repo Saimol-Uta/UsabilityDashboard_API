@@ -213,7 +213,8 @@ Por favor, asegúrate de que:
 2. Cada historia de usuario debe tener criterios de aceptación detallados y un conjunto de tareas técnicas específicas necesarias para su desarrollo.
 3. Asigna prioridades (Alta, Media, Baja) basadas en la severidad de los hallazgos y problemas (ej. problemas críticos tienen prioridad Alta).
 4. Estima las horas de las tareas técnicas de forma realista (usualmente de 2 a 12 horas).
-5. No incluyas explicaciones adicionales antes o después del JSON. Devuelve únicamente el JSON crudo.
+5. Para cada Historia de Usuario generada, debes incluir obligatoriamente el ID o nombre del Hallazgo de usabilidad de origen en una propiedad llamada ""origen_hallazgo"" (ej. ""Hallazgo #1 - Contraste Visual"" o ""Hallazgo #3 - Layout móvil"").
+6. No incluyas explicaciones adicionales antes o después del JSON. Devuelve únicamente el JSON crudo.
 
 ESTRUCTURA JSON REQUERIDA:
 {{
@@ -225,6 +226,7 @@ ESTRUCTURA JSON REQUERIDA:
       ""title"": ""[Título corto de la historia]"",
       ""description"": ""Como... quiero... para..."",
       ""priority"": ""Alta"",
+      ""origen_hallazgo"": ""[ID y título del hallazgo de origen, ej. Hallazgo #1 - Contraste Visual]"",
       ""acceptanceCriteria"": [
         ""Criterio de aceptación 1"",
         ""Criterio de aceptación 2""
@@ -327,6 +329,7 @@ ESTRUCTURA JSON REQUERIDA:
             if (findings.Any())
             {
                 int storyIndex = 1;
+                int findingIndex = 1;
                 foreach (var finding in findings.OrderByDescending(f => f.Severity))
                 {
                     var story = new UserStoryModel
@@ -335,6 +338,7 @@ ESTRUCTURA JSON REQUERIDA:
                         Title = $"Corregir: {TruncateString(finding.Description, 50)}",
                         Description = $"Como {userProfile}, quiero que el módulo '{plan.EvaluatedModule}' resuelva el problema de '{finding.Description}', para completar mi flujo de tareas con mayor satisfacción y sin errores.",
                         Priority = MapPriority(finding.Priority),
+                        Origen_Hallazgo = $"Hallazgo #{findingIndex++} - {TruncateString(finding.Description, 45)}",
                         AcceptanceCriteria = new List<string>
                         {
                             $"El usuario debe ser capaz de completar la tarea sin experimentar la fricción de: {finding.Description}",
@@ -389,6 +393,7 @@ ESTRUCTURA JSON REQUERIDA:
                         Title = $"Flujo Interactivo: {TruncateString(task.Scenario, 50)}",
                         Description = $"Como {userProfile}, quiero poder completar el escenario de '{task.Scenario}', para obtener el resultado esperado: '{task.ExpectedResult}'.",
                         Priority = "Media",
+                        Origen_Hallazgo = $"Tarea #{task.TaskNumber} - {TruncateString(task.Scenario, 45)}",
                         AcceptanceCriteria = new List<string>
                         {
                             $"El flujo debe guiar de manera intuitiva al usuario a obtener: {task.ExpectedResult}",
@@ -482,10 +487,15 @@ ESTRUCTURA JSON REQUERIDA:
             {
                 sb.AppendLine($"### 📋 [{us.Id}] {us.Title}");
                 sb.AppendLine();
+                if (!string.IsNullOrEmpty(us.Origen_Hallazgo))
+                {
+                    sb.AppendLine($"* **Origen:** 🔍 {us.Origen_Hallazgo}");
+                    sb.AppendLine();
+                }
+                sb.AppendLine($"* **Prioridad:** {us.Priority}");
+                sb.AppendLine();
                 sb.AppendLine($"**Descripción:**");
                 sb.AppendLine($"`{us.Description}`");
-                sb.AppendLine();
-                sb.AppendLine($"* **Prioridad:** {us.Priority}");
                 sb.AppendLine();
                 
                 sb.AppendLine("**Criterios de Aceptación:**");
@@ -536,6 +546,90 @@ ESTRUCTURA JSON REQUERIDA:
             };
         }
 
+        public async Task<string> ChatAsync(string prompt, string activePageName, string contextJson)
+        {
+            var apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return "⚠️ **Asistente de Copiloto IA:** El servidor no tiene configurada la variable de entorno `GEMINI_API_KEY`. Por favor, configura tu API Key de Gemini en el archivo `.env` del servidor para habilitar el asistente de IA.";
+            }
+
+            var systemPrompt = $@"
+Eres Copiloto IA, el asistente inteligente y experto en Ingeniería de Software e Interacción Humano-Computador (IHC) para el ""Usability Test Dashboard"".
+Tu objetivo es ayudar al usuario a analizar sus pruebas de usabilidad y planificar el desarrollo ágil alimentando el Sprint Backlog de forma orgánica.
+
+CONTEXTO ACTUAL DEL USUARIO:
+- Pantalla actual en la que navega el usuario: {activePageName}
+- Datos registrados en esta pantalla:
+{contextJson}
+
+INSTRUCCIONES DE RESPUESTA:
+1. Responde a la consulta del usuario de manera técnica, profesional y concisa (máximo 3 párrafos).
+2. Si propones agregar historias de usuario específicas para corregir fallos o mejorar la usabilidad, redacta historias bien formadas (""Como... quiero... para..."") y divídelas en tareas técnicas y criterios de aceptación.
+3. Para permitir que el usuario las integre instantáneamente a su backlog sin tener que transcribirlas, si tu respuesta propone historias de usuario concretas para el Sprint Backlog, debes adjuntar AL FINAL de tu respuesta un bloque especial JSON delimitado exactamente por las etiquetas [BACKLOG_ACTION] y [/BACKLOG_ACTION]. No incluyas marcas markdown de código (```json) dentro de este bloque especial. Formato:
+
+[BACKLOG_ACTION]
+{{
+  ""stories"": [
+    {{
+      ""title"": ""Optimizar el menú de hamburguesa móvil"",
+      ""description"": ""Como usuario móvil quiero un botón de menú con área de contacto de al menos 44px para navegar sin cometer errores táctiles."",
+      ""priority"": ""Alta"",
+      ""origen_hallazgo"": ""[ID y título del hallazgo de origen, ej. Hallazgo #1 - Contraste Visual]"",
+      ""acceptanceCriteria"": [
+        ""El botón de menú hamburguesa tiene dimensiones de al menos 44x44px."",
+        ""Se puede interactuar fluidamente usando navegación por teclado.""
+      ],
+      ""technicalTasks"": [
+        {{ ""title"": ""Refactorizar CSS de .layout-hamburger para Ley de Fitts"", ""estimatedHours"": 3 }},
+        {{ ""title"": ""Implementar focus trap en menú colapsable"", ""estimatedHours"": 5 }}
+      ]
+    }}
+  ]
+}}
+[/BACKLOG_ACTION]
+
+4. Mantén tus respuestas de texto bellamente redactadas en Markdown (con listas, negritas y encabezados).
+";
+
+            var requestBody = new
+            {
+                contents = new[]
+                {
+                    new
+                    {
+                        parts = new[]
+                        {
+                            new { text = systemPrompt },
+                            new { text = $"Consulta del usuario:\n{prompt}" }
+                        }
+                    }
+                },
+                generationConfig = new
+                {
+                    temperature = 0.2
+                }
+            };
+
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
+            var httpContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync(url, httpContent);
+            response.EnsureSuccessStatusCode();
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+            var jsonDoc = JsonDocument.Parse(responseBody);
+            
+            var reply = jsonDoc.RootElement
+                .GetProperty("candidates")[0]
+                .GetProperty("content")
+                .GetProperty("parts")[0]
+                .GetProperty("text")
+                .GetString();
+
+            return reply ?? "El modelo de IA devolvió una respuesta vacía.";
+        }
+
         private SprintBacklogDto MapToDto(SprintBacklog backlog)
         {
             return new SprintBacklogDto
@@ -565,6 +659,7 @@ ESTRUCTURA JSON REQUERIDA:
             public string Title { get; set; } = string.Empty;
             public string Description { get; set; } = string.Empty;
             public string Priority { get; set; } = string.Empty;
+            public string Origen_Hallazgo { get; set; } = string.Empty;
             public List<string> AcceptanceCriteria { get; set; } = new List<string>();
             public List<TechnicalTaskModel> TechnicalTasks { get; set; } = new List<TechnicalTaskModel>();
         }

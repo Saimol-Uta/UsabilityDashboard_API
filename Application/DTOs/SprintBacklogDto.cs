@@ -27,4 +27,11 @@ namespace Application.DTOs
         public string ContentJson { get; set; } = "{}";
         public string RawMarkdown { get; set; } = string.Empty;
     }
+
+    public class ChatRequestDto
+    {
+        public string Prompt { get; set; } = string.Empty;
+        public string ActivePageName { get; set; } = string.Empty;
+        public string ContextJson { get; set; } = "[]";
+    }
 }

@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
     Sparkles, Send, X, Brain, PlusCircle, CheckCircle2,
-    ClipboardList, HelpCircle, Settings,
-    FileText, ShieldAlert, Users, LayoutDashboard, ArrowRight
+    ClipboardList, HelpCircle, FileText, Users, LayoutDashboard
 } from 'lucide-react'
 import { usePlan } from '../context/PlanContext'
 import { useToast } from '../App'
@@ -12,49 +11,32 @@ import {
     sprintBacklogApi, testTasksApi
 } from '../api'
 
-const API_KEY_STORAGE_KEY = 'gemini_user_api_key'
-
 interface ChatMessage {
     id: number
     sender: 'user' | 'ai'
     text: string
     isAction?: boolean
-    actionData?: {
-        stories: Array<{
-            title: string
-            description: string
-            priority: string
-            acceptanceCriteria: string[]
-            technicalTasks: Array<{ title: string; estimatedHours: number }>
-        }>
-    }
+    actionData?: any
     inserted?: boolean
 }
 
 export default function AiCopilot() {
     const location = useLocation()
+    const navigate = useNavigate()
     const { activePlanId, activePlan, refreshGates } = usePlan()
     const { addToast } = useToast()
 
     const [isOpen, setIsOpen] = useState(false)
-    const [userApiKey, setUserApiKey] = useState('')
-    const [isKeySetup, setIsKeySetup] = useState(false)
-    const [inputApiKey, setInputApiKey] = useState('')
     const [messages, setMessages] = useState<ChatMessage[]>([])
     const [inputText, setInputText] = useState('')
     const [loading, setLoading] = useState(false)
 
+    const [selectedTasksState, setSelectedTasksState] = useState<Record<string, boolean>>({})
+
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
-    // Load stored key and set initial greeting
+    // Set initial greeting
     useEffect(() => {
-        const savedKey = localStorage.getItem(API_KEY_STORAGE_KEY)
-        if (savedKey) {
-            setUserApiKey(savedKey)
-            setIsKeySetup(true)
-        }
-
-        // Initial Greeting
         setMessages([
             {
                 id: 1,
@@ -70,6 +52,160 @@ export default function AiCopilot() {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
         }
     }, [messages, loading])
+
+    // Event listener for automated Copilot triggers (HCI interactions)
+    useEffect(() => {
+        const handleCopilotTrigger = async (e: Event) => {
+            const detail = (e as CustomEvent).detail
+            if (!detail) return
+
+            setIsOpen(true)
+
+            if (detail.action === 'suggest-tasks') {
+                setLoading(true)
+
+                // Render user-friendly query card in chat logs
+                setMessages(prev => [
+                    ...prev,
+                    {
+                        id: Date.now() - 1,
+                        sender: 'user',
+                        text: '✨ Sugerir tareas ergonómicas con Inteligencia Artificial'
+                    }
+                ])
+
+                try {
+                    const prompt = `Actúa como un experto en interacción humano-computador y diseño centrado en el usuario.
+Sugiere exactamente 3 tareas de usabilidad realistas y relevantes para evaluar el siguiente producto de software:
+- Proyecto: ${detail.projectName || activePlan?.projectName || 'N/A'}
+- Producto: ${detail.product || activePlan?.product || 'N/A'}
+- Módulo Evaluado: ${detail.evaluatedModule || activePlan?.evaluatedModule || 'N/A'}
+- Objetivo del Plan: ${detail.objective || activePlan?.objective || 'N/A'}
+
+Por favor, asegúrate de que las tareas sean accionables, específicas y ergonómicas, conteniendo escenario, resultado esperado, métrica principal, criterio de éxito y tiempo estimado máximo en segundos.
+
+Debes responder amigablemente y incluir estrictamente un bloque [TASK_ACTION] conteniendo únicamente un JSON con el array de tareas sugeridas para que el usuario las inserte con un solo clic.
+
+ESTRUCTURA DE RESPUESTA EXIGIDA:
+Presentación amigable con tips ergonómicos para el test.
+[TASK_ACTION]
+{
+  "tasks": [
+    {
+      "scenario": "[Descripción clara del escenario de prueba]",
+      "expectedResult": "[Resultado que el usuario final debe lograr]",
+      "mainMetric": "[Métrica, ej: Tasa de éxito]",
+      "successCriteria": "[Criterio exacto de satisfacción]",
+      "maxTimeSeconds": 90
+    }
+  ]
+}
+[/TASK_ACTION]
+`;
+
+                    const aiRawReply = await queryGemini(prompt, { action: 'suggest-tasks' })
+
+                    let cleanText = aiRawReply
+                    let isAction = false
+                    let actionData = undefined
+
+                    if (aiRawReply.includes('[TASK_ACTION]')) {
+                        const parts = aiRawReply.split('[TASK_ACTION]')
+                        cleanText = parts[0]
+                        const actionPart = parts[1].split('[/TASK_ACTION]')[0]
+                        try {
+                            actionData = JSON.parse(actionPart.trim())
+                            isAction = true
+                        } catch (err) {
+                            console.error('Error parsing suggest tasks action JSON:', err)
+                        }
+                    }
+
+                    setMessages(prev => [
+                        ...prev,
+                        {
+                            id: Date.now(),
+                            sender: 'ai',
+                            text: cleanText,
+                            isAction,
+                            actionData
+                        }
+                    ])
+                } catch (err: any) {
+                    setMessages(prev => [
+                        ...prev,
+                        {
+                            id: Date.now(),
+                            sender: 'ai',
+                            text: `❌ **Error al sugerir tareas:** ${err.message || 'No se pudo conectar con el servidor de IA.'}`
+                        }
+                    ])
+                } finally {
+                    setLoading(false)
+                }
+            } else if (detail.action === 'participant-saved') {
+                setMessages(prev => [
+                    ...prev,
+                    {
+                        id: Date.now(),
+                        sender: 'ai',
+                        text: `🎉 ¡Espectacular! Se ha registrado con éxito al participante **${detail.participantName}**.\n\nCon esto finalizas la fase de preparación de participantes. ¿Deseas avanzar paso a paso hacia la síntesis de **Hallazgos y Acciones de Mejora**, o prefieres ir directo a planificar el **Sprint Backlog**?`
+                    }
+                ])
+            }
+        }
+
+        window.addEventListener('copilot-trigger', handleCopilotTrigger)
+        return () => window.removeEventListener('copilot-trigger', handleCopilotTrigger)
+    }, [activePlanId, activePlan])
+
+    const handleInsertTasks = async (msgId: number, tasks: any[]) => {
+        if (!activePlanId) return
+
+        try {
+            addToast('Agregando tareas seleccionadas al plan...', 'success')
+            
+            // Filter only selected tasks
+            const selectedTasks = tasks.filter((_, idx) => {
+                const uniqueKey = `task-sug-${msgId}-${idx}`
+                return selectedTasksState[uniqueKey] !== false // Default is checked
+            })
+
+            if (selectedTasks.length === 0) {
+                addToast('No seleccionaste ninguna tarea', 'error')
+                return
+            }
+
+            // 1. Fetch current task list to know the starting task number
+            const currentTasksRes = await testTasksApi.getByPlan(activePlanId)
+            const currentTasks = currentTasksRes.data || []
+            const startingTaskNumber = currentTasks.length + 1
+
+            // 2. Create tasks one by one
+            await Promise.all(selectedTasks.map((task, idx) => {
+                return testTasksApi.create({
+                    testPlanId: activePlanId,
+                    taskNumber: startingTaskNumber + idx,
+                    scenario: task.scenario,
+                    expectedResult: task.expectedResult || '',
+                    mainMetric: task.mainMetric || 'Tasa de éxito',
+                    successCriteria: task.successCriteria || '',
+                    maxTimeSeconds: task.maxTimeSeconds || 120
+                })
+            }))
+
+            // 3. Mark as inserted in state
+            setMessages(prev => prev.map(m => m.id === msgId ? { ...m, inserted: true } : m))
+            addToast(`¡${selectedTasks.length} tarea(s) agregada(s) con éxito!`, 'success')
+            
+            // Trigger a general custom event to tell the Tareas page to reload its task list!
+            window.dispatchEvent(new CustomEvent('tasks-updated'))
+            refreshGates()
+        } catch (err) {
+            console.error(err)
+            addToast('Error al agregar tareas al plan', 'error')
+        }
+    }
 
     // Get current context metadata based on path
     const getContextMeta = () => {
@@ -125,7 +261,7 @@ export default function AiCopilot() {
                 color: '#6366f1',
                 suggestions: [
                     '💡 Evaluar coherencia de mis historias y metas de sprint',
-                    '💡 Sugerir tareas técnicas adicionales para mis historias'
+                    '💡 Sugerir tareas técnicas adicionales para mi sprint'
                 ]
             }
         }
@@ -142,112 +278,22 @@ export default function AiCopilot() {
 
     const contextMeta = getContextMeta()
 
-    // Handle key setup
-    const handleSaveApiKey = () => {
-        if (!inputApiKey.trim()) {
-            addToast('Por favor, ingresa una API Key válida', 'error')
-            return
-        }
-        localStorage.setItem(API_KEY_STORAGE_KEY, inputApiKey.trim())
-        setUserApiKey(inputApiKey.trim())
-        setIsKeySetup(true)
-        addToast('Gemini API Key configurada con éxito', 'success')
-        
-        // Add follow-up AI message
-        setMessages(prev => [
-            ...prev,
-            {
-                id: Date.now(),
-                sender: 'ai',
-                text: '🚀 **¡API Key configurada!** Ahora puedo acceder al modelo Gemini 2.5 Flash en tiempo real. \n\nSelecciona cualquiera de las sugerencias rápidas abajo o escríbeme una consulta contextual.'
-            }
-        ])
-    }
-
-    const handleDisconnectKey = () => {
-        localStorage.removeItem(API_KEY_STORAGE_KEY)
-        setUserApiKey('')
-        setIsKeySetup(false)
-        setInputApiKey('')
-        addToast('API Key desconectada', 'success')
-    }
-
-    // Call Gemini API directly
+    // Call Gemini API through backend proxy endpoint
     const queryGemini = async (prompt: string, planData: any) => {
         const activePageName = contextMeta.name
-        const pathname = location.pathname
+        const contextJson = JSON.stringify(planData)
 
-        const systemPrompt = `
-Eres Copiloto IA, el asistente inteligente y experto en Ingeniería de Software e Interacción Humano-Computador (IHC) para el "Usability Test Dashboard".
-Tu objetivo es ayudar al usuario a analizar sus pruebas de usabilidad y planificar el desarrollo ágil alimentando el Sprint Backlog de forma orgánica.
-
-CONTEXTO ACTUAL DEL USUARIO:
-- Proyecto evaluado: ${activePlan ? activePlan.projectName : 'Sin plan activo'}
-- Pantalla actual en la que navega el usuario: ${activePageName} (Ruta: ${pathname})
-- Datos registrados en esta pantalla:
-${JSON.stringify(planData, null, 2)}
-
-INSTRUCCIONES DE RESPUESTA:
-1. Responde a la consulta del usuario de manera técnica, profesional y concisa (máximo 3 párrafos).
-2. Si propones agregar historias de usuario específicas para corregir fallos o mejorar la usabilidad, redacta historias bien formadas ("Como... quiero... para...") y divídelas en tareas técnicas y criterios de aceptación.
-3. Para permitir que el usuario las integre instantáneamente a su backlog sin tener que transcribirlas, si tu respuesta propone historias de usuario concretas para el Sprint Backlog, debes adjuntar AL FINAL de tu respuesta un bloque especial JSON delimitado exactamente por las etiquetas \`[BACKLOG_ACTION]\` y \`[/BACKLOG_ACTION]\`. No incluyas marcas markdown de código (\`\`\`json) dentro de este bloque especial. Formato:
-
-[BACKLOG_ACTION]
-{
-  "stories": [
-    {
-      "title": "Optimizar el menú de hamburguesa móvil",
-      "description": "Como usuario móvil quiero un botón de menú con área de contacto de al menos 44px para navegar sin cometer errores táctiles.",
-      "priority": "Alta",
-      "acceptanceCriteria": [
-        "El botón de menú hamburguesa tiene dimensiones de al menos 44x44px.",
-        "Se puede interactuar fluidamente usando navegación por teclado."
-      ],
-      "technicalTasks": [
-        { "title": "Refactorizar CSS de .layout-hamburger para Ley de Fitts", "estimatedHours": 3 },
-        { "title": "Implementar focus trap en menú colapsable", "estimatedHours": 5 }
-      ]
-    }
-  ]
-}
-[/BACKLOG_ACTION]
-
-4. Mantén tus respuestas textuales bellamente redactadas en Markdown (con listas, negritas y encabezados).
-`
-
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userApiKey}`
-        const requestBody = {
-            contents: [
-                {
-                    parts: [
-                        { text: systemPrompt },
-                        { text: `Consulta del usuario:\n${prompt}` }
-                    ]
-                }
-            ],
-            generationConfig: {
-                temperature: 0.2
-            }
-        }
-
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
+        const res = await sprintBacklogApi.chat({
+            prompt,
+            activePageName,
+            contextJson
         })
 
-        if (!response.ok) {
-            const errData = await response.json().catch(() => ({}))
-            throw new Error(errData?.error?.message || `HTTP ${response.status} Error`)
+        if (res.data && res.data.reply) {
+            return res.data.reply
         }
-
-        const resData = await response.json()
-        const text = resData?.candidates?.[0]?.content?.parts?.[0]?.text
-        if (!text) {
-            throw new Error('El modelo de lenguaje devolvió una respuesta vacía.')
-        }
-
-        return text
+        
+        throw new Error('La respuesta del servidor no tiene un formato válido.')
     }
 
     // Load contextual data from backend to feed the prompt
@@ -320,7 +366,7 @@ INSTRUCCIONES DE RESPUESTA:
             // 1. Fetch relevant page context data
             const contextData = await fetchContextData()
 
-            // 2. Query Gemini
+            // 2. Query Gemini through backend secure proxy
             const aiRawText = await queryGemini(text, contextData)
 
             // 3. Parse BACKLOG_ACTION if any
@@ -358,7 +404,7 @@ INSTRUCCIONES DE RESPUESTA:
                 {
                     id: Date.now(),
                     sender: 'ai',
-                    text: `❌ **Error del Asistente:** ${err.message || 'No se pudo establecer conexión con la IA. Por favor, verifica tu API Key y conexión a internet.'}`
+                    text: `❌ **Error del Asistente:** ${err.message || 'No se pudo conectar con el servidor de IA de forma segura.'}`
                 }
             ])
         } finally {
@@ -422,6 +468,7 @@ INSTRUCCIONES DE RESPUESTA:
                     title: story.title || `Historia de Usabilidad ${usId}`,
                     description: story.description,
                     priority: story.priority || 'Alta',
+                    origen_hallazgo: story.origen_hallazgo || 'Copiloto IA - Sugerencia Contextual',
                     acceptanceCriteria: story.acceptanceCriteria || [],
                     technicalTasks
                 }
@@ -435,7 +482,10 @@ INSTRUCCIONES DE RESPUESTA:
                 md += `**Meta del Sprint:** ${data.sprintGoal}\n\n`;
                 md += `## Historias de Usuario\n\n`;
                 data.userStories.forEach((us: any) => {
-                    md += `### [${us.id}] ${us.title}\n`;
+                    md += `### 📋 [${us.id}] ${us.title}\n`;
+                    if (us.origen_hallazgo) {
+                        md += `* **Origen:** 🔍 ${us.origen_hallazgo}\n`;
+                    }
                     md += `**Descripción:** ${us.description}\n`;
                     md += `**Prioridad:** ${us.priority}\n\n`;
                     md += `#### Criterios de Aceptación:\n`;
@@ -474,7 +524,6 @@ INSTRUCCIONES DE RESPUESTA:
 
     // Helper to render markdown simply
     const renderMessageText = (text: string) => {
-        // Simple regex-based markdown renderer
         const paragraphs = text.split('\n\n')
         return paragraphs.map((p, pIdx) => {
             let rendered = p
@@ -541,135 +590,200 @@ INSTRUCCIONES DE RESPUESTA:
                     </div>
 
                     <div className="copilot-body">
-                        {/* ── Key Setup Area if no Gemini Key ── */}
-                        {!isKeySetup ? (
-                            <div className="copilot-setup">
-                                <ShieldAlert size={36} style={{ color: 'var(--color-warning)' }} />
-                                <h4 className="copilot-setup-title">Activar Asistente de IA</h4>
-                                <p>
-                                    Este asistente utiliza **Gemini 2.5 Flash** para leer el contexto de tus pantallas en tiempo real y sugerir historias de usuario directas.
-                                </p>
-                                <p style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                                    Introduce tu API Key de Google. Es 100% gratuita y se almacena únicamente en tu navegador de forma local.
-                                </p>
-                                <a
-                                    href="https://aistudio.google.com/"
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="copilot-setup-link"
+                        {/* Chat Messages Log */}
+                        <div className="copilot-messages soft-scrollbar">
+                            {messages.map((msg) => (
+                                <div
+                                    key={msg.id}
+                                    className={`copilot-msg copilot-msg--${msg.sender}`}
                                 >
-                                    Obtener API Key gratis <ArrowRight size={12} />
-                                </a>
-                                <input
-                                    type="password"
-                                    placeholder="AIzaSy..."
-                                    className="copilot-setup-input"
-                                    value={inputApiKey}
-                                    onChange={(e) => setInputApiKey(e.target.value)}
-                                />
-                                <button
-                                    onClick={handleSaveApiKey}
-                                    className="copilot-setup-save-btn"
-                                >
-                                    Conectar Asistente
-                                </button>
-                            </div>
-                        ) : (
-                            <>
-                                {/* Chat Messages Log */}
-                                <div className="copilot-messages soft-scrollbar">
-                                    {messages.map((msg) => (
-                                        <div
-                                            key={msg.id}
-                                            className={`copilot-msg copilot-msg--${msg.sender}`}
-                                        >
-                                            {renderMessageText(msg.text)}
+                                    {renderMessageText(msg.text)}
 
-                                            {/* Actionable Button to inject backlog */}
-                                            {msg.isAction && msg.actionData?.stories && (
-                                                <div>
-                                                    {msg.inserted ? (
-                                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#10b981', marginTop: 'var(--space-2)', fontWeight: 'bold' }}>
-                                                            <CheckCircle2 size={12} />
-                                                            <span>¡Historias integradas al Backlog!</span>
-                                                        </div>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => handleInsertIntoBacklog(msg.id, msg.actionData)}
-                                                            className="copilot-msg-insert-btn"
-                                                        >
-                                                            <PlusCircle size={12} />
-                                                            <span>Insertar {msg.actionData.stories.length} Historia(s) en Backlog</span>
-                                                        </button>
-                                                    )}
+                                    {/* Actionable Button to inject backlog */}
+                                    {msg.isAction && msg.actionData?.stories && (
+                                        <div>
+                                            {msg.inserted ? (
+                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#10b981', marginTop: 'var(--space-2)', fontWeight: 'bold' }}>
+                                                    <CheckCircle2 size={12} />
+                                                    <span>¡Historias integradas al Backlog!</span>
                                                 </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleInsertIntoBacklog(msg.id, msg.actionData)}
+                                                    className="copilot-msg-insert-btn"
+                                                >
+                                                    <PlusCircle size={12} />
+                                                    <span>Insertar {msg.actionData.stories.length} Historia(s) en Backlog</span>
+                                                </button>
                                             )}
                                         </div>
-                                    ))}
-                                    {loading && (
-                                        <div className="copilot-loading">
-                                            <Sparkles size={12} className="sprint-spin" />
-                                            <span>Copiloto analizando pantalla...</span>
-                                            <div className="copilot-loading-dot" />
-                                            <div className="copilot-loading-dot" />
-                                            <div className="copilot-loading-dot" />
+                                    )}
+
+                                    {/* Actionable checkbox tasks suggestion block */}
+                                    {msg.isAction && msg.actionData?.tasks && (
+                                        <div style={{ marginTop: 'var(--space-3)', background: 'rgba(255,255,255,0.05)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                            {msg.inserted ? (
+                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#10b981', fontWeight: 'bold' }}>
+                                                    <CheckCircle2 size={12} />
+                                                    <span>¡Tareas agregadas exitosamente!</span>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <p style={{ fontSize: '11px', color: 'var(--neutral-300)', marginBottom: 'var(--space-2)', fontWeight: 'var(--font-weight-semibold)' }}>Selecciona las tareas que deseas agregar:</p>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                                                        {msg.actionData.tasks.map((task: any, idx: number) => {
+                                                            const uniqueKey = `task-sug-${msg.id}-${idx}`
+                                                            const isChecked = selectedTasksState[uniqueKey] !== false
+                                                            return (
+                                                                <label key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)', fontSize: '11px', color: 'white', cursor: 'pointer' }}>
+                                                                    <input 
+                                                                        type="checkbox" 
+                                                                        checked={isChecked}
+                                                                        onChange={(e) => {
+                                                                            setSelectedTasksState(prev => ({
+                                                                                ...prev,
+                                                                                [uniqueKey]: e.target.checked
+                                                                            }))
+                                                                        }}
+                                                                        style={{ marginTop: '3px', cursor: 'pointer' }}
+                                                                    />
+                                                                    <div style={{ flex: 1 }}>
+                                                                        <strong>T{idx+1}: {task.scenario}</strong>
+                                                                        <div style={{ color: 'var(--neutral-400)', fontSize: '10px', marginTop: '1px' }}>
+                                                                            ⏱️ {task.maxTimeSeconds}s | 📊 {task.mainMetric}
+                                                                        </div>
+                                                                    </div>
+                                                                </label>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleInsertTasks(msg.id, msg.actionData.tasks)}
+                                                        className="copilot-msg-insert-btn"
+                                                        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-1)' }}
+                                                    >
+                                                        <PlusCircle size={12} />
+                                                        <span>Agregar Tareas Seleccionadas</span>
+                                                    </button>
+                                                </>
+                                            )}
                                         </div>
                                     )}
-                                    <div ref={messagesEndRef} />
                                 </div>
-
-                                {/* Suggestion Action Chips */}
-                                {messages.length < 3 && !loading && (
-                                    <div className="copilot-quick-actions">
-                                        <p className="copilot-quick-actions-title">Sugerencias del asistente:</p>
-                                        <div className="copilot-quick-actions-grid">
-                                            {contextMeta.suggestions.map((sug, i) => (
-                                                <button
-                                                    key={i}
-                                                    onClick={() => handleSuggestionClick(sug)}
-                                                    className="copilot-action-chip"
-                                                >
-                                                    {sug}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Message Prompt input area */}
-                                <div className="copilot-input-area">
-                                    <textarea
-                                        placeholder={!activePlanId ? 'Selecciona un plan activo primero' : 'Pregúntame sobre esta sección...'}
-                                        disabled={!activePlanId || loading}
-                                        className="copilot-textarea soft-scrollbar"
-                                        value={inputText}
-                                        onChange={(e) => setInputText(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                e.preventDefault()
-                                                handleSendMessage(inputText)
-                                            }
-                                        }}
-                                    />
-                                    <button
-                                        onClick={() => handleSendMessage(inputText)}
-                                        disabled={!inputText.trim() || !activePlanId || loading}
-                                        className="copilot-send-btn"
-                                        aria-label="Enviar prompt"
-                                    >
-                                        <Send size={14} />
-                                    </button>
-                                    <button
-                                        onClick={handleDisconnectKey}
-                                        className="copilot-close"
-                                        title="Desconectar API Key"
-                                        style={{ padding: '8px' }}
-                                    >
-                                        <Settings size={14} />
-                                    </button>
+                            ))}
+                            {loading && (
+                                <div className="copilot-loading">
+                                    <Sparkles size={12} className="sprint-spin" />
+                                    <span>Analizando pantalla...</span>
+                                    <div className="copilot-loading-dot" />
+                                    <div className="copilot-loading-dot" />
+                                    <div className="copilot-loading-dot" />
                                 </div>
-                            </>
+                            )}
+                            <div ref={messagesEndRef} />
+                        </div>
+
+                        {/* Suggestion Action Chips */}
+                        {messages.length < 3 && !loading && (
+                            <div className="copilot-quick-actions">
+                                <p className="copilot-quick-actions-title">Sugerencias del asistente:</p>
+                                <div className="copilot-quick-actions-grid">
+                                    {contextMeta.suggestions.map((sug, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => handleSuggestionClick(sug)}
+                                            className="copilot-action-chip"
+                                        >
+                                            {sug}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         )}
+
+                        {/* Persistent Quick Replies / Navigation Row */}
+                        {activePlanId && !loading && (
+                            <div className="copilot-quick-replies" style={{ padding: '0 var(--space-4) var(--space-2)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        navigate('/hallazgos')
+                                        handleSendMessage('Avanzar paso a paso (Hallazgos y Mejoras)')
+                                    }}
+                                    className="copilot-action-chip"
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 'var(--space-2)',
+                                        background: 'rgba(255, 255, 255, 0.08)',
+                                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                                        color: 'white',
+                                        padding: '10px var(--space-3)',
+                                        borderRadius: 'var(--radius-md)',
+                                        fontSize: '11px',
+                                        fontWeight: 'var(--font-weight-semibold)',
+                                        width: '100%',
+                                        textAlign: 'left',
+                                        cursor: 'pointer',
+                                        justifyContent: 'flex-start'
+                                    }}
+                                >
+                                    📋 Avanzar paso a paso (Hallazgos y Mejoras)
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        navigate('/backlog')
+                                        handleSendMessage('Ir directo al Sprint Backlog')
+                                    }}
+                                    className="copilot-action-chip"
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 'var(--space-2)',
+                                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(139, 92, 246, 0.25) 100%)',
+                                        border: '1px solid rgba(99, 102, 241, 0.5)',
+                                        color: '#818cf8',
+                                        padding: '10px var(--space-3)',
+                                        borderRadius: 'var(--radius-md)',
+                                        fontSize: '11px',
+                                        fontWeight: 'var(--font-weight-bold)',
+                                        width: '100%',
+                                        textAlign: 'left',
+                                        cursor: 'pointer',
+                                        justifyContent: 'flex-start'
+                                    }}
+                                >
+                                    ⚡ Ir directo al Sprint Backlog (Recomendado)
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Message Prompt input area */}
+                        <div className="copilot-input-area">
+                            <textarea
+                                placeholder={!activePlanId ? 'Selecciona un plan activo primero' : 'Pregúntame sobre esta sección...'}
+                                disabled={!activePlanId || loading}
+                                className="copilot-textarea soft-scrollbar"
+                                value={inputText}
+                                onChange={(e) => setInputText(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault()
+                                        handleSendMessage(inputText)
+                                    }
+                                }}
+                            />
+                            <button
+                                onClick={() => handleSendMessage(inputText)}
+                                disabled={!inputText.trim() || !activePlanId || loading}
+                                className="copilot-send-btn"
+                                aria-label="Enviar prompt"
+                            >
+                                <Send size={14} />
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

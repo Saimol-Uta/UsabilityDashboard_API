@@ -5,12 +5,13 @@ import { usePlan } from '../context/PlanContext'
 import { extractErrorMessage } from '../hooks/useApiError'
 import {
     Sparkles, Save, FileText, Printer, Plus, Trash2,
-    AlertCircle, Key, Cpu, CheckSquare, Layers,
-    Hourglass, ClipboardList, HelpCircle, ChevronDown,
+    AlertCircle, Cpu, CheckSquare, Layers,
+    Hourglass, ClipboardList, ChevronDown,
     Database, BookOpen, Users, Search,
     ArrowUp, ArrowDown, Clock, CheckCircle2,
     Timer, TrendingUp, TrendingDown, Minus
 } from 'lucide-react'
+import Modal from '../components/Modal'
 
 interface TechnicalTask {
     id: string
@@ -25,6 +26,7 @@ interface UserStory {
     priority: string // 'Alta' | 'Media' | 'Baja'
     acceptanceCriteria: string[]
     technicalTasks: TechnicalTask[]
+    origen_hallazgo?: string
 }
 
 interface BacklogData {
@@ -32,8 +34,6 @@ interface BacklogData {
     sprintGoal: string
     userStories: UserStory[]
 }
-
-const API_KEY_STORAGE_KEY = 'gemini_user_api_key'
 
 /** Metadata about the data sources consumed during generation */
 interface SourcesMetadata {
@@ -61,19 +61,30 @@ export default function SprintBacklog() {
     const [sourcesData, setSourcesData] = useState<SourcesMetadata | null>(null)
     const [showSources, setShowSources] = useState(true)
 
-    // API Key management
-    const [userApiKey, setUserApiKey] = useState('')
-    const [showApiKey, setShowApiKey] = useState(false)
+    // Setup panel toggle
     const [showSetupPanel, setShowSetupPanel] = useState(true)
 
-    // Load active plan backlog and stored API key
-    useEffect(() => {
-        // Load API Key from localStorage
-        const savedKey = localStorage.getItem(API_KEY_STORAGE_KEY)
-        if (savedKey) {
-            setUserApiKey(savedKey)
-        }
+    // Traceability lists and active modal states
+    const [findingsList, setFindingsList] = useState<any[]>([])
+    const [selectedFinding, setSelectedFinding] = useState<any | null>(null)
 
+    // Cascading loader step state
+    const [generatingStep, setGeneratingStep] = useState(0)
+
+    // Cascading generating steps timer (dynamic HCI loader)
+    useEffect(() => {
+        if (!isGenerating) {
+            setGeneratingStep(0)
+            return
+        }
+        const interval = setInterval(() => {
+            setGeneratingStep(prev => (prev < 2 ? prev + 1 : 2))
+        }, 3000)
+        return () => clearInterval(interval)
+    }, [isGenerating])
+
+    // Load active plan backlog on plan changes
+    useEffect(() => {
         if (activePlanId) {
             loadBacklog(activePlanId)
             loadSourcesMetadata(activePlanId)
@@ -98,6 +109,7 @@ export default function SprintBacklog() {
             const findings = findingsRes.status === 'fulfilled' ? (findingsRes.value.data || []) : []
 
             const findingsArr = Array.isArray(findings) ? findings : []
+            setFindingsList(findingsArr)
 
             setSourcesData({
                 tasksCount: Array.isArray(tasks) ? tasks.length : 0,
@@ -144,14 +156,48 @@ export default function SprintBacklog() {
         }
     }
 
-    const handleSaveApiKey = () => {
-        const trimmed = userApiKey.trim()
-        if (trimmed) {
-            localStorage.setItem(API_KEY_STORAGE_KEY, trimmed)
-            addToast('API Key de Gemini guardada de forma segura en este navegador', 'success')
+    const handleShowFindingDetail = (origen: string) => {
+        if (!origen) return
+
+        const origenLower = origen.toLowerCase()
+
+        // 1. Try exact or substring match in description
+        let found = findingsList.find(f => {
+            const desc = (f.description || '').toLowerCase()
+            return origenLower.includes(desc) || desc.includes(origenLower)
+        })
+
+        // 2. Try match by positional ID (e.g., "Hallazgo #1")
+        if (!found) {
+            const match = origen.match(/Hallazgo\s*#?\s*(\d+)/i)
+            if (match && match[1]) {
+                const index = parseInt(match[1]) - 1
+                if (index >= 0 && index < findingsList.length) {
+                    found = findingsList[index]
+                }
+            }
+        }
+
+        if (found) {
+            setSelectedFinding({
+                type: 'finding',
+                title: origen,
+                description: found.description,
+                severity: found.severity || found.priority || 'Media',
+                recommendation: found.recommendation || 'No hay recomendaciones de IHC registradas para este hallazgo.',
+                tool: found.tool || 'Evaluación de Usabilidad',
+                category: found.category || 'General'
+            })
         } else {
-            localStorage.removeItem(API_KEY_STORAGE_KEY)
-            addToast('API Key eliminada del almacenamiento local', 'success')
+            // Fallback generic card for task or Consolidated AI finding
+            setSelectedFinding({
+                type: 'generic',
+                title: origen.startsWith('🔍') ? origen : `🔍 ${origen}`,
+                description: 'Esta historia de usuario fue diseñada de forma inteligente analizando la sinergia general del plan de pruebas, guión del moderador y sesiones registradas.',
+                recommendation: 'Aplicar estándares heurísticos de interacción humano-computador correspondientes a este flujo.',
+                severity: 'Informativo',
+                tool: 'Motor de IA de Usabilidad'
+            })
         }
     }
 
@@ -161,18 +207,13 @@ export default function SprintBacklog() {
             return
         }
 
-        if (useAI && !userApiKey.trim()) {
-            addToast('Por favor, ingresa una API Key de Gemini válida para usar la generación por IA', 'error')
-            return
-        }
-
         setIsGenerating(true)
         try {
             addToast(useAI ? 'Analizando datos y generando con IA (Gemini 2.5 Flash)...' : 'Generando backlog estructurado con el Motor Local...', 'success')
 
             const reqData = {
                 testPlanId: activePlanId,
-                userApiKey: useAI ? userApiKey.trim() : undefined
+                userApiKey: undefined // Proxy handles environment key securely at server side
             }
 
             const res = await sprintBacklogApi.generate(reqData)
@@ -562,7 +603,55 @@ export default function SprintBacklog() {
             </div>
 
             {/* WEB VIEWPORT (Visible on screen, hidden on print) */}
-            <div className="print:hidden sprint-editor-board">
+            <div className="print:hidden sprint-editor-board" style={{ position: 'relative' }}>
+
+                {/* Unified AI cascading loader screen */}
+                {isGenerating && (
+                    <div className="sprint-generating-overlay" style={{
+                        position: 'absolute',
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        background: 'rgba(15, 23, 42, 0.88)',
+                        backdropFilter: 'blur(16px)',
+                        zIndex: 99,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: 'var(--radius-2xl)',
+                        padding: 'var(--space-6)',
+                        color: 'white',
+                        minHeight: '400px'
+                    }}>
+                        <div style={{ position: 'relative', marginBottom: 'var(--space-6)' }}>
+                            <div className="sprint-loading-spinner" style={{ width: 64, height: 64, borderWidth: '3px', borderBottomColor: '#6366f1' }}></div>
+                            <Sparkles size={24} style={{ color: '#818cf8', position: 'absolute', top: '20px', left: '20px', animation: 'pulse 1.5s infinite' }} />
+                        </div>
+
+                        <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'var(--font-weight-bold)', marginBottom: 'var(--space-2)' }}>
+                            Procesando en cascada con Copiloto de IA
+                        </h3>
+                        <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--neutral-400)', marginBottom: 'var(--space-6)', maxWidth: '320px', textAlign: 'center' }}>
+                            Consolidando base de datos del plan para estructurar tu Sprint Backlog ergonómico...
+                        </p>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', width: '100%', maxWidth: '340px', background: 'rgba(255, 255, 255, 0.03)', padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                            <div className={`cascading-step ${generatingStep === 0 ? 'cascading-step--active' : generatingStep > 0 ? 'cascading-step--done' : 'cascading-step--pending'}`}>
+                                <div className={`cascading-dot ${generatingStep === 0 ? 'cascading-dot--active' : generatingStep > 0 ? 'cascading-dot--done' : 'cascading-dot--pending'}`} />
+                                <span>{generatingStep > 0 ? '✓ Sesiones analizadas con éxito' : '🔍 Analizando sesiones de prueba y métricas...'}</span>
+                            </div>
+
+                            <div className={`cascading-step ${generatingStep === 1 ? 'cascading-step--active' : generatingStep > 1 ? 'cascading-step--done' : 'cascading-step--pending'}`}>
+                                <div className={`cascading-dot ${generatingStep === 1 ? 'cascading-dot--active' : generatingStep > 1 ? 'cascading-dot--done' : 'cascading-dot--pending'}`} />
+                                <span>{generatingStep > 1 ? '✓ Hallazgos de usabilidad identificados' : '📂 Identificando hallazgos críticos de usabilidad...'}</span>
+                            </div>
+
+                            <div className={`cascading-step ${generatingStep === 2 ? 'cascading-step--active' : 'cascading-step--pending'}`}>
+                                <div className={`cascading-dot ${generatingStep === 2 ? 'cascading-dot--active' : 'cascading-dot--pending'}`} />
+                                <span>🧠 Estructurando historias de usuario y tareas con Gemini...</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Header Section */}
                 <div className="sprint-page-header">
@@ -586,7 +675,7 @@ export default function SprintBacklog() {
                     </button>
                 </div>
 
-                {/* AI Key and Generation Panel */}
+                {/* AI Configuration and Generation Panel */}
                 {showSetupPanel && (
                     <div className="sprint-setup-panel" style={{ maxWidth: '800px', margin: '0 auto var(--space-6)' }}>
                         <div className="sprint-setup-panel-bg-icon">
@@ -598,64 +687,22 @@ export default function SprintBacklog() {
                             Generación de Historias asistida por IA
                         </h3>
 
-                        <p className="sprint-setup-description" style={{ marginBottom: 'var(--space-4)' }}>
-                            El sistema procesará automáticamente toda la base de datos de tu plan actual (los hallazgos de usabilidad y acciones de mejora) para modelar historias de usuario ("Como / Quiero / Para") detalladas y tareas técnicas estimadas usando el modelo de lenguaje de Google.
+                        <p className="sprint-setup-description" style={{ marginBottom: 'var(--space-6)' }}>
+                            El sistema procesará automáticamente toda la base de datos de tu plan de pruebas actual (los hallazgos de usabilidad y acciones de mejora) para modelar historias de usuario ("Como / Quiero / Para") detalladas y tareas técnicas estimadas utilizando el modelo de lenguaje Google Gemini de forma 100% segura y privada desde el servidor.
                         </p>
 
-                        <div className="sprint-api-key-container" style={{ background: 'rgba(255, 255, 255, 0.5)', padding: 'var(--space-4)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-color)', backdropFilter: 'blur(8px)' }}>
-                            <label className="sprint-api-key-label-wrapper" style={{ marginBottom: 'var(--space-2)' }}>
-                                <span style={{ fontWeight: 'bold', color: 'var(--text-secondary)' }}>Ingresa tu API Key de Gemini</span>
-                                <a
-                                    href="https://aistudio.google.com/"
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="sprint-api-key-link"
-                                >
-                                    Obtener llave gratis <HelpCircle size={12} />
-                                </a>
-                            </label>
-
-                            <div className="sprint-api-key-inputs" style={{ marginBottom: 'var(--space-4)' }}>
-                                <div className="sprint-api-key-input-wrapper">
-                                    <input
-                                        type={showApiKey ? 'text' : 'password'}
-                                        value={userApiKey}
-                                        onChange={(e) => setUserApiKey(e.target.value)}
-                                        placeholder="Introduce tu API Key (AIzaSy...)"
-                                        className="sprint-api-key-input"
-                                        disabled={isReadOnly}
-                                    />
-                                    <Key className="sprint-api-key-icon" size={13} />
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowApiKey(!showApiKey)}
-                                    className="sprint-api-key-btn-toggle"
-                                    title={showApiKey ? 'Ocultar llave' : 'Mostrar llave'}
-                                >
-                                    {showApiKey ? 'Ocultar' : 'Mostrar'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleSaveApiKey}
-                                    className="sprint-api-key-btn-save"
-                                    disabled={isReadOnly}
-                                >
-                                    Guardar
-                                </button>
-                            </div>
-
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                             <button
                                 type="button"
                                 onClick={() => handleGenerate(true)}
-                                disabled={isGenerating || isReadOnly || !userApiKey.trim()}
+                                disabled={isGenerating || isReadOnly}
                                 className="sprint-btn-generate sprint-btn-generate--ai"
-                                style={{ padding: 'var(--space-3)', fontSize: 'var(--font-size-sm)', width: '100%' }}
+                                style={{ padding: 'var(--space-3) var(--space-4)', fontSize: 'var(--font-size-sm)', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)' }}
                             >
                                 {isGenerating ? (
                                     <>
-                                        <div className="sprint-loading-spinner" style={{ width: 14, height: 14, borderBottomColor: 'white', marginRight: 'var(--space-2)' }}></div>
-                                        Generando Backlog con Gemini...
+                                        <div className="sprint-loading-spinner" style={{ width: 16, height: 16, borderBottomColor: 'white', marginRight: 'var(--space-2)' }}></div>
+                                        Generando Sprint Backlog con IA...
                                     </>
                                 ) : (
                                     <>
@@ -663,6 +710,16 @@ export default function SprintBacklog() {
                                         Generar Sprint Backlog con IA
                                     </>
                                 )}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => handleGenerate(false)}
+                                disabled={isGenerating || isReadOnly}
+                                className="sprint-btn-generate sprint-btn-generate--local"
+                                style={{ padding: 'var(--space-2) var(--space-4)', fontSize: 'var(--font-size-xs)' }}
+                            >
+                                Generar con Motor Local (Heurístico)
                             </button>
                         </div>
                     </div>
@@ -910,6 +967,17 @@ export default function SprintBacklog() {
                                             {story.id}
                                         </span>
 
+                                        {story.origen_hallazgo && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleShowFindingDetail(story.origen_hallazgo!)}
+                                                className="sprint-traceability-badge"
+                                                title={`Trazabilidad: ${story.origen_hallazgo}. Haz clic para ver detalles del hallazgo.`}
+                                            >
+                                                🔍 Basado en: {story.origen_hallazgo}
+                                            </button>
+                                        )}
+
                                         <div className="sprint-story-title-field">
                                             <input
                                                 type="text"
@@ -1147,7 +1215,7 @@ export default function SprintBacklog() {
                         <ClipboardList className="sprint-empty-state-icon" />
                         <h3 className="sprint-empty-state-title">Ningún borrador creado aún</h3>
                         <p className="sprint-empty-state-subtitle">
-                            El plan "{activePlan?.projectName}" no cuenta con un backlog de sprint. Por favor, configura tu API Key de Gemini en el panel superior para generarlo de forma automática asistido por IA.
+                            El plan "{activePlan?.projectName}" no cuenta con un backlog de sprint. Genera de forma automática un borrador detallado asistido por Inteligencia Artificial analizando la base de datos de tu plan actual de forma segura.
                         </p>
 
                         <button
@@ -1159,12 +1227,79 @@ export default function SprintBacklog() {
                             style={{ padding: 'var(--space-2) var(--space-5)', fontSize: 'var(--font-size-xs)', display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}
                         >
                             <Sparkles size={14} />
-                            Configurar API Key y Generar
+                            Generar Borrador Asistido por IA
                         </button>
                     </div>
                 )}
 
             </div>
+
+            {/* Traceability Details Popover Modal */}
+            <Modal
+                isOpen={!!selectedFinding}
+                onClose={() => setSelectedFinding(null)}
+                title={selectedFinding?.title || 'Origen de la Historia de Usuario'}
+                maxWidth="550px"
+            >
+                {selectedFinding && (
+                    <div className="traceability-modal-grid">
+                        <div className="traceability-modal-section">
+                            <span className="traceability-modal-label">Tipo de Origen</span>
+                            <span className="traceability-modal-value">
+                                {selectedFinding.type === 'finding' ? '🔍 Hallazgo de Usabilidad de Origen' : '⚡ Análisis de Consolidación de Plan'}
+                            </span>
+                        </div>
+
+                        <div className="traceability-modal-section">
+                            <span className="traceability-modal-label">Descripción / Detalle</span>
+                            <p className="traceability-modal-value" style={{ fontStyle: 'italic', background: 'var(--neutral-50)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', margin: 'var(--space-1) 0' }}>
+                                "{selectedFinding.description}"
+                            </p>
+                        </div>
+
+                        {selectedFinding.severity && (
+                            <div className="traceability-modal-section">
+                                <span className="traceability-modal-label">Severidad / Prioridad</span>
+                                <div style={{ marginTop: '4px' }}>
+                                    <span className={`traceability-severity-badge ${
+                                        selectedFinding.severity.toLowerCase().includes('crit') ? 'traceability-severity--critical' :
+                                        selectedFinding.severity.toLowerCase().includes('may') || selectedFinding.severity.toLowerCase().includes('maj') || selectedFinding.severity.toLowerCase().includes('high') ? 'traceability-severity--major' :
+                                        'traceability-severity--minor'
+                                    }`}>
+                                        {selectedFinding.severity}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+
+                        {selectedFinding.tool && (
+                            <div className="traceability-modal-section">
+                                <span className="traceability-modal-label">Herramienta de Diagnóstico</span>
+                                <span className="traceability-modal-value" style={{ fontWeight: 'var(--font-weight-medium)' }}>
+                                    {selectedFinding.tool}
+                                </span>
+                            </div>
+                        )}
+
+                        <div className="traceability-modal-section">
+                            <span className="traceability-modal-label">Recomendación / Criterio IHC</span>
+                            <p className="traceability-modal-value" style={{ color: 'var(--color-success-text)', background: 'var(--color-success-light)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: '1px dashed var(--color-success-border)', fontWeight: 'var(--font-weight-medium)', margin: 'var(--space-1) 0' }}>
+                                {selectedFinding.recommendation}
+                            </p>
+                        </div>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-2)' }}>
+                            <button 
+                                onClick={() => setSelectedFinding(null)} 
+                                className="btn btn-secondary"
+                                style={{ padding: 'var(--space-2) var(--space-4)', fontSize: 'var(--font-size-xs)' }}
+                            >
+                                Cerrar Ventana
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     )
 }
