@@ -63,7 +63,7 @@ namespace Application.Services
                 existing.SprintGoal = dto.SprintGoal;
                 existing.ContentJson = dto.ContentJson;
                 existing.RawMarkdown = dto.RawMarkdown;
-                
+
                 await _backlogRepository.UpdateAsync(existing);
                 return MapToDto(existing);
             }
@@ -175,7 +175,7 @@ namespace Application.Services
                 contextBuilder.AppendLine($"Tasa de éxito de tareas: {(logs.Any() ? Math.Round((double)logs.Count(l => l.TaskSuccess) / logs.Count * 100, 1) : 0)}%");
                 contextBuilder.AppendLine($"Tiempo promedio empleado: {(logs.Any() ? Math.Round(logs.Average(l => l.TimeSeconds), 1) : 0)} segundos");
                 contextBuilder.AppendLine($"Total errores detectados: {logs.Sum(l => l.ErrorCount)}");
-                
+
                 var problemLogs = logs.Where(l => !string.IsNullOrEmpty(l.DetectedProblem)).Take(10).ToList();
                 if (problemLogs.Any())
                 {
@@ -276,7 +276,8 @@ ESTRUCTURA JSON REQUERIDA:
                 }
             };
 
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
+            var model = GetGeminiModel();
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
             var httpContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
 
             var response = await _httpClient.PostAsync(url, httpContent);
@@ -284,7 +285,7 @@ ESTRUCTURA JSON REQUERIDA:
 
             var responseBody = await response.Content.ReadAsStringAsync();
             var jsonDoc = JsonDocument.Parse(responseBody);
-            
+
             // Extraer el texto generado por Gemini
             var rawText = jsonDoc.RootElement
                 .GetProperty("candidates")[0]
@@ -440,7 +441,7 @@ ESTRUCTURA JSON REQUERIDA:
             }
 
             backlogData.UserStories = userStories;
-            
+
             var contentJson = JsonSerializer.Serialize(backlogData);
             var markdown = GenerateMarkdown(backlogData);
 
@@ -507,7 +508,7 @@ ESTRUCTURA JSON REQUERIDA:
                 sb.AppendLine($"**Descripción:**");
                 sb.AppendLine($"`{us.Description}`");
                 sb.AppendLine();
-                
+
                 sb.AppendLine("**Criterios de Aceptación:**");
                 foreach (var ac in us.AcceptanceCriteria)
                 {
@@ -627,7 +628,8 @@ INSTRUCCIONES DE RESPUESTA:
                 }
             };
 
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
+            var model = GetGeminiModel();
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
             var httpContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
 
             var response = await _httpClient.PostAsync(url, httpContent);
@@ -635,7 +637,7 @@ INSTRUCCIONES DE RESPUESTA:
 
             var responseBody = await response.Content.ReadAsStringAsync();
             var jsonDoc = JsonDocument.Parse(responseBody);
-            
+
             var reply = jsonDoc.RootElement
                 .GetProperty("candidates")[0]
                 .GetProperty("content")
@@ -659,6 +661,12 @@ INSTRUCCIONES DE RESPUESTA:
                 CreatedAt = backlog.CreatedAt,
                 UpdatedAt = backlog.UpdatedAt
             };
+        }
+
+        private static string GetGeminiModel()
+        {
+            var model = Environment.GetEnvironmentVariable("GEMINI_MODEL");
+            return string.IsNullOrWhiteSpace(model) ? "gemini-2.5-flash" : model.Trim();
         }
 
         // --- Modelos Auxiliares para Deserialización ---
