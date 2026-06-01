@@ -102,6 +102,16 @@ namespace Application.Services
                 .Where(x => x.TestPlanId == planId)
                 .ToList();
 
+            // Validar si hay al menos un hallazgo, acción de mejora u observación
+            var totalObservationLogs = sessions.SelectMany(s => s.ObservationLogs).Count();
+            var totalFindings = findings.Count;
+            var totalActions = findings.SelectMany(f => f.ImprovementActions).Count();
+
+            if (totalFindings == 0 && totalObservationLogs == 0 && totalActions == 0)
+            {
+                throw new ArgumentException("No hay información de usabilidad suficiente en este plan. Se requiere registrar al menos una observación incidental en las sesiones de prueba, un hallazgo de usabilidad o una acción de mejora antes de poder generar el Sprint Backlog.");
+            }
+
             // 2. Determinar si usamos IA o el Motor Heurístico Local
             var apiKey = userApiKey ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY");
 
@@ -563,8 +573,11 @@ CONTEXTO ACTUAL DEL USUARIO:
 - Datos registrados en esta pantalla:
 {contextJson}
 
-[REGLA CRÍTICA DE CONTEXTO - ANÁLISIS EN CASCADA]
-Si el usuario solicita generar el Sprint Backlog (usando la etiqueta [BACKLOG_ACTION]) y detectas que la lista de ""hallazgos"" o ""acciones de mejora"" en el contexto está vacía o ausente, NO indiques que falta información. Realiza un análisis en cascada de inmediato: lee directamente las observaciones e incidentes registrados en las ""sesiones"" de los participantes (contenidas en el JSON de contexto). Infiere los problemas ergonómicos y de usabilidad de forma autónoma para modelar y estructurar el Sprint Backlog.
+[REGLA CRÍTICA DE CONTEXTO - ANÁLISIS EN CASCADA Y VALIDACIÓN]
+1. Si el usuario te pide generar el Sprint Backlog (usando la etiqueta [BACKLOG_ACTION]):
+   a) Revisa si existen ""hallazgos"", ""acciones de mejora"" u ""observaciones/incidentes"" en las sesiones de los participantes dentro del JSON de contexto.
+   b) SI NO EXISTE ABSOLUTAMENTE NINGUNO DE ESTOS ELEMENTOS (es decir, la lista de hallazgos está vacía, no hay acciones de mejora y no hay observaciones registradas en las sesiones de los participantes), NO debes inventar ni alucinar ninguna historia de usuario ni generar el bloque [BACKLOG_ACTION]. En su lugar, debes responder con un mensaje profesional y claro explicando que **no hay información de usabilidad suficiente registrada en el proyecto** para estructurar un Sprint Backlog coherente, y que el evaluador debe primero registrar observaciones en las sesiones de los participantes o sintetizar hallazgos.
+   c) Si los hallazgos y acciones de mejora están vacíos pero SÍ existen observaciones o incidentes en las sesiones, realiza un análisis en cascada de inmediato: lee directamente las observaciones de las sesiones para inferir los problemas de usabilidad y construir el Sprint Backlog de forma autónoma.
 
 INSTRUCCIONES DE RESPUESTA:
 1. Responde a la consulta del usuario de manera técnica, profesional y concisa (máximo 3 párrafos).

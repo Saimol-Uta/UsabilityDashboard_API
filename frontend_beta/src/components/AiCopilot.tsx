@@ -403,6 +403,29 @@ Presentación amigable con tips ergonómicos para el test.
             // 1. Fetch relevant page context data
             const contextData = await fetchContextData()
 
+            // Interceptor del lado del cliente para no gastar tokens si no hay datos de usabilidad suficientes
+            const findingsArr = (contextData as any).findings || []
+            const obsLogsArr = (contextData as any).observationLogs || []
+            const hasUsabilityData = findingsArr.length > 0 || obsLogsArr.length > 0
+
+            const isRequestingBacklog = location.pathname.includes('/backlog') || 
+                                         text.toLowerCase().includes('backlog') || 
+                                         text.toLowerCase().includes('historia') ||
+                                         text.toLowerCase().includes('generar')
+
+            if (isRequestingBacklog && !hasUsabilityData) {
+                setMessages(prev => [
+                    ...prev,
+                    {
+                        id: Date.now(),
+                        sender: 'ai',
+                        text: '⚠️ **Copiloto de Usabilidad:** No hay información de usabilidad suficiente registrada en este plan. Se requiere registrar al menos una observación incidental en las sesiones de prueba o un hallazgo sintetizado para poder estructurar el Sprint Backlog. Por favor, registra observaciones para los participantes en sus sesiones primero.'
+                    }
+                ])
+                setLoading(false)
+                return
+            }
+
             // 2. Query Gemini through backend secure proxy
             const aiRawText = await queryGemini(text, contextData)
 
@@ -741,34 +764,7 @@ Presentación amigable con tips ergonómicos para el test.
 
                         {/* Persistent Quick Replies / Navigation Row */}
                         {activePlanId && !loading && (
-                            <div className="copilot-quick-replies" style={{ padding: '0 var(--space-4) var(--space-2)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        navigate('/hallazgos')
-                                        handleSendMessage('Avanzar paso a paso (Hallazgos y Mejoras)')
-                                    }}
-                                    className="copilot-action-chip"
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 'var(--space-2)',
-                                        background: 'rgba(255, 255, 255, 0.08)',
-                                        border: '1px solid rgba(255, 255, 255, 0.15)',
-                                        color: 'white',
-                                        padding: '10px var(--space-3)',
-                                        borderRadius: 'var(--radius-md)',
-                                        fontSize: '11px',
-                                        fontWeight: 'var(--font-weight-semibold)',
-                                        width: '100%',
-                                        textAlign: 'left',
-                                        cursor: 'pointer',
-                                        justifyContent: 'flex-start'
-                                    }}
-                                >
-                                    📋 Avanzar paso a paso (Hallazgos y Mejoras)
-                                </button>
-
+                            <div className="copilot-quick-replies" style={{ padding: '0 var(--space-4) var(--space-2)' }}>
                                 <button
                                     type="button"
                                     onClick={() => {

@@ -5,7 +5,7 @@ import { usePlan } from '../context/PlanContext'
 import { extractErrorMessage } from '../hooks/useApiError'
 import {
     Sparkles, Save, FileText, Printer, Plus, Trash2,
-    AlertCircle, Cpu, CheckSquare, Layers,
+    AlertCircle, CheckSquare, Layers,
     Hourglass, ClipboardList, ChevronDown,
     Database, BookOpen, Users, Search,
     ArrowUp, ArrowDown, Clock, CheckCircle2,
@@ -64,6 +64,7 @@ export default function SprintBacklog() {
     // Traceability lists and active modal states
     const [findingsList, setFindingsList] = useState<any[]>([])
     const [selectedFinding, setSelectedFinding] = useState<any | null>(null)
+    const [storyToDeleteIndex, setStoryToDeleteIndex] = useState<number | null>(null)
 
     // Cascading loader step state
     const [generatingStep, setGeneratingStep] = useState(0)
@@ -388,8 +389,11 @@ export default function SprintBacklog() {
     }
 
     const handleDeleteStory = (storyIndex: number) => {
+        setStoryToDeleteIndex(storyIndex)
+    }
+
+    const confirmDeleteStory = (storyIndex: number) => {
         if (!backlogData) return
-        if (!window.confirm('¿Estás seguro de que deseas eliminar esta Historia de Usuario del backlog?')) return
 
         const updatedStories = backlogData.userStories.filter((_, idx) => idx !== storyIndex)
             // Re-index stories for clean serial IDs
@@ -1170,38 +1174,25 @@ export default function SprintBacklog() {
                             El plan "{activePlan?.projectName}" no cuenta con un backlog de sprint. Genera de forma automática un borrador detallado analizando la base de datos de tu plan actual de forma segura y ergonómica.
                         </p>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', width: '100%', maxWidth: '380px', margin: 'var(--space-4) auto 0' }}>
-                            <button
-                                type="button"
-                                onClick={() => handleGenerate(true)}
-                                disabled={isGenerating || isReadOnly}
-                                className="btn btn-primary"
-                                style={{ padding: 'var(--space-3) var(--space-5)', fontSize: 'var(--font-size-sm)', width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)' }}
-                            >
-                                {isGenerating ? (
-                                    <>
-                                        <div className="sprint-loading-spinner" style={{ width: 16, height: 16, borderBottomColor: 'white', marginRight: 'var(--space-2)' }}></div>
-                                        Generando con IA...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Sparkles size={16} />
-                                        Generar Borrador con IA
-                                    </>
-                                )}
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => handleGenerate(false)}
-                                disabled={isGenerating || isReadOnly}
-                                className="btn btn-secondary"
-                                style={{ padding: 'var(--space-2) var(--space-4)', fontSize: 'var(--font-size-xs)', width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)' }}
-                            >
-                                <Cpu size={14} />
-                                Generar con Motor Local (Heurístico)
-                            </button>
-                        </div>
+                        <button
+                            type="button"
+                            onClick={() => handleGenerate(true)}
+                            disabled={isGenerating || isReadOnly}
+                            className="btn btn-primary"
+                            style={{ padding: 'var(--space-3) var(--space-6)', fontSize: 'var(--font-size-sm)', display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-4)' }}
+                        >
+                            {isGenerating ? (
+                                <>
+                                    <div className="sprint-loading-spinner" style={{ width: 16, height: 16, borderBottomColor: 'white', marginRight: 'var(--space-2)' }}></div>
+                                    Generando con IA...
+                                </>
+                            ) : (
+                                <>
+                                    <Sparkles size={16} />
+                                    Generar Borrador con IA
+                                </>
+                            )}
+                        </button>
                     </div>
                 )}
 
@@ -1272,6 +1263,47 @@ export default function SprintBacklog() {
                         </div>
                     </div>
                 )}
+            </Modal>
+
+            {/* Custom confirmation Modal for User Story deletion (avoid default browser alerts) */}
+            <Modal
+                isOpen={storyToDeleteIndex !== null}
+                onClose={() => setStoryToDeleteIndex(null)}
+                title="Confirmar Eliminación"
+                maxWidth="400px"
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', padding: 'var(--space-2)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', color: 'var(--color-error-text)', background: 'var(--color-error-light)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-error-border)' }}>
+                        <AlertCircle size={20} />
+                        <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)' }}>¿Estás seguro de que deseas eliminar esta historia?</span>
+                    </div>
+                    <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+                        Esta acción es irreversible dentro del borrador actual. Si confirmas, la Historia de Usuario y todas sus tareas técnicas estimadas asociadas se eliminarán y se reindexarán los IDs secuencialmente.
+                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
+                        <button
+                            type="button"
+                            onClick={() => setStoryToDeleteIndex(null)}
+                            className="btn btn-secondary"
+                            style={{ padding: 'var(--space-2) var(--space-4)', fontSize: 'var(--font-size-xs)' }}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (storyToDeleteIndex !== null) {
+                                    confirmDeleteStory(storyToDeleteIndex)
+                                    setStoryToDeleteIndex(null)
+                                }
+                            }}
+                            className="btn btn-primary"
+                            style={{ padding: 'var(--space-2) var(--space-4)', fontSize: 'var(--font-size-xs)', backgroundColor: 'var(--color-error)', borderColor: 'var(--color-error)', color: 'white' }}
+                        >
+                            Eliminar
+                        </button>
+                    </div>
+                </div>
             </Modal>
         </div>
     )

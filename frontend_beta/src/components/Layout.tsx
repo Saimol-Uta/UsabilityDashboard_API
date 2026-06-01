@@ -31,10 +31,10 @@ const phases = [
     {
         title: 'Fase 3 — Análisis y Cierre',
         items: [
+            { to: '/backlog', icon: ClipboardList, label: 'Sprint Backlog', detail: 'Backlog de desarrollo ágil', sectionKey: 'backlog' },
             { to: '/hallazgos', icon: Search, label: 'Hallazgos', detail: 'Síntesis de problemas', sectionKey: 'hallazgos' },
             { to: '/mejoras', icon: Lightbulb, label: 'Acciones de Mejora', detail: 'Plan de mejoras', sectionKey: 'mejoras' },
             { to: '/accesibilidad', icon: ShieldCheck, label: 'Accesibilidad', detail: 'Auditorías WAVE, Stark, Lighthouse', sectionKey: 'accesibilidad' },
-            { to: '/backlog', icon: ClipboardList, label: 'Sprint Backlog', detail: 'Backlog de desarrollo ágil', sectionKey: 'backlog' },
         ]
     }
 ]
