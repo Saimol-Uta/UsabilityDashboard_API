@@ -22,6 +22,7 @@ interface ObservationForm {
     severity: string
     proposedImprovement: string
     submitted: boolean
+    completedWithoutIssues: boolean
 }
 
 export default function SessionRunner() {
@@ -74,10 +75,11 @@ export default function SessionRunner() {
                     timeSeconds: 0,
                     errorCount: 0,
                     comments: '',
-                    detectedProblem: '',
-                    severity: 'Medium',
+                    detectedProblem: 'Ninguno',
+                    severity: 'Low',
                     proposedImprovement: '',
                     submitted: false,
+                    completedWithoutIssues: true,
                 })))
 
                 if (scriptRes.data) {
@@ -127,10 +129,21 @@ export default function SessionRunner() {
             // Auto-fill time from timer
             updateObservation(index, 'timeSeconds', timerSeconds)
         }
-        if ((!obs.taskSuccess || obs.errorCount > 0) && !obs.detectedProblem.trim()) {
-            addToast('El problema detectado es obligatorio cuando hay errores o la tarea falló', 'error')
-            return
+
+        if (obs.completedWithoutIssues) {
+            // Ensure clean state values are saved
+            updateObservation(index, 'taskSuccess', true)
+            updateObservation(index, 'errorCount', 0)
+            updateObservation(index, 'detectedProblem', 'Ninguno')
+            updateObservation(index, 'severity', 'Low')
+            updateObservation(index, 'proposedImprovement', '')
+        } else {
+            if ((!obs.taskSuccess || obs.errorCount > 0) && (!obs.detectedProblem || !obs.detectedProblem.trim() || obs.detectedProblem === 'Ninguno')) {
+                addToast('El problema detectado es obligatorio cuando hay errores o la tarea falló', 'error')
+                return
+            }
         }
+
         updateObservation(index, 'submitted', true)
 
         // Move to next task or closing
@@ -153,13 +166,13 @@ export default function SessionRunner() {
                     await observationLogsApi.create({
                         testSessionId: sessionId,
                         testTaskId: obs.testTaskId,
-                        taskSuccess: obs.taskSuccess,
+                        taskSuccess: obs.completedWithoutIssues ? true : obs.taskSuccess,
                         timeSeconds: obs.timeSeconds > 0 ? obs.timeSeconds : 1,
-                        errorCount: obs.errorCount,
+                        errorCount: obs.completedWithoutIssues ? 0 : obs.errorCount,
                         comments: obs.comments,
-                        detectedProblem: obs.detectedProblem,
-                        severity: obs.severity,
-                        proposedImprovement: obs.proposedImprovement,
+                        detectedProblem: obs.completedWithoutIssues ? "Ninguno" : (obs.detectedProblem || "Ninguno"),
+                        severity: obs.completedWithoutIssues ? "Low" : obs.severity,
+                        proposedImprovement: obs.completedWithoutIssues ? "" : obs.proposedImprovement,
                     })
                 }
             }
@@ -179,11 +192,9 @@ export default function SessionRunner() {
     // ──────────── LOADING ────────────
     if (phase === 'loading') {
         return (
-            <div className="flex items-center justify-center py-20">
-                <div className="text-center">
-                    <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto" />
-                    <p className="text-sm text-slate-500 mt-4">Cargando sesión de prueba...</p>
-                </div>
+            <div className="dashboard-loader" style={{ padding: 'var(--space-20) 0' }}>
+                <div className="dashboard-spinner" aria-label="Cargando..." />
+                <p className="dashboard-loader-text">Cargando sesión de prueba...</p>
             </div>
         )
     }
@@ -191,33 +202,32 @@ export default function SessionRunner() {
     // ──────────── OPENING PHASE ────────────
     if (phase === 'opening' && script) {
         return (
-            <div className="max-w-3xl mx-auto flex flex-col gap-6 animate-rise">
+            <div className="runner-page-narrow">
                 {/* Exit button */}
-                <button onClick={() => setShowExitConfirm(true)} className="btn btn-secondary self-start text-[12px]">
-                    <ArrowLeft size={14} /> Salir de la Sesión
+                <button onClick={() => setShowExitConfirm(true)} className="btn btn-secondary">
+                    <ArrowLeft size={14} aria-hidden="true" /> Salir de la Sesión
                 </button>
 
                 {/* Hero card */}
-                <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 rounded-3xl p-8 md:p-12 text-white shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full -mr-32 -mt-32" />
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-2 mb-4">
-                            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-[12px] font-semibold backdrop-blur-sm">
-                                <Mic size={14} className="text-blue-300" />
+                <div className="runner-hero-card">
+                    <div style={{ position: 'relative', zIndex: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                            <span className="runner-badge-pill">
+                                <Mic size={14} style={{ color: 'var(--color-primary-300)' }} aria-hidden="true" />
                                 Modo Guía de Sesión
                             </span>
                         </div>
-                        <h1 className="text-2xl md:text-3xl font-bold mb-3">Apertura de la Sesión</h1>
-                        <p className="text-blue-100/80 text-sm mb-6">Lee en voz alta la siguiente introducción al participante antes de comenzar las tareas.</p>
+                        <h1 className="runner-hero-title">Apertura de la Sesión</h1>
+                        <p className="runner-hero-subtitle">Lee en voz alta la siguiente introducción al participante antes de comenzar las tareas.</p>
 
-                        <div className="flex flex-wrap gap-3 text-[12px]">
-                            <span className="bg-white/10 border border-white/20 px-3 py-1.5 rounded-lg">
+                        <div className="runner-meta-row">
+                            <span className="runner-meta-pill">
                                 👤 {participant?.name || 'Participante'}
                             </span>
-                            <span className="bg-white/10 border border-white/20 px-3 py-1.5 rounded-lg">
+                            <span className="runner-meta-pill">
                                 🖥️ {session?.platformTested}
                             </span>
-                            <span className="bg-white/10 border border-white/20 px-3 py-1.5 rounded-lg">
+                            <span className="runner-meta-pill">
                                 📋 {tasks.length} tareas
                             </span>
                         </div>
@@ -225,43 +235,44 @@ export default function SessionRunner() {
                 </div>
 
                 {/* Introduction text */}
-                <div className="bg-white rounded-2xl border-2 border-blue-200 shadow-lg overflow-hidden">
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-blue-100 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-100 border border-blue-200 flex items-center justify-center">
-                            <BookOpen size={20} className="text-blue-600" />
+                <div className="runner-section-card">
+                    <div className="runner-section-header">
+                        <div className="runner-section-icon-box">
+                            <BookOpen size={20} aria-hidden="true" />
                         </div>
                         <div>
-                            <h3 className="text-[16px] font-bold text-slate-900">Texto de Introducción</h3>
-                            <p className="text-[11px] text-slate-500">Léelo completo al participante</p>
+                            <h3 className="runner-section-title">Texto de Introducción</h3>
+                            <p className="runner-section-subtitle">Léelo completo al participante</p>
                         </div>
                     </div>
-                    <div className="p-6 md:p-8">
-                        <div className="text-[16px] md:text-[18px] leading-relaxed text-slate-800 whitespace-pre-line font-medium">
+                    <div className="runner-section-body">
+                        <div className="runner-script-text">
                             {script.introduction}
                         </div>
                     </div>
                 </div>
 
-                {/* Start button */}
-                <div className="flex justify-center pt-2 pb-4">
+                <div className="runner-button-container">
                     <button
                         onClick={handleStartTest}
-                        className="group relative inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-[16px] px-8 py-4 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                        className="btn btn-primary"
+                        aria-label="Comenzar Prueba de Usabilidad"
+                        style={{ padding: 'var(--space-3) var(--space-6)', borderRadius: 'var(--radius-xl)', fontSize: 'var(--font-size-base)', display: 'inline-flex', alignItems: 'center', gap: 'var(--space-3)' }}
                     >
-                        <Play size={22} className="group-hover:scale-110 transition-transform" />
+                        <Play size={20} aria-hidden="true" />
                         Comenzar Prueba
-                        <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                        <ChevronRight size={18} aria-hidden="true" />
                     </button>
                 </div>
 
                 <Modal isOpen={showExitConfirm} onClose={() => setShowExitConfirm(false)} title="¿Salir de la sesión?" maxWidth="440px">
-                    <div className="p-5 space-y-4">
-                        <p className="text-[14px] text-slate-600">
+                    <div className="modal-body">
+                        <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--line-height)' }}>
                             Se perderá el progreso de esta sesión. ¿Deseas salir?
                         </p>
-                        <div className="flex justify-end gap-3">
+                        <div className="modal-footer">
                             <button onClick={() => setShowExitConfirm(false)} className="btn btn-secondary">Cancelar</button>
-                            <button onClick={() => navigate('/sesiones')} className="btn btn-danger px-4">Salir</button>
+                            <button onClick={() => navigate('/sesiones')} className="btn btn-danger">Salir</button>
                         </div>
                     </div>
                 </Modal>
@@ -275,70 +286,71 @@ export default function SessionRunner() {
         const currentObs = observations[activeTaskIndex]
 
         return (
-            <div className="flex flex-col gap-4 animate-rise">
+            <div className="page-container">
                 {/* Top bar */}
-                <div className="flex items-center justify-between flex-wrap gap-3">
-                    <div className="flex items-center gap-3">
-                        <button onClick={() => setShowExitConfirm(true)} className="btn btn-secondary text-[11px] py-1.5 px-3">
-                            <ArrowLeft size={14} /> Salir
+                <div className="page-header">
+                    <div className="runner-header-left">
+                        <button onClick={() => setShowExitConfirm(true)} className="btn btn-secondary" style={{ fontSize: 11, padding: '6px 12px', height: 'auto', minHeight: 'unset' }}>
+                            <ArrowLeft size={14} aria-hidden="true" /> Salir
                         </button>
                         <div>
-                            <h2 className="text-[18px] font-bold text-slate-900">Sesión en Curso</h2>
-                            <p className="text-[12px] text-slate-500">
+                            <h2 className="page-header-title" style={{ fontSize: 18 }}>Sesión en Curso</h2>
+                            <p className="page-header-subtitle">
                                 {participant?.name} · {session?.platformTested}
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[12px] font-bold">
-                            <CheckCircle2 size={14} />
-                            {completedCount}/{tasks.length} tareas
+                    <div className="runner-header-right">
+                        <span className="badge badge-completada" style={{ padding: '6px 12px', gap: 'var(--space-2)', borderRadius: 'var(--radius-full)' }}>
+                            <CheckCircle2 size={14} aria-hidden="true" />
+                            <span>{completedCount}/{tasks.length} tareas</span>
                         </span>
-                        <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[12px] font-bold font-mono">
-                            <Timer size={14} />
-                            {formatTime(timerSeconds)}
+                        <span className="runner-timer-badge">
+                            <Timer size={14} aria-hidden="true" />
+                            <span>{formatTime(timerSeconds)}</span>
                         </span>
                     </div>
                 </div>
 
                 {/* Progress bar */}
-                <div className="bg-white rounded-xl p-3 border border-slate-200 shadow-sm">
-                    <div className="flex items-center gap-2 mb-2">
+                <div className="runner-progress-card">
+                    <div className="runner-progress-steps-row">
                         {tasks.map((t: any, i: number) => (
                             <button
                                 key={t.id}
                                 onClick={() => !observations[i].submitted && setActiveTaskIndex(i)}
-                                className={`flex-1 h-2.5 rounded-full transition-all duration-300 ${observations[i].submitted
-                                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-400'
+                                className={`runner-progress-step ${observations[i].submitted
+                                    ? 'runner-progress-step--complete'
                                     : i === activeTaskIndex
-                                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 animate-pulse'
-                                        : 'bg-slate-200'
+                                        ? 'runner-progress-step--active'
+                                        : 'runner-progress-step--pending'
                                     }`}
                                 title={`T${t.taskNumber}: ${observations[i].submitted ? 'Completada' : i === activeTaskIndex ? 'Actual' : 'Pendiente'}`}
+                                aria-label={`Tarea ${t.taskNumber}: ${observations[i].submitted ? 'Completada' : i === activeTaskIndex ? 'Actual' : 'Pendiente'}`}
                             />
                         ))}
                     </div>
-                    <div className="flex items-center justify-between text-[11px] text-slate-500">
+                    <div className="runner-progress-labels">
                         <span>Tarea {activeTaskIndex + 1} de {tasks.length}</span>
                         <span>{completedCount} completadas</span>
                     </div>
                 </div>
 
                 {/* Main layout: Script sidebar + Task panel */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                <div className="runner-main-grid">
                     {/* Script sidebar */}
                     {script && (
-                        <div className="lg:col-span-4 xl:col-span-3">
-                            <div className="bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden sticky top-4">
-                                <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 border-b border-amber-100">
-                                    <div className="flex items-center gap-2">
-                                        <MessageSquareText size={16} className="text-amber-600" />
-                                        <h3 className="text-[14px] font-bold text-slate-900">Guía del Moderador</h3>
+                        <div className="runner-sidebar-col">
+                            <div className="runner-sidebar-card">
+                                <div className="runner-sidebar-header">
+                                    <div className="runner-sidebar-header-inner">
+                                        <MessageSquareText size={16} aria-hidden="true" />
+                                        <h3 className="runner-sidebar-title">Guía del Moderador</h3>
                                     </div>
                                 </div>
 
                                 {/* Tabs */}
-                                <div className="flex border-b border-slate-100">
+                                <div className="runner-sidebar-tabs">
                                     {([
                                         { key: 'intro', label: 'Intro', icon: BookOpen },
                                         { key: 'questions', label: 'Preguntas', icon: HelpCircle },
@@ -347,44 +359,43 @@ export default function SessionRunner() {
                                         <button
                                             key={tab.key}
                                             onClick={() => setScriptTab(tab.key)}
-                                            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold transition-all border-b-2 ${scriptTab === tab.key
-                                                ? 'border-amber-500 text-amber-700 bg-amber-50/50'
-                                                : 'border-transparent text-slate-400 hover:text-slate-600'
-                                                }`}
+                                            className={`runner-sidebar-tab ${scriptTab === tab.key ? 'is-active' : ''}`}
+                                            aria-selected={scriptTab === tab.key}
+                                            role="tab"
                                         >
-                                            <tab.icon size={12} />
+                                            <tab.icon size={12} aria-hidden="true" />
                                             {tab.label}
                                         </button>
                                     ))}
                                 </div>
 
                                 {/* Tab content */}
-                                <div className="p-4 max-h-[60vh] overflow-y-auto soft-scrollbar">
+                                <div className="runner-sidebar-content soft-scrollbar">
                                     {scriptTab === 'intro' && (
-                                        <div className="text-[13px] text-slate-700 leading-relaxed whitespace-pre-line">
+                                        <div className="runner-script-text" style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-normal)' }}>
                                             {script.introduction}
                                         </div>
                                     )}
                                     {scriptTab === 'questions' && (
                                         <div>
-                                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3">
-                                                <p className="text-[11px] text-amber-800 font-semibold flex items-center gap-1.5">
-                                                    <HelpCircle size={12} />
+                                            <div className="runner-questions-hint">
+                                                <p className="runner-questions-hint-text">
+                                                    <HelpCircle size={12} aria-hidden="true" />
                                                     Usa estas preguntas si el participante se queda en silencio
                                                 </p>
                                             </div>
-                                            <div className="space-y-2">
+                                            <div className="runner-questions-list">
                                                 {script.followUpQuestions.split(/[?\n]/).filter((q: string) => q.trim()).map((q: string, i: number) => (
-                                                    <div key={i} className="flex items-start gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-100 hover:bg-blue-50 hover:border-blue-100 transition-colors">
-                                                        <span className="text-[11px] font-bold text-blue-500 mt-0.5">{i + 1}.</span>
-                                                        <span className="text-[12px] text-slate-700 leading-snug">{q.trim()}?</span>
+                                                    <div key={i} className="runner-question-item">
+                                                        <span className="runner-question-number">{i + 1}.</span>
+                                                        <span className="runner-question-text">{q.trim()}?</span>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
                                     )}
                                     {scriptTab === 'closing' && (
-                                        <div className="text-[13px] text-slate-700 leading-relaxed whitespace-pre-line">
+                                        <div className="runner-script-text" style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-normal)' }}>
                                             {script.closingInstructions}
                                         </div>
                                     )}
@@ -394,34 +405,34 @@ export default function SessionRunner() {
                     )}
 
                     {/* Task observation panel */}
-                    <div className={script ? 'lg:col-span-8 xl:col-span-9' : 'lg:col-span-12'}>
+                    <div className="runner-content-col" style={script ? undefined : { gridColumn: 'span 12' }}>
                         {currentTask && currentObs && (
-                            <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden">
+                            <div className="runner-obs-card">
                                 {/* Task header */}
-                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-blue-100">
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 border-2 border-blue-200 flex items-center justify-center text-[16px] font-bold text-blue-700 shadow-md flex-shrink-0">
+                                <div className="runner-obs-header">
+                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-4)' }}>
+                                        <div className="runner-task-badge">
                                             T{currentTask.taskNumber}
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="text-[16px] font-bold text-slate-900">{currentTask.scenario}</h3>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <h3 className="runner-obs-title">{currentTask.scenario}</h3>
                                             {currentTask.expectedResult && (
-                                                <p className="text-[12px] text-slate-500 mt-1">
+                                                <p className="runner-obs-meta-row">
                                                     <strong>Resultado esperado:</strong> {currentTask.expectedResult}
                                                 </p>
                                             )}
-                                            <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-500">
-                                                <span className="inline-flex items-center gap-1 bg-white px-2 py-0.5 rounded border border-slate-200">
-                                                    <Clock size={10} /> Máx: {currentTask.maxTimeSeconds}s
+                                            <div className="runner-obs-badge-row">
+                                                <span className="runner-obs-meta-badge">
+                                                    <Clock size={10} aria-hidden="true" /> Máx: {currentTask.maxTimeSeconds}s
                                                 </span>
-                                                <span className="inline-flex items-center gap-1 bg-white px-2 py-0.5 rounded border border-slate-200">
+                                                <span className="runner-obs-meta-badge">
                                                     📊 {currentTask.mainMetric}
                                                 </span>
                                             </div>
                                         </div>
                                         {currentObs.submitted && (
-                                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-bold border border-emerald-200">
-                                                <CheckCircle2 size={12} /> Registrada
+                                            <span className="badge badge-completada">
+                                                <CheckCircle2 size={12} aria-hidden="true" /> Registrada
                                             </span>
                                         )}
                                     </div>
@@ -429,13 +440,22 @@ export default function SessionRunner() {
 
                                 {/* Observation form */}
                                 {!currentObs.submitted ? (
-                                    <div className="p-6 space-y-5">
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div className="form-layout">
+                                        <div className="form-grid-3">
                                             <div>
                                                 <label className="form-label">¿Éxito?</label>
                                                 <select
                                                     value={currentObs.taskSuccess ? 'true' : 'false'}
-                                                    onChange={e => updateObservation(activeTaskIndex, 'taskSuccess', e.target.value === 'true')}
+                                                    onChange={e => {
+                                                        const success = e.target.value === 'true'
+                                                        updateObservation(activeTaskIndex, 'taskSuccess', success)
+                                                        if (!success) {
+                                                            updateObservation(activeTaskIndex, 'completedWithoutIssues', false)
+                                                            if (currentObs.detectedProblem === 'Ninguno') {
+                                                                updateObservation(activeTaskIndex, 'detectedProblem', '')
+                                                            }
+                                                        }
+                                                    }}
                                                     className="form-input"
                                                 >
                                                     <option value="true">✓ Sí</option>
@@ -443,8 +463,8 @@ export default function SessionRunner() {
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="form-label">Tiempo (seg) <span className="text-red-500">*</span></label>
-                                                <div className="flex items-center gap-2">
+                                                <label className="form-label">Tiempo (seg) <span style={{ color: 'var(--color-error)' }}>*</span></label>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                                                     <input
                                                         type="number"
                                                         value={currentObs.timeSeconds || ''}
@@ -452,11 +472,12 @@ export default function SessionRunner() {
                                                         className="form-input"
                                                         min={1}
                                                         placeholder={String(timerSeconds)}
+                                                        required
                                                     />
                                                     <button
                                                         type="button"
                                                         onClick={() => updateObservation(activeTaskIndex, 'timeSeconds', timerSeconds)}
-                                                        className="text-[10px] bg-blue-50 text-blue-600 border border-blue-200 px-2 py-2 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap font-medium"
+                                                        className="btn-use-timer"
                                                         title="Usar tiempo del cronómetro"
                                                     >
                                                         ⏱ Usar
@@ -464,56 +485,112 @@ export default function SessionRunner() {
                                                 </div>
                                             </div>
                                             <div>
-                                                <label className="form-label">Errores <span className="text-red-500">*</span></label>
+                                                <label className="form-label">Errores <span style={{ color: 'var(--color-error)' }}>*</span></label>
                                                 <input
                                                     type="number"
                                                     value={currentObs.errorCount}
-                                                    onChange={e => updateObservation(activeTaskIndex, 'errorCount', Number(e.target.value))}
+                                                    onChange={e => {
+                                                        const val = Number(e.target.value)
+                                                        updateObservation(activeTaskIndex, 'errorCount', val)
+                                                        if (val > 0) {
+                                                            updateObservation(activeTaskIndex, 'completedWithoutIssues', false)
+                                                            if (currentObs.detectedProblem === 'Ninguno') {
+                                                                updateObservation(activeTaskIndex, 'detectedProblem', '')
+                                                            }
+                                                        }
+                                                    }}
                                                     className="form-input"
                                                     min={0}
+                                                    required
                                                 />
                                             </div>
                                         </div>
 
-                                        <div>
-                                            <label className="form-label">Severidad</label>
-                                            <select
-                                                value={currentObs.severity}
-                                                onChange={e => updateObservation(activeTaskIndex, 'severity', e.target.value)}
-                                                className="form-input"
-                                            >
-                                                <option value="Critical">Crítica</option>
-                                                <option value="High">Alta</option>
-                                                <option value="Medium">Media</option>
-                                                <option value="Low">Baja</option>
-                                            </select>
-                                        </div>
-
-                                        <div>
-                                            <label className="form-label">
-                                                Problema detectado
-                                                {(!currentObs.taskSuccess || currentObs.errorCount > 0) && <span className="text-red-500"> *</span>}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                                            <input
+                                                id={`completedWithoutIssues-${activeTaskIndex}`}
+                                                type="checkbox"
+                                                checked={currentObs.completedWithoutIssues}
+                                                onChange={e => {
+                                                    const val = e.target.checked
+                                                    updateObservation(activeTaskIndex, 'completedWithoutIssues', val)
+                                                    if (val) {
+                                                        updateObservation(activeTaskIndex, 'taskSuccess', true)
+                                                        updateObservation(activeTaskIndex, 'errorCount', 0)
+                                                        updateObservation(activeTaskIndex, 'detectedProblem', 'Ninguno')
+                                                        updateObservation(activeTaskIndex, 'proposedImprovement', '')
+                                                        updateObservation(activeTaskIndex, 'severity', 'Low')
+                                                    } else {
+                                                        updateObservation(activeTaskIndex, 'detectedProblem', '')
+                                                        updateObservation(activeTaskIndex, 'severity', 'Medium')
+                                                    }
+                                                }}
+                                                style={{ width: 16, height: 16, cursor: 'pointer' }}
+                                            />
+                                            <label htmlFor={`completedWithoutIssues-${activeTaskIndex}`} className="form-label" style={{ margin: 0, cursor: 'pointer', fontWeight: 'var(--font-weight-semibold)' }}>
+                                                ✨ ¿La tarea se completó exitosamente sin ninguna anomalía o incomodidad?
                                             </label>
-                                            <textarea
-                                                value={currentObs.detectedProblem}
-                                                onChange={e => updateObservation(activeTaskIndex, 'detectedProblem', e.target.value)}
-                                                className={`form-input ${(!currentObs.taskSuccess || currentObs.errorCount > 0) && !currentObs.detectedProblem.trim() ? 'border-red-300 focus:border-red-500' : ''}`}
-                                                rows={2}
-                                                placeholder="Describe el problema observado"
-                                                required={!currentObs.taskSuccess || currentObs.errorCount > 0}
-                                            />
                                         </div>
 
-                                        <div>
-                                            <label className="form-label">Mejora propuesta</label>
-                                            <textarea
-                                                value={currentObs.proposedImprovement}
-                                                onChange={e => updateObservation(activeTaskIndex, 'proposedImprovement', e.target.value)}
-                                                className="form-input"
-                                                rows={2}
-                                                placeholder="Sugerencia de mejora"
-                                            />
-                                        </div>
+                                        {!currentObs.completedWithoutIssues ? (
+                                            <>
+                                                <div>
+                                                    <label className="form-label">Severidad</label>
+                                                    <select
+                                                        value={currentObs.severity}
+                                                        onChange={e => updateObservation(activeTaskIndex, 'severity', e.target.value)}
+                                                        className="form-input"
+                                                    >
+                                                        <option value="Critical">Crítica</option>
+                                                        <option value="High">Alta</option>
+                                                        <option value="Medium">Media</option>
+                                                        <option value="Low">Baja</option>
+                                                    </select>
+                                                </div>
+
+                                                <div>
+                                                    <label className="form-label">
+                                                        Problema detectado
+                                                        {(!currentObs.taskSuccess || currentObs.errorCount > 0) && <span style={{ color: 'var(--color-error)' }}> *</span>}
+                                                    </label>
+                                                    <textarea
+                                                        value={currentObs.detectedProblem}
+                                                        onChange={e => updateObservation(activeTaskIndex, 'detectedProblem', e.target.value)}
+                                                        className={`form-input ${(!currentObs.taskSuccess || currentObs.errorCount > 0) && !currentObs.detectedProblem.trim() ? 'field-error' : ''}`}
+                                                        rows={2}
+                                                        placeholder="Describe el problema observado"
+                                                        required={!currentObs.taskSuccess || currentObs.errorCount > 0}
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="form-label">Mejora propuesta</label>
+                                                    <textarea
+                                                        value={currentObs.proposedImprovement}
+                                                        onChange={e => updateObservation(activeTaskIndex, 'proposedImprovement', e.target.value)}
+                                                        className="form-input"
+                                                        rows={2}
+                                                        placeholder="Sugerencia de mejora"
+                                                    />
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div style={{
+                                                padding: 'var(--space-4)',
+                                                borderRadius: 'var(--radius-md)',
+                                                background: 'rgba(16, 185, 129, 0.06)',
+                                                border: '1px dashed rgba(16, 185, 129, 0.3)',
+                                                color: 'var(--color-success-text)',
+                                                fontSize: 'var(--font-size-sm)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 'var(--space-2)',
+                                                margin: 'var(--space-3) 0'
+                                            }}>
+                                                <CheckCircle2 size={16} style={{ color: 'var(--color-success)' }} />
+                                                <span>✨ Tarea completada limpiamente. No se requiere reportar severidad, anomalías ni propuestas de mejora.</span>
+                                            </div>
+                                        )}
 
                                         <div>
                                             <label className="form-label">Comentarios del moderador</label>
@@ -526,34 +603,37 @@ export default function SessionRunner() {
                                             />
                                         </div>
 
-                                        <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                                            <div className="text-[12px] text-slate-400">
+                                        <div className="runner-obs-footer">
+                                            <div>
                                                 {activeTaskIndex > 0 && (
                                                     <button
+                                                        type="button"
                                                         onClick={() => setActiveTaskIndex(activeTaskIndex - 1)}
-                                                        className="text-slate-500 hover:text-slate-700 font-medium"
+                                                        className="btn-runner-prev"
                                                     >
                                                         ← Tarea anterior
                                                     </button>
                                                 )}
                                             </div>
                                             <button
+                                                type="button"
                                                 onClick={() => handleSubmitTask(activeTaskIndex)}
-                                                className="btn btn-primary text-[14px] px-6 py-2.5"
+                                                className="btn btn-primary"
+                                                style={{ padding: '10px 24px' }}
                                             >
                                                 {activeTaskIndex < tasks.length - 1 ? (
-                                                    <>Registrar y Siguiente <ArrowRight size={16} /></>
+                                                    <>Registrar y Siguiente <ArrowRight size={16} aria-hidden="true" style={{ marginLeft: 6 }} /></>
                                                 ) : (
-                                                    <>Registrar Última Tarea <CheckCircle2 size={16} /></>
+                                                    <>Registrar Última Tarea <CheckCircle2 size={16} aria-hidden="true" style={{ marginLeft: 6 }} /></>
                                                 )}
                                             </button>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="p-8 text-center">
-                                        <CheckCircle2 size={48} className="text-emerald-500 mx-auto mb-3" />
-                                        <h4 className="text-[16px] font-bold text-slate-900">Tarea registrada</h4>
-                                        <p className="text-[13px] text-slate-500 mt-1">
+                                    <div className="runner-task-complete-panel">
+                                        <CheckCircle2 size={48} style={{ color: 'var(--color-success)', margin: '0 auto var(--space-3)' }} aria-hidden="true" />
+                                        <h4 className="runner-task-complete-title">Tarea registrada</h4>
+                                        <p className="runner-task-complete-desc">
                                             {currentObs.taskSuccess ? '✓ Completada exitosamente' : '✗ No completada'} · {currentObs.timeSeconds}s · {currentObs.errorCount} errores
                                         </p>
                                     </div>
@@ -561,21 +641,21 @@ export default function SessionRunner() {
                             </div>
                         )}
 
-                        {/* Task list */}
-                        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                        {/* Task selector grid */}
+                        <div className="runner-task-selector-grid">
                             {tasks.map((t: any, i: number) => (
                                 <button
                                     key={t.id}
                                     onClick={() => setActiveTaskIndex(i)}
-                                    className={`p-3 rounded-xl border text-center transition-all duration-200 ${i === activeTaskIndex
-                                        ? 'border-blue-400 bg-blue-50 shadow-md scale-105'
+                                    className={`runner-task-selector-btn ${i === activeTaskIndex
+                                        ? 'is-active'
                                         : observations[i].submitted
-                                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                                            : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                                            ? 'is-complete'
+                                            : ''
                                         }`}
                                 >
-                                    <div className="text-[14px] font-bold">T{t.taskNumber}</div>
-                                    <div className="text-[10px] mt-0.5">
+                                    <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-bold)' }}>T{t.taskNumber}</div>
+                                    <div style={{ fontSize: 10, marginTop: 4, opacity: 0.8 }}>
                                         {observations[i].submitted ? '✓ Hecha' : i === activeTaskIndex ? '● Actual' : '○ Pendiente'}
                                     </div>
                                 </button>
@@ -585,17 +665,17 @@ export default function SessionRunner() {
                 </div>
 
                 <Modal isOpen={showExitConfirm} onClose={() => setShowExitConfirm(false)} title="¿Salir de la sesión?" maxWidth="440px">
-                    <div className="p-5 space-y-4">
-                        <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200">
-                            <AlertTriangle size={20} className="text-amber-500 flex-shrink-0 mt-0.5" />
-                            <p className="text-[14px] text-amber-800 leading-relaxed">
+                    <div className="modal-body">
+                        <div className="warning-banner">
+                            <AlertTriangle size={20} className="flex-shrink-0" aria-hidden="true" />
+                            <div style={{ fontSize: 'var(--font-size-sm)', lineHeight: 'var(--line-height)' }}>
                                 Se perderán las observaciones no guardadas.<br />
                                 <strong>{completedCount} de {tasks.length}</strong> tareas estaban registradas.
-                            </p>
+                            </div>
                         </div>
-                        <div className="flex justify-end gap-3">
+                        <div className="modal-footer">
                             <button onClick={() => setShowExitConfirm(false)} className="btn btn-secondary">Continuar</button>
-                            <button onClick={() => navigate('/sesiones')} className="btn btn-danger px-4">Salir de todas formas</button>
+                            <button onClick={() => navigate('/sesiones')} className="btn btn-danger">Salir de todas formas</button>
                         </div>
                     </div>
                 </Modal>
@@ -606,19 +686,18 @@ export default function SessionRunner() {
     // ──────────── CLOSING PHASE ────────────
     if (phase === 'closing') {
         return (
-            <div className="max-w-3xl mx-auto flex flex-col gap-6 animate-rise">
+            <div className="runner-page-narrow">
                 {/* Hero */}
-                <div className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 rounded-3xl p-8 md:p-12 text-white shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full -mr-32 -mt-32" />
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-2 mb-4">
-                            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-[12px] font-semibold backdrop-blur-sm">
-                                <Sparkles size={14} className="text-emerald-300" />
+                <div className="runner-hero-card runner-hero-card--emerald">
+                    <div style={{ position: 'relative', zIndex: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                            <span className="runner-badge-pill">
+                                <Sparkles size={14} style={{ color: 'var(--color-success-300)' }} aria-hidden="true" />
                                 Cierre de Sesión
                             </span>
                         </div>
-                        <h1 className="text-2xl md:text-3xl font-bold mb-3">¡Prueba Completada!</h1>
-                        <p className="text-emerald-100/80 text-sm">
+                        <h1 className="runner-hero-title">¡Prueba Completada!</h1>
+                        <p className="runner-hero-subtitle">
                             Se registraron {completedCount} de {tasks.length} tareas. Lee las instrucciones de cierre al participante.
                         </p>
                     </div>
@@ -626,18 +705,18 @@ export default function SessionRunner() {
 
                 {/* Closing instructions */}
                 {script?.closingInstructions && (
-                    <div className="bg-white rounded-2xl border-2 border-emerald-200 shadow-lg overflow-hidden">
-                        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-4 border-b border-emerald-100 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center">
-                                <ClipboardCheck size={20} className="text-emerald-600" />
+                    <div className="runner-section-card runner-section-card--emerald">
+                        <div className="runner-section-header runner-section-header--emerald">
+                            <div className="runner-section-icon-box runner-section-icon-box--emerald">
+                                <ClipboardCheck size={20} aria-hidden="true" />
                             </div>
                             <div>
-                                <h3 className="text-[16px] font-bold text-slate-900">Instrucciones de Cierre</h3>
-                                <p className="text-[11px] text-slate-500">Léelas al participante</p>
+                                <h3 className="runner-section-title">Instrucciones de Cierre</h3>
+                                <p className="runner-section-subtitle">Léelas al participante</p>
                             </div>
                         </div>
-                        <div className="p-6 md:p-8">
-                            <div className="text-[16px] md:text-[18px] leading-relaxed text-slate-800 whitespace-pre-line font-medium">
+                        <div className="runner-section-body">
+                            <div className="runner-script-text">
                                 {script.closingInstructions}
                             </div>
                         </div>
@@ -645,32 +724,32 @@ export default function SessionRunner() {
                 )}
 
                 {/* Summary */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden">
-                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                        <h3 className="text-[15px] font-bold text-slate-900">Resumen de Observaciones</h3>
+                <div className="runner-summary-card">
+                    <div className="runner-summary-header">
+                        <h3 className="runner-section-title" style={{ fontSize: 'var(--font-size-sm)' }}>Resumen de Observaciones</h3>
                     </div>
-                    <div className="p-4 space-y-2">
+                    <div className="runner-summary-body">
                         {tasks.map((t: any, i: number) => {
                             const obs = observations[i]
                             return (
-                                <div key={t.id} className={`flex items-center gap-3 p-3 rounded-xl border ${obs.submitted ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-100'}`}>
-                                    <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-[13px] font-bold text-slate-700">
+                                <div key={t.id} className={`runner-summary-item ${obs.submitted ? 'is-complete' : 'is-pending'}`}>
+                                    <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-md)', background: 'var(--surface-card)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-bold)', color: 'var(--text-secondary)', flexShrink: 0 }}>
                                         T{t.taskNumber}
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-[13px] text-slate-800 truncate font-medium">{t.scenario}</p>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <p className="runner-section-title" style={{ fontSize: 'var(--font-size-sm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.scenario}</p>
                                     </div>
                                     {obs.submitted ? (
-                                        <div className="flex items-center gap-3 text-[11px]">
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontSize: 'var(--font-size-xs)' }}>
                                             {obs.taskSuccess
-                                                ? <span className="text-emerald-600 font-bold flex items-center gap-1"><CheckCircle2 size={12} /> Éxito</span>
-                                                : <span className="text-red-600 font-bold flex items-center gap-1"><XCircle size={12} /> Fallo</span>
+                                                ? <span style={{ color: 'var(--color-success-text)', fontWeight: 'var(--font-weight-bold)', display: 'inline-flex', alignItems: 'center', gap: 4 }}><CheckCircle2 size={12} /> Éxito</span>
+                                                : <span style={{ color: 'var(--color-error-text)', fontWeight: 'var(--font-weight-bold)', display: 'inline-flex', alignItems: 'center', gap: 4 }}><XCircle size={12} /> Fallo</span>
                                             }
-                                            <span className="text-slate-500 font-mono">{obs.timeSeconds}s</span>
-                                            <span className="text-slate-500">{obs.errorCount} err</span>
+                                            <span className="observations-mono-badge">{obs.timeSeconds}s</span>
+                                            <span style={{ color: 'var(--text-secondary)' }}>{obs.errorCount} err</span>
                                         </div>
                                     ) : (
-                                        <span className="text-[11px] text-slate-400 italic">No registrada</span>
+                                        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-disabled)', fontStyle: 'italic' }}>No registrada</span>
                                     )}
                                 </div>
                             )
@@ -679,13 +758,14 @@ export default function SessionRunner() {
                 </div>
 
                 {/* Save button */}
-                <div className="flex justify-center pt-2 pb-6">
+                <div className="runner-button-container">
                     <button
                         onClick={handleSaveAndClose}
                         disabled={saving}
-                        className="group relative inline-flex items-center gap-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-[16px] px-8 py-4 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+                        className="btn-runner-save"
+                        aria-label="Guardar y Finalizar Sesión de Prueba"
                     >
-                        <Save size={22} />
+                        <Save size={22} aria-hidden="true" />
                         {saving ? 'Guardando...' : 'Guardar y Cerrar Sesión'}
                     </button>
                 </div>
@@ -696,14 +776,12 @@ export default function SessionRunner() {
     // ──────────── SAVED PHASE ────────────
     if (phase === 'saved') {
         return (
-            <div className="flex items-center justify-center py-20 animate-rise">
-                <div className="text-center">
-                    <div className="w-20 h-20 mx-auto rounded-full bg-emerald-100 border-2 border-emerald-300 flex items-center justify-center mb-4">
-                        <CheckCircle2 size={40} className="text-emerald-600" />
-                    </div>
-                    <h2 className="text-[22px] font-bold text-slate-900 mb-2">Sesión Guardada</h2>
-                    <p className="text-[14px] text-slate-500">Redirigiendo al listado de sesiones...</p>
+            <div className="dashboard-loader" style={{ padding: 'var(--space-20) 0', animation: 'rise 0.4s ease-out' }}>
+                <div className="runner-success-icon-box">
+                    <CheckCircle2 size={40} style={{ color: 'var(--color-success)' }} aria-hidden="true" />
                 </div>
+                <h2 className="runner-section-title" style={{ fontSize: 22, textAlign: 'center', marginBottom: 8 }}>Sesión Guardada</h2>
+                <p className="dashboard-loader-text" style={{ marginTop: 0 }}>Redirigiendo al listado de sesiones...</p>
             </div>
         )
     }

@@ -108,14 +108,14 @@ export default function TestSessions() {
     }
 
     return (
-        <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="page-container">
+            <div className="page-header">
                 <div>
-                    <h2 className="text-[22px] font-bold text-slate-900">Sesiones de Prueba</h2>
-                    <p className="text-[13px] text-slate-500 mt-1">Organiza y agenda el trabajo de campo con los usuarios</p>
+                    <h2 className="page-header-title">Sesiones de Prueba</h2>
+                    <p className="page-header-subtitle">Organiza y agenda el trabajo de campo con los usuarios</p>
                 </div>
                 <button
-                    className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="btn btn-primary"
                     onClick={() => { setEditId(null); setForm({ ...emptyForm, testPlanId: activePlanId, participantId: participants[0]?.id ?? '' }); setShowForm(true) }}
                     disabled={!activePlanId || isReadOnly}
                     aria-label="Programar Sesión"
@@ -126,44 +126,48 @@ export default function TestSessions() {
 
             {/* GLB-04: Read-only banner */}
             {isReadOnly && activePlan && (
-                <div className="readonly-banner">
-                    <AlertTriangle size={16} className="flex-shrink-0" />
+                <div className="readonly-banner" role="status">
+                    <AlertTriangle size={16} className="flex-shrink-0" aria-hidden="true" />
                     <span>El plan "<strong>{activePlan.projectName}</strong>" está {activePlan.status === 'Completed' ? 'completado' : 'cancelado'}. No se pueden crear ni modificar sesiones.</span>
                 </div>
             )}
 
-            <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-end gap-4">
-                <div className="min-w-0">
+            <div className="sessions-context-card">
+                <div style={{ minWidth: 0 }}>
                     <label className="form-label">Plan de prueba activo</label>
-                    <div className="text-[14px] font-semibold text-slate-800 bg-slate-50 px-3 py-2 rounded border border-slate-200">
+                    <div className="sessions-plan-value">
                         {activePlan ? activePlan.projectName : 'Seleccione en el menú principal'}
                     </div>
                 </div>
-                <p className="text-[13px] text-slate-500 md:mb-2">Las sesiones nuevas se asignarán a este plan.</p>
+                <p className="sessions-context-info">Las sesiones nuevas se asignarán a este plan.</p>
             </div>
 
             {!loading && activePlan && tasksCount === 0 && sessions.length > 0 && (
-                <div className="flex items-start sm:items-center justify-between gap-3 bg-amber-50 rounded-xl p-3 border border-amber-200 mt-2">
-                    <div className="flex items-start gap-3">
-                        <AlertTriangle size={18} className="text-amber-500 flex-shrink-0 mt-0.5 sm:mt-0" />
-                        <div className="text-[13px] text-amber-800">
-                            <strong>Atención:</strong> No hay <strong>tareas</strong> registradas en este plan. Debes crear tareas antes de poder iniciar la ejecución de una sesión.
-                        </div>
+                <div className="warning-banner" role="alert">
+                    <AlertTriangle size={18} className="flex-shrink-0" aria-hidden="true" />
+                    <div style={{ fontSize: 'var(--font-size-sm)', lineHeight: 'var(--line-height)' }}>
+                        <strong>Atención:</strong> No hay <strong>tareas</strong> registradas en este plan. Debes crear tareas antes de poder iniciar la ejecución de una sesión.
                     </div>
                 </div>
             )}
 
             {/* Form Modal */}
             <Modal isOpen={showForm} onClose={resetForm} title={editId ? 'Editar Sesión' : 'Programar Sesión'} maxWidth="480px">
-                <form onSubmit={handleSubmit} className="p-5 space-y-4">
+                <form onSubmit={handleSubmit} className="form-layout">
                     <div>
                         <label className="form-label">Plan asignado</label>
-                        <div className="form-input bg-slate-50 text-slate-700 cursor-not-allowed">{activePlan?.projectName || 'Sin plan seleccionado'}</div>
+                        <div className="form-input form-input--disabled" style={{ cursor: 'not-allowed', background: 'var(--neutral-100)', color: 'var(--text-muted)' }}>
+                            {activePlan?.projectName || 'Sin plan seleccionado'}
+                        </div>
                     </div>
                     <div>
-                        <label htmlFor="participantId" className="form-label">Participante <span className="text-red-500">*</span></label>
+                        <label htmlFor="participantId" className="form-label">
+                            Participante <span style={{ color: 'var(--color-error)' }}>*</span>
+                        </label>
                         {participants.length === 0 ? (
-                            <div className="text-red-500 text-xs mt-1">No hay participantes registrados. Registra uno antes de programar sesiones.</div>
+                            <div style={{ color: 'var(--color-error)', fontSize: 'var(--font-size-xs)', marginTop: 4 }}>
+                                No hay participantes registrados. Registra uno antes de programar sesiones.
+                            </div>
                         ) : (
                             <select id="participantId" value={form.participantId} onChange={e => setForm(f => ({ ...f, participantId: e.target.value }))} className="form-input" required>
                                 <option value="" disabled>Selecciona un participante</option>
@@ -172,18 +176,22 @@ export default function TestSessions() {
                         )}
                     </div>
                     <div>
-                        <label htmlFor="date" className="form-label">Fecha de la sesión <span className="text-red-500">*</span></label>
+                        <label htmlFor="date" className="form-label">
+                            Fecha de la sesión <span style={{ color: 'var(--color-error)' }}>*</span>
+                        </label>
                         <input id="date" type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className="form-input" required />
                     </div>
                     <div>
-                        <label htmlFor="platformTested" className="form-label">Plataforma a evaluar <span className="text-red-500">*</span></label>
+                        <label htmlFor="platformTested" className="form-label">
+                            Plataforma a evaluar <span style={{ color: 'var(--color-error)' }}>*</span>
+                        </label>
                         <input id="platformTested" type="text" value={form.platformTested} onChange={e => setForm(f => ({ ...f, platformTested: e.target.value }))} className="form-input" placeholder="Ej: iOS App, Android, Desktop Web..." required />
                     </div>
-                    <div className="flex items-center gap-3 pt-3">
+                    <div className="form-actions">
                         <button type="submit" className="btn btn-primary" disabled={participants.length === 0 || isSubmitting}>
-                            <Save size={16} /> {isSubmitting ? 'Guardando...' : (editId ? 'Actualizar' : 'Guardar')}
+                            <Save size={16} aria-hidden="true" /> {isSubmitting ? 'Guardando...' : (editId ? 'Actualizar' : 'Guardar')}
                         </button>
-                        <button type="button" onClick={resetForm} className="btn btn-secondary text-center" disabled={isSubmitting}>
+                        <button type="button" onClick={resetForm} className="btn btn-secondary" disabled={isSubmitting}>
                             Cancelar
                         </button>
                     </div>
@@ -191,34 +199,61 @@ export default function TestSessions() {
             </Modal>
 
             {loading ? (
-                <div className="flex justify-center py-12"><div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" /></div>
+                <div className="dashboard-loader">
+                    <div className="dashboard-spinner" aria-label="Cargando..." />
+                </div>
             ) : sessions.length === 0 ? (
-                <div className="bg-white rounded-2xl border-2 border-dashed border-slate-300 p-12 text-center">
-                    <CalendarRange size={40} className="text-slate-300 mx-auto" />
-                    <h3 className="mt-3 text-[15px] font-semibold text-slate-600">Sin sesiones programadas</h3>
-                    <p className="text-[13px] text-slate-400 mt-1">Agenda tu primera sesión en el campo</p>
+                <div className="empty-state-card">
+                    <CalendarRange size={40} className="empty-state-icon" aria-hidden="true" />
+                    <h3 className="empty-state-title">Sin sesiones programadas</h3>
+                    <p className="empty-state-subtitle">Agenda tu primera sesión en el campo</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="sessions-grid">
                     {sessions.map((session: any) => (
-                        <div key={session.id} className="bg-white rounded-2xl border-l-[4px] border border-blue-500 shadow-sm p-4 flex flex-col gap-3 animate-rise hover:shadow-md transition-shadow">
+                        <div key={session.id} className="session-card">
                             <div>
-                                <h3 className="text-[15px] font-bold text-slate-900">{getParticipantName(session.participantId)}</h3>
-                                <div className="flex items-center gap-2 text-slate-500 text-[12px] mt-1.5">
-                                    <Calendar size={13} aria-hidden="true" />
-                                    <span>{new Date(session.date).toLocaleDateString()}</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-slate-500 text-[12px] mt-1">
-                                    <MonitorPlay size={13} aria-hidden="true" />
-                                    <span>Plataforma: {session.platformTested || 'No definida'}</span>
+                                <h3 className="session-card-title">{getParticipantName(session.participantId)}</h3>
+                                <div className="session-card-meta-list">
+                                    <div className="session-card-meta-item">
+                                        <Calendar size={14} aria-hidden="true" />
+                                        <span>{new Date(session.date).toLocaleDateString()}</span>
+                                    </div>
+                                    <div className="session-card-meta-item">
+                                        <MonitorPlay size={14} aria-hidden="true" />
+                                        <span>Plataforma: {session.platformTested || 'No definida'}</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 mt-auto pt-3">
-                                <button onClick={() => navigate(`/sesiones/${session.id}/ejecutar`)} disabled={tasksCount === 0} title={tasksCount === 0 ? "Requiere crear tareas primero" : ""} className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-slate-400 disabled:to-slate-500 disabled:cursor-not-allowed text-white text-[11px] font-semibold py-1.5 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
-                                    <Play size={12} /> Iniciar Sesión
+                            <div className="session-card-actions">
+                                <button
+                                    onClick={() => navigate(`/sesiones/${session.id}/ejecutar`)}
+                                    disabled={tasksCount === 0}
+                                    title={tasksCount === 0 ? "Requiere crear tareas primero" : ""}
+                                    className="btn btn-primary"
+                                    aria-label={`Iniciar sesión con ${getParticipantName(session.participantId)}`}
+                                    style={{ padding: 'var(--space-2) var(--space-4)', fontSize: 12, height: 'auto', minHeight: 'unset', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                                >
+                                    <Play size={12} aria-hidden="true" /> Iniciar Sesión
                                 </button>
-                                <button onClick={() => handleEdit(session)} className="btn btn-secondary text-[11px] py-1 px-3" disabled={isReadOnly} aria-label={`Modificar sesión de ${getParticipantName(session.participantId)}`}>Modificar</button>
-                                <button onClick={() => setSessionToDelete(session)} className="btn btn-danger text-[11px] py-1 px-3" disabled={isReadOnly} aria-label={`Eliminar sesión de ${getParticipantName(session.participantId)}`}>Eliminar</button>
+                                <button
+                                    onClick={() => handleEdit(session)}
+                                    className="btn btn-secondary"
+                                    disabled={isReadOnly}
+                                    aria-label={`Modificar sesión de ${getParticipantName(session.participantId)}`}
+                                    style={{ fontSize: 11, padding: '6px 12px', height: 'auto', minHeight: 'unset' }}
+                                >
+                                    Modificar
+                                </button>
+                                <button
+                                    onClick={() => setSessionToDelete(session)}
+                                    className="btn btn-danger"
+                                    disabled={isReadOnly}
+                                    aria-label={`Eliminar sesión de ${getParticipantName(session.participantId)}`}
+                                    style={{ fontSize: 11, padding: '6px 12px', height: 'auto', minHeight: 'unset' }}
+                                >
+                                    Eliminar
+                                </button>
                             </div>
                         </div>
                     ))}
@@ -227,13 +262,13 @@ export default function TestSessions() {
 
             {/* Delete confirmation */}
             <Modal isOpen={!!sessionToDelete} onClose={() => setSessionToDelete(null)} title="Eliminar Sesión" maxWidth="480px">
-                <div className="p-5 space-y-4">
-                    <p className="text-[14px] text-slate-600">
+                <div className="modal-body">
+                    <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--line-height)' }}>
                         ¿Estás seguro de que deseas eliminar la sesión del participante <strong>{sessionToDelete && getParticipantName(sessionToDelete.participantId)}</strong>? Esta acción no se puede deshacer.
                     </p>
-                    <div className="flex justify-end gap-3">
+                    <div className="modal-footer">
                         <button type="button" onClick={() => setSessionToDelete(null)} className="btn btn-secondary">Cancelar</button>
-                        <button type="button" onClick={() => sessionToDelete && confirmDelete(sessionToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
+                        <button type="button" onClick={() => sessionToDelete && confirmDelete(sessionToDelete.id)} className="btn btn-danger">Eliminar</button>
                     </div>
                 </div>
             </Modal>

@@ -24,9 +24,10 @@ export default function Observations() {
         timeSeconds: 60,
         errorCount: 0,
         comments: '',
-        detectedProblem: '',
-        severity: 'Medium',
+        detectedProblem: 'Ninguno',
+        severity: 'Low',
         proposedImprovement: '',
+        completedWithoutIssues: true,
     }
     const [form, setForm] = useState(emptyForm)
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -75,6 +76,7 @@ export default function Observations() {
     }
 
     const handleEdit = (log: any) => {
+        const isClean = log.taskSuccess && log.errorCount === 0 && (log.detectedProblem === 'Ninguno' || !log.detectedProblem);
         setForm({
             testSessionId: log.testSessionId,
             testTaskId: log.testTaskId,
@@ -85,6 +87,7 @@ export default function Observations() {
             detectedProblem: log.detectedProblem || '',
             severity: log.severity || 'Medium',
             proposedImprovement: log.proposedImprovement || '',
+            completedWithoutIssues: isClean,
         })
         setEditId(log.id)
         setShowForm(true)
@@ -102,7 +105,17 @@ export default function Observations() {
         if (form.timeSeconds <= 0) { addToast('El tiempo debe ser mayor a 0', 'error'); return }
         if (form.errorCount < 0) { addToast('Los errores no pueden ser negativos', 'error'); return }
 
-        if ((!form.taskSuccess || form.errorCount > 0) && !form.detectedProblem.trim()) {
+        // Determine final fields to submit
+        const submissionForm = {
+            ...form,
+            taskSuccess: form.completedWithoutIssues ? true : form.taskSuccess,
+            errorCount: form.completedWithoutIssues ? 0 : form.errorCount,
+            detectedProblem: form.completedWithoutIssues ? "Ninguno" : (form.detectedProblem || "Ninguno"),
+            severity: form.completedWithoutIssues ? "Low" : form.severity,
+            proposedImprovement: form.completedWithoutIssues ? "" : form.proposedImprovement,
+        }
+
+        if (!form.completedWithoutIssues && (!submissionForm.detectedProblem.trim() || submissionForm.detectedProblem === 'Ninguno')) {
             addToast('El problema detectado es obligatorio cuando hay errores o la tarea no tuvo éxito', 'error')
             return
         }
@@ -111,17 +124,27 @@ export default function Observations() {
         try {
             if (editId) {
                 await observationLogsApi.update(editId, {
-                    taskSuccess: form.taskSuccess,
-                    timeSeconds: form.timeSeconds,
-                    errorCount: form.errorCount,
-                    comments: form.comments,
-                    detectedProblem: form.detectedProblem,
-                    severity: form.severity,
-                    proposedImprovement: form.proposedImprovement,
+                    taskSuccess: submissionForm.taskSuccess,
+                    timeSeconds: submissionForm.timeSeconds,
+                    errorCount: submissionForm.errorCount,
+                    comments: submissionForm.comments,
+                    detectedProblem: submissionForm.detectedProblem,
+                    severity: submissionForm.severity,
+                    proposedImprovement: submissionForm.proposedImprovement,
                 })
                 addToast('Registro actualizado', 'success')
             } else {
-                await observationLogsApi.create(form)
+                await observationLogsApi.create({
+                    testSessionId: submissionForm.testSessionId,
+                    testTaskId: submissionForm.testTaskId,
+                    taskSuccess: submissionForm.taskSuccess,
+                    timeSeconds: submissionForm.timeSeconds,
+                    errorCount: submissionForm.errorCount,
+                    comments: submissionForm.comments,
+                    detectedProblem: submissionForm.detectedProblem,
+                    severity: submissionForm.severity,
+                    proposedImprovement: submissionForm.proposedImprovement,
+                })
                 addToast('Registro creado', 'success')
             }
             resetForm()
@@ -170,82 +193,91 @@ export default function Observations() {
     }
 
     return (
-        <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="page-container">
+            <div className="page-header">
                 <div>
-                    <h2 className="text-[20px] font-semibold text-slate-900">Registro de Observación</h2>
-                    <p className="text-[13px] text-slate-500 mt-1">Registra resultados por sesión y tarea: éxito, tiempo, errores y severidad</p>
+                    <h2 className="page-header-title">Registro de Observación</h2>
+                    <p className="page-header-subtitle">Registra resultados por sesión y tarea: éxito, tiempo, errores y severidad</p>
                 </div>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-                    <button
-                        onClick={() => { setEditId(null); resetForm(); setShowForm(true) }}
-                        className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={!activePlanId || isReadOnly || sessions.length === 0 || tasks.length === 0}
-                        aria-label="Nuevo Registro"
-                    >
-                        <Plus size={14} aria-hidden="true" /> Nuevo Registro
-                    </button>
-                </div>
+                <button
+                    onClick={() => { setEditId(null); resetForm(); setShowForm(true) }}
+                    className="btn btn-primary"
+                    disabled={!activePlanId || isReadOnly || sessions.length === 0 || tasks.length === 0}
+                    aria-label="Nuevo Registro"
+                >
+                    <Plus size={18} aria-hidden="true" /> Nuevo Registro
+                </button>
             </div>
 
             {/* GLB-04: Read-only banner */}
             {isReadOnly && activePlan && (
-                <div className="readonly-banner">
-                    <AlertTriangle size={16} className="flex-shrink-0" />
+                <div className="readonly-banner" role="status">
+                    <AlertTriangle size={16} className="flex-shrink-0" aria-hidden="true" />
                     <span>El plan "<strong>{activePlan.projectName}</strong>" está {activePlan.status === 'Completed' ? 'completado' : 'cancelado'}. No se pueden crear ni modificar observaciones.</span>
                 </div>
             )}
 
             {/* Blocking banner for missing dependencies */}
             {!isReadOnly && activePlan && !loading && (sessions.length === 0 || tasks.length === 0) && (
-                <div className="flex items-start sm:items-center justify-between gap-3 bg-amber-50 rounded-xl p-3 sm:p-4 border border-amber-200">
-                    <div className="flex items-start gap-3">
-                        <AlertTriangle size={20} className="text-amber-500 flex-shrink-0 mt-0.5 sm:mt-0" />
-                        <div className="text-[13px] text-amber-800">
-                            <strong>No se pueden registrar observaciones:</strong> Es necesario contar con al menos una <strong>Tarea</strong> y una <strong>Sesión de Prueba</strong> registradas en este plan. Ve a dichas secciones para programarlas primero.
-                        </div>
+                <div className="warning-banner" role="alert">
+                    <AlertTriangle size={20} className="flex-shrink-0" aria-hidden="true" />
+                    <div style={{ fontSize: 'var(--font-size-sm)', lineHeight: 'var(--line-height)' }}>
+                        <strong>No se pueden registrar observaciones:</strong> Es necesario contar con al menos una <strong>Tarea</strong> y una <strong>Sesión de Prueba</strong> registradas en este plan. Ve a dichas secciones para programarlas primero.
                     </div>
                 </div>
             )}
 
             {/* Form Modal */}
             <Modal isOpen={showForm} onClose={resetForm} title={editId ? 'Editar Registro' : 'Nuevo Registro'}>
-                <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <form onSubmit={handleSubmit} className="form-layout">
+                    <div className="form-grid-2">
                         <div>
-                            <label htmlFor="obsTestSessionId" className="form-label">Sesión <span className="text-red-500">*</span></label>
+                            <label htmlFor="obsTestSessionId" className="form-label">Sesión <span style={{ color: 'var(--color-error)' }}>*</span></label>
                             <select id="obsTestSessionId" value={form.testSessionId} onChange={e => setForm(f => ({ ...f, testSessionId: e.target.value }))} className="form-input" required>
                                 {sessions.map((s: any) => <option key={s.id} value={s.id}>{s.participantName} · {new Date(s.date).toLocaleDateString()}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label htmlFor="obsTestTaskId" className="form-label">Tarea <span className="text-red-500">*</span></label>
+                            <label htmlFor="obsTestTaskId" className="form-label">Tarea <span style={{ color: 'var(--color-error)' }}>*</span></label>
                             <select id="obsTestTaskId" value={form.testTaskId} onChange={e => setForm(f => ({ ...f, testTaskId: e.target.value }))} className="form-input" required>
                                 {tasks.map((t: any) => <option key={t.id} value={t.id}>T{t.taskNumber} — {String(t.scenario).substring(0, 40)}...</option>)}
                             </select>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="form-grid-3">
                         <div>
                             <label htmlFor="obsTaskSuccess" className="form-label">¿Éxito?</label>
-                            <select id="obsTaskSuccess" value={form.taskSuccess ? 'true' : 'false'} onChange={e => setForm(f => ({ ...f, taskSuccess: e.target.value === 'true' }))} className="form-input">
+                            <select id="obsTaskSuccess" value={form.taskSuccess ? 'true' : 'false'} onChange={e => {
+                                const success = e.target.value === 'true'
+                                setForm(f => ({
+                                    ...f,
+                                    taskSuccess: success,
+                                    ...(!success ? { completedWithoutIssues: false, detectedProblem: f.detectedProblem === 'Ninguno' ? '' : f.detectedProblem } : {})
+                                }))
+                            }} className="form-input">
                                 <option value="true">Sí</option>
                                 <option value="false">No</option>
                             </select>
                         </div>
                         <div>
-                            <label htmlFor="obsTimeSeconds" className="form-label">Tiempo (seg) <span className="text-red-500">*</span></label>
+                            <label htmlFor="obsTimeSeconds" className="form-label">Tiempo (seg) <span style={{ color: 'var(--color-error)' }}>*</span></label>
                             <input id="obsTimeSeconds" type="number" value={form.timeSeconds} onChange={e => setForm(f => ({ ...f, timeSeconds: Number(e.target.value) }))} className="form-input" min={1} required />
                         </div>
                         <div>
-                            {/* SEC-04: Fixed error input clearing */}
-                            <label htmlFor="obsErrorCount" className="form-label">Errores <span className="text-red-500">*</span></label>
+                            <label htmlFor="obsErrorCount" className="form-label">Errores <span style={{ color: 'var(--color-error)' }}>*</span></label>
                             <input
                                 id="obsErrorCount"
                                 type="number"
                                 value={form.errorCount}
-                                onChange={e => setForm(f => ({ ...f, errorCount: e.target.value === '' ? '' as any : Number(e.target.value) }))}
+                                onChange={e => {
+                                    const val = e.target.value === '' ? '' as any : Number(e.target.value)
+                                    setForm(f => ({
+                                        ...f,
+                                        errorCount: val,
+                                        ...(val > 0 ? { completedWithoutIssues: false, detectedProblem: f.detectedProblem === 'Ninguno' ? '' : f.detectedProblem } : {})
+                                    }))
+                                }}
                                 onFocus={handleErrorCountFocus}
                                 onBlur={handleErrorCountBlur}
                                 className="form-input"
@@ -255,34 +287,83 @@ export default function Observations() {
                         </div>
                     </div>
 
-                    <div>
-                        <label htmlFor="obsSeverity" className="form-label">Severidad</label>
-                        <select id="obsSeverity" value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value }))} className="form-input">
-                            <option value="Critical">Crítica</option>
-                            <option value="High">Alta</option>
-                            <option value="Medium">Media</option>
-                            <option value="Low">Baja</option>
-                        </select>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                        <input
+                            id="obsCompletedWithoutIssues"
+                            type="checkbox"
+                            checked={form.completedWithoutIssues}
+                            onChange={e => {
+                                const val = e.target.checked
+                                setForm(f => ({
+                                    ...f,
+                                    completedWithoutIssues: val,
+                                    ...(val ? {
+                                        taskSuccess: true,
+                                        errorCount: 0,
+                                        detectedProblem: 'Ninguno',
+                                        severity: 'Low',
+                                        proposedImprovement: '',
+                                    } : {
+                                        detectedProblem: f.detectedProblem === 'Ninguno' ? '' : f.detectedProblem,
+                                        severity: 'Medium',
+                                    })
+                                }))
+                            }}
+                            style={{ width: 16, height: 16, cursor: 'pointer' }}
+                        />
+                        <label htmlFor="obsCompletedWithoutIssues" className="form-label" style={{ margin: 0, cursor: 'pointer', fontWeight: 'var(--font-weight-semibold)' }}>
+                            ✨ ¿La tarea se completó exitosamente sin ninguna anomalía o incomodidad?
+                        </label>
                     </div>
 
-                    <div>
-                        <label htmlFor="obsDetectedProblem" className="form-label">Problema detectado {(!form.taskSuccess || form.errorCount > 0) && <span className="text-red-500">*</span>}</label>
-                        <textarea id="obsDetectedProblem" value={form.detectedProblem} onChange={e => setForm(f => ({ ...f, detectedProblem: e.target.value }))} className={`form-input ${(!form.taskSuccess || form.errorCount > 0) && !form.detectedProblem.trim() ? 'border-red-500 focus:border-red-500 focus:ring-red-50' : ''}`} rows={2} placeholder="Describe el problema observado" required={!form.taskSuccess || form.errorCount > 0} />
-                    </div>
+                    {!form.completedWithoutIssues ? (
+                        <>
+                            <div>
+                                <label htmlFor="obsSeverity" className="form-label">Severidad</label>
+                                <select id="obsSeverity" value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value }))} className="form-input">
+                                    <option value="Critical">Crítica</option>
+                                    <option value="High">Alta</option>
+                                    <option value="Medium">Media</option>
+                                    <option value="Low">Baja</option>
+                                </select>
+                            </div>
 
-                    <div>
-                        <label htmlFor="obsProposedImprovement" className="form-label">Mejora propuesta</label>
-                        <textarea id="obsProposedImprovement" value={form.proposedImprovement} onChange={e => setForm(f => ({ ...f, proposedImprovement: e.target.value }))} className="form-input" rows={2} placeholder="Propuesta de mejora" />
-                    </div>
+                            <div>
+                                <label htmlFor="obsDetectedProblem" className="form-label">Problema detectado {(!form.taskSuccess || form.errorCount > 0) && <span style={{ color: 'var(--color-error)' }}>*</span>}</label>
+                                <textarea id="obsDetectedProblem" value={form.detectedProblem} onChange={e => setForm(f => ({ ...f, detectedProblem: e.target.value }))} className={`form-input ${(!form.taskSuccess || form.errorCount > 0) && !form.detectedProblem.trim() ? 'field-error' : ''}`} rows={2} placeholder="Describe el problema observado" required={!form.taskSuccess || form.errorCount > 0} />
+                            </div>
+
+                            <div>
+                                <label htmlFor="obsProposedImprovement" className="form-label">Mejora propuesta</label>
+                                <textarea id="obsProposedImprovement" value={form.proposedImprovement} onChange={e => setForm(f => ({ ...f, proposedImprovement: e.target.value }))} className="form-input" rows={2} placeholder="Propuesta de mejora" />
+                            </div>
+                        </>
+                    ) : (
+                        <div style={{
+                            padding: 'var(--space-4)',
+                            borderRadius: 'var(--radius-md)',
+                            background: 'rgba(16, 185, 129, 0.06)',
+                            border: '1px dashed rgba(16, 185, 129, 0.3)',
+                            color: 'var(--color-success-text)',
+                            fontSize: 'var(--font-size-sm)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 'var(--space-2)',
+                            margin: 'var(--space-3) 0'
+                        }}>
+                            <CheckCircle2 size={16} style={{ color: 'var(--color-success)' }} />
+                            <span>✨ Tarea completada limpiamente. No se requiere reportar severidad, anomalías ni propuestas de mejora.</span>
+                        </div>
+                    )}
 
                     <div>
                         <label htmlFor="obsComments" className="form-label">Comentarios</label>
                         <textarea id="obsComments" value={form.comments} onChange={e => setForm(f => ({ ...f, comments: e.target.value }))} className="form-input" rows={3} placeholder="Notas del moderador" />
                     </div>
 
-                    <div className="flex items-center gap-3 pt-3">
+                    <div className="form-actions">
                         <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                            <Save size={16} /> {isSubmitting ? 'Guardando...' : (editId ? 'Actualizar' : 'Guardar')}
+                            <Save size={16} aria-hidden="true" /> {isSubmitting ? 'Guardando...' : (editId ? 'Actualizar' : 'Guardar')}
                         </button>
                         <button type="button" onClick={resetForm} className="btn btn-secondary text-center" disabled={isSubmitting}>
                             Cancelar
@@ -292,60 +373,66 @@ export default function Observations() {
             </Modal>
 
             {loading ? (
-                <div className="flex justify-center py-12"><div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" /></div>
+                <div className="dashboard-loader">
+                    <div className="dashboard-spinner" aria-label="Cargando..." />
+                </div>
             ) : logs.length === 0 ? (
-                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl border-2 border-dashed border-slate-300 p-12 text-center shadow-inner">
-                    <Eye size={48} className="text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-[18px] font-semibold text-slate-700 mb-2">Sin registros de observación</h3>
-                    <p className="text-[14px] text-slate-500">Comienza a registrar observaciones de las sesiones de prueba.</p>
+                <div className="empty-state-card" style={{ padding: 'var(--space-10) var(--space-6)' }}>
+                    <Eye size={48} className="empty-state-icon" aria-hidden="true" />
+                    <h3 className="empty-state-title">Sin registros de observación</h3>
+                    <p className="empty-state-subtitle">Comienza a registrar observaciones de las sesiones de prueba.</p>
                 </div>
             ) : (
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden animate-rise">
-                    <div className="overflow-x-auto soft-scrollbar">
-                        <table className="w-full text-[13px]">
-                            <thead>
-                                <tr className="bg-gradient-to-r from-slate-100 to-slate-50 border-b border-slate-200">
-                                    <th className="px-5 py-3 text-left text-[12px] font-bold text-slate-600 uppercase tracking-wide">Sesión</th>
-                                    <th className="px-5 py-3 text-left text-[12px] font-bold text-slate-600 uppercase tracking-wide">Tarea</th>
-                                    <th className="px-5 py-3 text-left text-[12px] font-bold text-slate-600 uppercase tracking-wide">Éxito</th>
-                                    <th className="px-5 py-3 text-left text-[12px] font-bold text-slate-600 uppercase tracking-wide">Tiempo</th>
-                                    <th className="px-5 py-3 text-left text-[12px] font-bold text-slate-600 uppercase tracking-wide">Errores</th>
-                                    <th className="px-5 py-3 text-left text-[12px] font-bold text-slate-600 uppercase tracking-wide">Severidad</th>
-                                    <th className="px-5 py-3 text-left text-[12px] font-bold text-slate-600 uppercase tracking-wide">Acciones</th>
+                <div className="observations-table-card">
+                    <div className="overflow-x-auto soft-scrollbar" style={{ overflowX: 'auto' }}>
+                        <table className="observations-table">
+                            <thead className="observations-thead">
+                                <tr>
+                                    <th className="observations-th">Sesión</th>
+                                    <th className="observations-th">Tarea</th>
+                                    <th className="observations-th">Éxito</th>
+                                    <th className="observations-th">Tiempo</th>
+                                    <th className="observations-th">Errores</th>
+                                    <th className="observations-th">Severidad</th>
+                                    <th className="observations-th">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {logs.map((log: any, i: number) => (
-                                    <tr key={log.id} className={`border-b border-slate-100 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                                        <td className="px-5 py-4">
-                                            <div className="font-semibold text-slate-800">{getSessionName(log.testSessionId)}</div>
+                                    <tr key={log.id} className={`observations-tr ${i % 2 === 0 ? 'observations-tr--even' : 'observations-tr--odd'}`}>
+                                        <td className="observations-td">
+                                            <div className="observations-session-name">{getSessionName(log.testSessionId)}</div>
                                         </td>
-                                        <td className="px-5 py-4">
-                                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-[12px] font-medium">{getTaskLabel(log.testTaskId)}</span>
+                                        <td className="observations-td">
+                                            <span className="observations-task-badge">{getTaskLabel(log.testTaskId)}</span>
                                         </td>
-                                        <td className="px-5 py-4">
+                                        <td className="observations-td">
                                             {log.taskSuccess
-                                                ? <CheckCircle2 size={18} className="text-emerald-600" aria-label="Éxito" />
-                                                : <XCircle size={18} className="text-red-500" aria-label="Fallo" />}
+                                                ? <CheckCircle2 size={18} style={{ color: 'var(--color-success)' }} aria-label="Éxito" />
+                                                : <XCircle size={18} style={{ color: 'var(--color-error)' }} aria-label="Fallo" />}
                                         </td>
-                                        <td className="px-5 py-4">
-                                            <span className="font-mono text-slate-700 bg-slate-100 px-2 py-1 rounded-md text-[13px]">{log.timeSeconds}s</span>
+                                        <td className="observations-td">
+                                            <span className="observations-mono-badge">{log.timeSeconds}s</span>
                                         </td>
-                                        <td className="px-5 py-4">
-                                            <span className="font-mono text-slate-700 bg-slate-100 px-2 py-1 rounded-md text-[13px]">{log.errorCount}</span>
+                                        <td className="observations-td">
+                                            <span className="observations-mono-badge">{log.errorCount}</span>
                                         </td>
-                                        <td className="px-5 py-4">
-                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-[12px] font-semibold shadow-sm ${log.severity === 'Critical' ? 'bg-red-100 text-red-800 border border-red-300' : log.severity === 'High' ? 'bg-orange-100 text-orange-800 border border-orange-300' : log.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' : 'bg-green-100 text-green-800 border border-green-300'}`}>
-                                                {log.severity === 'Critical' ? 'Crítica' : log.severity === 'High' ? 'Alta' : log.severity === 'Medium' ? 'Media' : 'Baja'}
+                                        <td className="observations-td">
+                                            <span className={`badge ${log.severity === 'Critical' ? 'badge-critica' : log.severity === 'High' ? 'badge-alta' : log.severity === 'Medium' ? 'badge-media' : 'badge-baja'}`}>
+                                                {log.severity === 'Critical' && <XCircle size={12} aria-hidden="true" style={{ color: '#991b1b', marginRight: 4 }} />}
+                                                {log.severity === 'High' && <AlertTriangle size={12} aria-hidden="true" style={{ color: 'var(--color-error-text)', marginRight: 4 }} />}
+                                                {log.severity === 'Medium' && <AlertTriangle size={12} aria-hidden="true" style={{ color: 'var(--color-primary-hover)', marginRight: 4 }} />}
+                                                {log.severity === 'Low' && <CheckCircle2 size={12} aria-hidden="true" style={{ color: 'var(--color-success-text)', marginRight: 4 }} />}
+                                                <span>{log.severity === 'Critical' ? 'Crítica' : log.severity === 'High' ? 'Alta' : log.severity === 'Medium' ? 'Media' : 'Baja'}</span>
                                             </span>
                                         </td>
-                                        <td className="px-5 py-4">
-                                            <div className="flex gap-2">
-                                                <button onClick={() => handleEdit(log)} className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-[12px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-blue-200" aria-label={`Editar observación de ${getSessionName(log.testSessionId)}`} disabled={isReadOnly}>
+                                        <td className="observations-td">
+                                            <div className="observations-actions">
+                                                <button onClick={() => handleEdit(log)} className="btn-table-edit" aria-label={`Editar observación de ${getSessionName(log.testSessionId)}`} disabled={isReadOnly}>
                                                     Editar
                                                 </button>
-                                                <button onClick={() => setLogToDelete(log)} className="bg-red-50 hover:bg-red-100 text-red-700 text-[12px] py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-medium border border-red-200" aria-label={`Eliminar observación de ${getSessionName(log.testSessionId)}`} disabled={isReadOnly}>
-                                                    <Trash2 size={14} />
+                                                <button onClick={() => setLogToDelete(log)} className="btn-table-delete" aria-label={`Eliminar observación de ${getSessionName(log.testSessionId)}`} disabled={isReadOnly}>
+                                                    <Trash2 size={14} aria-hidden="true" />
                                                 </button>
                                             </div>
                                         </td>
@@ -359,13 +446,13 @@ export default function Observations() {
 
             {/* Delete confirmation */}
             <Modal isOpen={!!logToDelete} onClose={() => setLogToDelete(null)} title="Eliminar Observación" maxWidth="480px">
-                <div className="p-5">
-                    <p className="text-[14px] text-slate-600 mb-5">
+                <div className="modal-body">
+                    <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--line-height)' }}>
                         ¿Estás seguro de que deseas eliminar la observación de la sesión <strong>{logToDelete && getSessionName(logToDelete.testSessionId)}</strong> (Tarea {logToDelete && getTaskLabel(logToDelete.testTaskId)})? Esta acción no se puede deshacer.
                     </p>
-                    <div className="flex justify-end gap-3">
+                    <div className="modal-footer">
                         <button type="button" onClick={() => setLogToDelete(null)} className="btn btn-secondary">Cancelar</button>
-                        <button type="button" onClick={() => logToDelete && confirmDelete(logToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
+                        <button type="button" onClick={() => logToDelete && confirmDelete(logToDelete.id)} className="btn btn-danger">Eliminar</button>
                     </div>
                 </div>
             </Modal>

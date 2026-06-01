@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Application.Mappings;
 using Application.Services;
 using Application.Validators;
@@ -24,6 +24,7 @@ public static class ApplicationExtensions
         services.AddScoped<IModeratorScriptService, ModeratorScriptService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<ITestSessionService, TestSessionService>();
+        services.AddScoped<ISprintBacklogService, SprintBacklogService>();
 
         return services;
     }

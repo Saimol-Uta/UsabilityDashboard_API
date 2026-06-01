@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
-import { testPlansApi, participantsApi, moderatorScriptsApi, testTasksApi, testSessionsApi, observationLogsApi, findingsApi, improvementActionsApi } from '../api'
+import { testPlansApi, participantsApi, moderatorScriptsApi, testTasksApi, testSessionsApi, observationLogsApi, findingsApi, improvementActionsApi, sprintBacklogApi } from '../api'
 
 interface Plan {
   id: string
@@ -79,13 +79,14 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       return
     }
     try {
-      const [participantsReq, scriptReq, tasksReq, sessionsReq, logsReq, findingsReq] = await Promise.all([
+      const [participantsReq, scriptReq, tasksReq, sessionsReq, logsReq, findingsReq, backlogReq] = await Promise.all([
         participantsApi.getAll(),
         moderatorScriptsApi.getByPlan(activePlanId).catch(() => ({ data: null })),
         testTasksApi.getByPlan(activePlanId),
         testSessionsApi.getAll(activePlanId),
         observationLogsApi.getAll(),
-        findingsApi.getByPlan(activePlanId).catch(() => ({ data: [] }))
+        findingsApi.getByPlan(activePlanId).catch(() => ({ data: [] })),
+        sprintBacklogApi.getByPlan(activePlanId).catch(() => ({ data: null }))
       ])
 
       const hasParticipants = (participantsReq.data?.length ?? 0) > 0
@@ -133,6 +134,8 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       const allFindings: any[] = findingsReq.data ?? []
       const hasAccessibility = allFindings.some(f => accessibilityTools.includes(f.tool))
 
+      const hasBacklog = !!backlogReq.data
+
       setSectionDone({
         guion: hasScript,
         participantes: hasParticipants,
@@ -142,6 +145,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
         hallazgos: hasFindings,
         mejoras: hasActions,
         accesibilidad: hasAccessibility,
+        backlog: hasBacklog,
       })
     } catch {
       setCanAccessPhase2(false)

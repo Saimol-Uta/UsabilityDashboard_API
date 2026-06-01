@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { testPlansApi } from '../api'
 import { useToast } from '../App'
 import { usePlan } from '../context/PlanContext'
 import { extractErrorMessage } from '../hooks/useApiError'
 import Modal from '../components/Modal'
-import { Plus, Edit3, Trash2, Calendar, Target, Save, CheckCircle2, PlayCircle } from 'lucide-react'
+import { Plus, Edit3, Trash2, Calendar, Target, Save, CheckCircle2, PlayCircle, Clock, FileText, AlertCircle } from 'lucide-react'
 
 const todayIso = new Date().toISOString().split('T')[0]
 
@@ -24,6 +25,7 @@ const emptyForm = {
 }
 
 export default function TestPlans() {
+    const navigate = useNavigate()
     const [plans, setPlans] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [planToDelete, setPlanToDelete] = useState<{ id: string, name: string } | null>(null)
@@ -92,7 +94,6 @@ export default function TestPlans() {
 
         setSaving(true)
         try {
-            // Check for duplicate name
             const existingPlansRes = await testPlansApi.getAll()
             const existingPlans = existingPlansRes.data ?? []
             const nameTrimmed = form.projectName.trim().toLowerCase()
@@ -144,31 +145,83 @@ export default function TestPlans() {
     }
 
     const togglePlanStatus = async (id: string, currentStatus: string) => {
-        const newStatus = currentStatus === 'Completed' ? 'InProgress' : 'Completed';
+        let newStatus = 'InProgress'
+        let message = 'Plan iniciado correctamente'
+        
+        if (currentStatus === 'Draft') {
+            newStatus = 'InProgress'
+            message = 'Plan iniciado correctamente'
+        } else if (currentStatus === 'InProgress') {
+            newStatus = 'Completed'
+            message = 'Plan finalizado correctamente'
+        } else if (currentStatus === 'Completed') {
+            newStatus = 'InProgress'
+            message = 'Plan reactivado correctamente'
+        }
+
         try {
-            await testPlansApi.updateStatus(id, newStatus);
-            addToast(`Plan ${newStatus === 'Completed' ? 'marcado como completado' : 'reactivado'} correctamente`, 'success');
-            fetchPlans();
-            refreshPlans();
+            await testPlansApi.updateStatus(id, newStatus)
+            addToast(message, 'success')
+            fetchPlans()
+            refreshPlans()
+            
+            // Redirect to guion moderator script page upon starting the draft plan
+            if (currentStatus === 'Draft') {
+                navigate('/guion')
+            }
         } catch (err) {
-            addToast(extractErrorMessage(err, 'Error al cambiar el estado del plan'), 'error');
+            addToast(extractErrorMessage(err, 'Error al cambiar el estado del plan'), 'error')
+        }
+    }
+
+    const getStatusBadge = (status: string) => {
+        const iconStyle = { marginRight: '4px', flexShrink: 0 }
+        switch (status) {
+            case 'Completed':
+                return (
+                    <span className="badge badge-completada" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                        <CheckCircle2 size={10} aria-hidden="true" style={iconStyle} />
+                        Completado
+                    </span>
+                )
+            case 'InProgress':
+                return (
+                    <span className="badge badge-enprogreso" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                        <Clock size={10} aria-hidden="true" style={iconStyle} />
+                        En Progreso
+                    </span>
+                )
+            case 'Cancelled':
+                return (
+                    <span className="badge badge-alta" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                        <AlertCircle size={10} aria-hidden="true" style={iconStyle} />
+                        Cancelado
+                    </span>
+                )
+            default: // 'Draft'
+                return (
+                    <span className="badge badge-pendiente" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                        <FileText size={10} aria-hidden="true" style={iconStyle} />
+                        Borrador
+                    </span>
+                )
         }
     }
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-20">
-                <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+            <div className="dashboard-loader-container">
+                <div className="dashboard-spinner" />
             </div>
         )
     }
 
     return (
-        <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="page-container">
+            <div className="page-header">
                 <div>
-                    <h2 className="text-[20px] font-semibold text-slate-900">Planes de Prueba</h2>
-                    <p className="text-[13px] text-slate-500 mt-1">Gestiona los planes de prueba de usabilidad</p>
+                    <h2 className="page-header-title">Planes de Prueba</h2>
+                    <p className="page-header-subtitle">Gestiona los planes de prueba de usabilidad</p>
                 </div>
                 <button onClick={openCreate} className="btn btn-primary">
                     <Plus size={16} aria-hidden="true" />
@@ -177,58 +230,59 @@ export default function TestPlans() {
             </div>
 
             {plans.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center animate-rise">
-                    <Target size={40} className="text-slate-300 mx-auto" />
-                    <h3 className="mt-3 text-[15px] font-semibold text-slate-600">Sin planes de prueba</h3>
-                    <p className="text-[13px] text-slate-400 mt-1">Crea tu primer plan de prueba para comenzar</p>
-                    <button onClick={openCreate} className="btn btn-primary mt-4">
+                <div className="empty-state-card">
+                    <Target size={40} className="empty-state-icon" aria-hidden="true" />
+                    <h3 className="empty-state-title">Sin planes de prueba</h3>
+                    <p className="empty-state-subtitle">Crea tu primer plan de prueba para comenzar</p>
+                    <button onClick={openCreate} className="btn btn-primary">
                         <Plus size={16} /> Crear Plan
                     </button>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="page-grid-2">
                     {plans.map((plan: any) => (
-                        <div key={plan.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-rise hover:shadow-md transition-shadow">
-                            <div className="h-1.5 w-full bg-gradient-to-r from-slate-800 to-blue-600" />
-                            <div className="p-5">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="min-w-0 flex-1">
-                                        <h3 className="text-[15px] font-semibold text-slate-900 leading-snug">{plan.projectName}</h3>
-                                        <p className="text-[12px] text-slate-500 mt-1 line-clamp-2">{plan.objective}</p>
+                        <div key={plan.id} className="testplan-card">
+                            <div className="testplan-card-bar" />
+                            <div className="testplan-card-body">
+                                <div className="testplan-card-header">
+                                    <div style={{ minWidth: 0, flex: 1 }}>
+                                        <h3 className="testplan-card-title">{plan.projectName}</h3>
+                                        <p className="testplan-card-objective">{plan.objective}</p>
                                     </div>
-                                    <span className={`badge ${plan.status === 'Completed' ? 'badge-completada' : plan.status === 'InProgress' ? 'badge-enprogreso' : plan.status === 'Cancelled' ? 'badge-alta' : 'badge-pendiente'}`}>
-                                        {plan.status === 'Draft' ? 'Borrador' : plan.status === 'InProgress' ? 'En Progreso' : plan.status === 'Completed' ? 'Completado' : plan.status === 'Cancelled' ? 'Cancelado' : plan.status}
-                                    </span>
+                                    {getStatusBadge(plan.status)}
                                 </div>
 
-                                <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-50 text-slate-500 border border-slate-100">
+                                <div className="testplan-card-meta">
+                                    <span className="testplan-card-meta-badge testplan-card-meta-badge--slate">
                                         <Calendar size={10} aria-hidden="true" />
                                         {plan.startDate ? new Date(plan.startDate).toLocaleDateString() : 'Sin fecha'}
                                     </span>
-                                    <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100">
+                                    <span className="testplan-card-meta-badge testplan-card-meta-badge--blue">
                                         {plan.tasks?.length || 0} tareas
                                     </span>
-                                    <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-600 border border-amber-100">
+                                    <span className="testplan-card-meta-badge testplan-card-meta-badge--amber">
                                         {plan.findings?.length || 0} hallazgos
                                     </span>
                                 </div>
 
-                                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                                    <div className="flex gap-2">
-                                        <button onClick={() => openEdit(plan)} className="btn btn-secondary text-[12px] py-1.5 px-3" aria-label={`Editar plan ${plan.projectName}`}>
+                                <div className="testplan-card-footer">
+                                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                                        <button onClick={() => openEdit(plan)} className="btn btn-secondary text-sm" style={{ padding: 'var(--space-1.5) var(--space-3)' }} aria-label={`Editar plan ${plan.projectName}`}>
                                             <Edit3 size={14} aria-hidden="true" /> Editar
                                         </button>
-                                        <button onClick={() => setPlanToDelete({ id: plan.id, name: plan.projectName })} className="btn btn-danger text-[12px] py-1.5 px-3" aria-label={`Eliminar plan ${plan.projectName}`}>
+                                        <button onClick={() => setPlanToDelete({ id: plan.id, name: plan.projectName })} className="btn btn-danger text-sm" style={{ padding: 'var(--space-1.5) var(--space-3)' }} aria-label={`Eliminar plan ${plan.projectName}`}>
                                             <Trash2 size={14} aria-hidden="true" />
                                         </button>
                                     </div>
                                     <button 
                                         onClick={() => togglePlanStatus(plan.id, plan.status)} 
-                                        className={`btn text-[12px] py-1.5 px-3 flex items-center gap-1.5 border transition-colors ${plan.status === 'Completed' ? 'text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100' : 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100'}`}
+                                        className={plan.status === 'Completed' ? 'btn btn-secondary text-sm' : plan.status === 'Draft' ? 'btn btn-primary text-sm' : 'btn btn-success text-sm'}
+                                        style={{ padding: 'var(--space-1.5) var(--space-3)', height: 'auto', minHeight: 'unset', display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1.5)' }}
                                     >
                                         {plan.status === 'Completed' ? (
                                             <><PlayCircle size={14} /> Reactivar</>
+                                        ) : plan.status === 'Draft' ? (
+                                            <><PlayCircle size={14} /> Comenzar</>
                                         ) : (
                                             <><CheckCircle2 size={14} /> Finalizar</>
                                         )}
@@ -242,11 +296,11 @@ export default function TestPlans() {
 
             {/* Delete confirmation modal */}
             <Modal isOpen={!!planToDelete} onClose={() => setPlanToDelete(null)} title="Eliminar Plan" maxWidth="480px">
-                <div className="p-5">
-                    <p className="text-[14px] text-slate-600 mb-5">
+                <div style={{ padding: 'var(--space-5)' }}>
+                    <p className="text-[14px]" style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-5)' }}>
                         ¿Estás seguro de que deseas eliminar el plan <strong>{planToDelete?.name}</strong>? Esta acción no se puede deshacer.
                     </p>
-                    <div className="flex justify-end gap-3">
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
                         <button type="button" onClick={() => setPlanToDelete(null)} className="btn btn-secondary">Cancelar</button>
                         <button type="button" onClick={() => planToDelete && confirmDelete(planToDelete.id)} className="btn btn-danger px-4">Eliminar</button>
                     </div>
@@ -255,31 +309,31 @@ export default function TestPlans() {
 
             {/* Create/Edit Drawer */}
             <Modal isOpen={showDrawer} onClose={closeDrawer} title={editId ? 'Editar Plan de Prueba' : 'Nuevo Plan de Prueba'} drawer>
-                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                <form onSubmit={handleSubmit} className="form-layout">
                     <div>
-                        <label htmlFor="drawerProjectName" className="form-label">Nombre del Proyecto <span className="text-red-500">*</span></label>
+                        <label htmlFor="drawerProjectName" className="form-label">Nombre del Proyecto <span style={{ color: 'var(--color-error)' }}>*</span></label>
                         <input id="drawerProjectName" value={form.projectName} onChange={e => setForm(f => ({ ...f, projectName: e.target.value }))} className="form-input" placeholder="Ej: Auditoría de Usabilidad: freeCodeCamp vs Coursera" required />
                     </div>
 
                     <div>
-                        <label htmlFor="drawerObjective" className="form-label">Objetivo <span className="text-red-500">*</span></label>
+                        <label htmlFor="drawerObjective" className="form-label">Objetivo <span style={{ color: 'var(--color-error)' }}>*</span></label>
                         <textarea id="drawerObjective" value={form.objective} onChange={e => setForm(f => ({ ...f, objective: e.target.value }))} className="form-input" rows={3} placeholder="Describe el objetivo principal del plan de prueba" required />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="form-grid-2">
                         <div>
-                            <label htmlFor="drawerProduct" className="form-label">Producto <span className="text-red-500">*</span></label>
+                            <label htmlFor="drawerProduct" className="form-label">Producto <span style={{ color: 'var(--color-error)' }}>*</span></label>
                             <input id="drawerProduct" value={form.product} onChange={e => setForm(f => ({ ...f, product: e.target.value }))} className="form-input" placeholder="Ej: Plataforma e-learning" required />
                         </div>
                         <div>
-                            <label htmlFor="drawerModule" className="form-label">Módulo evaluado <span className="text-red-500">*</span></label>
+                            <label htmlFor="drawerModule" className="form-label">Módulo evaluado <span style={{ color: 'var(--color-error)' }}>*</span></label>
                             <input id="drawerModule" value={form.evaluatedModule} onChange={e => setForm(f => ({ ...f, evaluatedModule: e.target.value }))} className="form-input" placeholder="Ej: Registro y pago" required />
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="form-grid-2">
                         <div>
-                            <label htmlFor="drawerMethodology" className="form-label">Metodología <span className="text-red-500">*</span></label>
+                            <label htmlFor="drawerMethodology" className="form-label">Metodología <span style={{ color: 'var(--color-error)' }}>*</span></label>
                             <input id="drawerMethodology" value={form.methodology} onChange={e => setForm(f => ({ ...f, methodology: e.target.value }))} className="form-input" placeholder="Ej: Evaluación heurística + WAVE" required />
                         </div>
                         {editId && (
@@ -295,19 +349,19 @@ export default function TestPlans() {
                         )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="form-grid-2">
                         <div>
-                            <label htmlFor="drawerStartDate" className="form-label">Fecha de Inicio <span className="text-red-500">*</span></label>
+                            <label htmlFor="drawerStartDate" className="form-label">Fecha de Inicio <span style={{ color: 'var(--color-error)' }}>*</span></label>
                             <input id="drawerStartDate" type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className="form-input" required />
                         </div>
                         <div>
-                            <label htmlFor="drawerEndDate" className="form-label">Fecha de Fin <span className="text-red-500">*</span></label>
+                            <label htmlFor="drawerEndDate" className="form-label">Fecha de Fin <span style={{ color: 'var(--color-error)' }}>*</span></label>
                             <input id="drawerEndDate" type="date" min={form.startDate} value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className="form-input" required />
                         </div>
                     </div>
 
                     <div>
-                        <label htmlFor="drawerUserProfile" className="form-label">Perfil de Usuario <span className="text-red-500">*</span></label>
+                        <label htmlFor="drawerUserProfile" className="form-label">Perfil de Usuario <span style={{ color: 'var(--color-error)' }}>*</span></label>
                         <textarea id="drawerUserProfile" value={form.userProfile} onChange={e => setForm(f => ({ ...f, userProfile: e.target.value }))} className="form-input" rows={2} placeholder="Describe el perfil de los participantes" required />
                     </div>
 
@@ -316,18 +370,18 @@ export default function TestPlans() {
                         <textarea id="drawerScope" value={form.scope} onChange={e => setForm(f => ({ ...f, scope: e.target.value }))} className="form-input" rows={2} placeholder="Define el alcance de las pruebas" />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="form-grid-2">
                         <div>
                             <label htmlFor="drawerLocation" className="form-label">Ubicación</label>
                             <input id="drawerLocation" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} className="form-input" placeholder="Ej: Laboratorio 2 / Remoto" />
                         </div>
                         <div>
-                            <label htmlFor="drawerDuration" className="form-label">Duración estimada (minutos) <span className="text-red-500">*</span></label>
+                            <label htmlFor="drawerDuration" className="form-label">Duración estimada (minutos) <span style={{ color: 'var(--color-error)' }}>*</span></label>
                             <input id="drawerDuration" type="number" min="1" value={form.estimatedDuration} onChange={e => setForm(f => ({ ...f, estimatedDuration: e.target.value }))} className="form-input" placeholder="Ej: 45" required />
                         </div>
                     </div>
 
-                    <div className="pt-3 flex items-center gap-3 sticky bottom-0 bg-white py-4 border-t border-slate-100 -mx-6 px-6 -mb-6">
+                    <div className="form-footer-sticky">
                         <button type="submit" className="btn btn-primary flex items-center gap-2" disabled={saving}>
                             <Save size={16} aria-hidden="true" /> {saving ? 'Guardando...' : editId ? 'Actualizar Plan' : 'Crear Plan'}
                         </button>
