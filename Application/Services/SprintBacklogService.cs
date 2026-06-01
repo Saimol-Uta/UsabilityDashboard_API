@@ -563,6 +563,9 @@ CONTEXTO ACTUAL DEL USUARIO:
 - Datos registrados en esta pantalla:
 {contextJson}
 
+[REGLA CRÍTICA DE CONTEXTO - ANÁLISIS EN CASCADA]
+Si el usuario solicita generar el Sprint Backlog (usando la etiqueta [BACKLOG_ACTION]) y detectas que la lista de ""hallazgos"" o ""acciones de mejora"" en el contexto está vacía o ausente, NO indiques que falta información. Realiza un análisis en cascada de inmediato: lee directamente las observaciones e incidentes registrados en las ""sesiones"" de los participantes (contenidas en el JSON de contexto). Infiere los problemas ergonómicos y de usabilidad de forma autónoma para modelar y estructurar el Sprint Backlog.
+
 INSTRUCCIONES DE RESPUESTA:
 1. Responde a la consulta del usuario de manera técnica, profesional y concisa (máximo 3 párrafos).
 2. Si propones agregar historias de usuario específicas para corregir fallos o mejorar la usabilidad, redacta historias bien formadas (""Como... quiero... para..."") y divídelas en tareas técnicas y criterios de aceptación.

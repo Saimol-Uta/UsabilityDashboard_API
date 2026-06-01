@@ -24,9 +24,10 @@ export default function Observations() {
         timeSeconds: 60,
         errorCount: 0,
         comments: '',
-        detectedProblem: '',
-        severity: 'Medium',
+        detectedProblem: 'Ninguno',
+        severity: 'Low',
         proposedImprovement: '',
+        completedWithoutIssues: true,
     }
     const [form, setForm] = useState(emptyForm)
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -75,6 +76,7 @@ export default function Observations() {
     }
 
     const handleEdit = (log: any) => {
+        const isClean = log.taskSuccess && log.errorCount === 0 && (log.detectedProblem === 'Ninguno' || !log.detectedProblem);
         setForm({
             testSessionId: log.testSessionId,
             testTaskId: log.testTaskId,
@@ -85,6 +87,7 @@ export default function Observations() {
             detectedProblem: log.detectedProblem || '',
             severity: log.severity || 'Medium',
             proposedImprovement: log.proposedImprovement || '',
+            completedWithoutIssues: isClean,
         })
         setEditId(log.id)
         setShowForm(true)
@@ -102,7 +105,17 @@ export default function Observations() {
         if (form.timeSeconds <= 0) { addToast('El tiempo debe ser mayor a 0', 'error'); return }
         if (form.errorCount < 0) { addToast('Los errores no pueden ser negativos', 'error'); return }
 
-        if ((!form.taskSuccess || form.errorCount > 0) && !form.detectedProblem.trim()) {
+        // Determine final fields to submit
+        const submissionForm = {
+            ...form,
+            taskSuccess: form.completedWithoutIssues ? true : form.taskSuccess,
+            errorCount: form.completedWithoutIssues ? 0 : form.errorCount,
+            detectedProblem: form.completedWithoutIssues ? "Ninguno" : (form.detectedProblem || "Ninguno"),
+            severity: form.completedWithoutIssues ? "Low" : form.severity,
+            proposedImprovement: form.completedWithoutIssues ? "" : form.proposedImprovement,
+        }
+
+        if (!form.completedWithoutIssues && (!submissionForm.detectedProblem.trim() || submissionForm.detectedProblem === 'Ninguno')) {
             addToast('El problema detectado es obligatorio cuando hay errores o la tarea no tuvo éxito', 'error')
             return
         }
@@ -111,17 +124,27 @@ export default function Observations() {
         try {
             if (editId) {
                 await observationLogsApi.update(editId, {
-                    taskSuccess: form.taskSuccess,
-                    timeSeconds: form.timeSeconds,
-                    errorCount: form.errorCount,
-                    comments: form.comments,
-                    detectedProblem: form.detectedProblem,
-                    severity: form.severity,
-                    proposedImprovement: form.proposedImprovement,
+                    taskSuccess: submissionForm.taskSuccess,
+                    timeSeconds: submissionForm.timeSeconds,
+                    errorCount: submissionForm.errorCount,
+                    comments: submissionForm.comments,
+                    detectedProblem: submissionForm.detectedProblem,
+                    severity: submissionForm.severity,
+                    proposedImprovement: submissionForm.proposedImprovement,
                 })
                 addToast('Registro actualizado', 'success')
             } else {
-                await observationLogsApi.create(form)
+                await observationLogsApi.create({
+                    testSessionId: submissionForm.testSessionId,
+                    testTaskId: submissionForm.testTaskId,
+                    taskSuccess: submissionForm.taskSuccess,
+                    timeSeconds: submissionForm.timeSeconds,
+                    errorCount: submissionForm.errorCount,
+                    comments: submissionForm.comments,
+                    detectedProblem: submissionForm.detectedProblem,
+                    severity: submissionForm.severity,
+                    proposedImprovement: submissionForm.proposedImprovement,
+                })
                 addToast('Registro creado', 'success')
             }
             resetForm()
@@ -225,7 +248,14 @@ export default function Observations() {
                     <div className="form-grid-3">
                         <div>
                             <label htmlFor="obsTaskSuccess" className="form-label">¿Éxito?</label>
-                            <select id="obsTaskSuccess" value={form.taskSuccess ? 'true' : 'false'} onChange={e => setForm(f => ({ ...f, taskSuccess: e.target.value === 'true' }))} className="form-input">
+                            <select id="obsTaskSuccess" value={form.taskSuccess ? 'true' : 'false'} onChange={e => {
+                                const success = e.target.value === 'true'
+                                setForm(f => ({
+                                    ...f,
+                                    taskSuccess: success,
+                                    ...(!success ? { completedWithoutIssues: false, detectedProblem: f.detectedProblem === 'Ninguno' ? '' : f.detectedProblem } : {})
+                                }))
+                            }} className="form-input">
                                 <option value="true">Sí</option>
                                 <option value="false">No</option>
                             </select>
@@ -240,7 +270,14 @@ export default function Observations() {
                                 id="obsErrorCount"
                                 type="number"
                                 value={form.errorCount}
-                                onChange={e => setForm(f => ({ ...f, errorCount: e.target.value === '' ? '' as any : Number(e.target.value) }))}
+                                onChange={e => {
+                                    const val = e.target.value === '' ? '' as any : Number(e.target.value)
+                                    setForm(f => ({
+                                        ...f,
+                                        errorCount: val,
+                                        ...(val > 0 ? { completedWithoutIssues: false, detectedProblem: f.detectedProblem === 'Ninguno' ? '' : f.detectedProblem } : {})
+                                    }))
+                                }}
                                 onFocus={handleErrorCountFocus}
                                 onBlur={handleErrorCountBlur}
                                 className="form-input"
@@ -250,25 +287,74 @@ export default function Observations() {
                         </div>
                     </div>
 
-                    <div>
-                        <label htmlFor="obsSeverity" className="form-label">Severidad</label>
-                        <select id="obsSeverity" value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value }))} className="form-input">
-                            <option value="Critical">Crítica</option>
-                            <option value="High">Alta</option>
-                            <option value="Medium">Media</option>
-                            <option value="Low">Baja</option>
-                        </select>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                        <input
+                            id="obsCompletedWithoutIssues"
+                            type="checkbox"
+                            checked={form.completedWithoutIssues}
+                            onChange={e => {
+                                const val = e.target.checked
+                                setForm(f => ({
+                                    ...f,
+                                    completedWithoutIssues: val,
+                                    ...(val ? {
+                                        taskSuccess: true,
+                                        errorCount: 0,
+                                        detectedProblem: 'Ninguno',
+                                        severity: 'Low',
+                                        proposedImprovement: '',
+                                    } : {
+                                        detectedProblem: f.detectedProblem === 'Ninguno' ? '' : f.detectedProblem,
+                                        severity: 'Medium',
+                                    })
+                                }))
+                            }}
+                            style={{ width: 16, height: 16, cursor: 'pointer' }}
+                        />
+                        <label htmlFor="obsCompletedWithoutIssues" className="form-label" style={{ margin: 0, cursor: 'pointer', fontWeight: 'var(--font-weight-semibold)' }}>
+                            ✨ ¿La tarea se completó exitosamente sin ninguna anomalía o incomodidad?
+                        </label>
                     </div>
 
-                    <div>
-                        <label htmlFor="obsDetectedProblem" className="form-label">Problema detectado {(!form.taskSuccess || form.errorCount > 0) && <span style={{ color: 'var(--color-error)' }}>*</span>}</label>
-                        <textarea id="obsDetectedProblem" value={form.detectedProblem} onChange={e => setForm(f => ({ ...f, detectedProblem: e.target.value }))} className={`form-input ${(!form.taskSuccess || form.errorCount > 0) && !form.detectedProblem.trim() ? 'field-error' : ''}`} rows={2} placeholder="Describe el problema observado" required={!form.taskSuccess || form.errorCount > 0} />
-                    </div>
+                    {!form.completedWithoutIssues ? (
+                        <>
+                            <div>
+                                <label htmlFor="obsSeverity" className="form-label">Severidad</label>
+                                <select id="obsSeverity" value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value }))} className="form-input">
+                                    <option value="Critical">Crítica</option>
+                                    <option value="High">Alta</option>
+                                    <option value="Medium">Media</option>
+                                    <option value="Low">Baja</option>
+                                </select>
+                            </div>
 
-                    <div>
-                        <label htmlFor="obsProposedImprovement" className="form-label">Mejora propuesta</label>
-                        <textarea id="obsProposedImprovement" value={form.proposedImprovement} onChange={e => setForm(f => ({ ...f, proposedImprovement: e.target.value }))} className="form-input" rows={2} placeholder="Propuesta de mejora" />
-                    </div>
+                            <div>
+                                <label htmlFor="obsDetectedProblem" className="form-label">Problema detectado {(!form.taskSuccess || form.errorCount > 0) && <span style={{ color: 'var(--color-error)' }}>*</span>}</label>
+                                <textarea id="obsDetectedProblem" value={form.detectedProblem} onChange={e => setForm(f => ({ ...f, detectedProblem: e.target.value }))} className={`form-input ${(!form.taskSuccess || form.errorCount > 0) && !form.detectedProblem.trim() ? 'field-error' : ''}`} rows={2} placeholder="Describe el problema observado" required={!form.taskSuccess || form.errorCount > 0} />
+                            </div>
+
+                            <div>
+                                <label htmlFor="obsProposedImprovement" className="form-label">Mejora propuesta</label>
+                                <textarea id="obsProposedImprovement" value={form.proposedImprovement} onChange={e => setForm(f => ({ ...f, proposedImprovement: e.target.value }))} className="form-input" rows={2} placeholder="Propuesta de mejora" />
+                            </div>
+                        </>
+                    ) : (
+                        <div style={{
+                            padding: 'var(--space-4)',
+                            borderRadius: 'var(--radius-md)',
+                            background: 'rgba(16, 185, 129, 0.06)',
+                            border: '1px dashed rgba(16, 185, 129, 0.3)',
+                            color: 'var(--color-success-text)',
+                            fontSize: 'var(--font-size-sm)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 'var(--space-2)',
+                            margin: 'var(--space-3) 0'
+                        }}>
+                            <CheckCircle2 size={16} style={{ color: 'var(--color-success)' }} />
+                            <span>✨ Tarea completada limpiamente. No se requiere reportar severidad, anomalías ni propuestas de mejora.</span>
+                        </div>
+                    )}
 
                     <div>
                         <label htmlFor="obsComments" className="form-label">Comentarios</label>

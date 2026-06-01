@@ -8,7 +8,7 @@ import { usePlan } from '../context/PlanContext'
 import { useToast } from '../App'
 import {
     findingsApi, testSessionsApi, moderatorScriptsApi,
-    sprintBacklogApi, testTasksApi
+    sprintBacklogApi, testTasksApi, observationLogsApi
 } from '../api'
 
 interface ChatMessage {
@@ -318,12 +318,21 @@ Presentación amigable con tips ergonómicos para el test.
                 })))
             }
             if (path.includes('/sesiones') || path.includes('/observaciones')) {
-                const [sessionsRes, tasksRes] = await Promise.all([
-                    testSessionsApi.getAll(activePlanId),
-                    testTasksApi.getByPlan(activePlanId)
+                const [sessionsRes, tasksRes, observationLogsRes] = await Promise.all([
+                    testSessionsApi.getAll(activePlanId).catch(() => ({ data: [] })),
+                    testTasksApi.getByPlan(activePlanId).catch(() => ({ data: [] })),
+                    observationLogsApi.getAll().catch(() => ({ data: [] }))
                 ])
+                const sessions = sessionsRes.data || []
+                const sessionIds = new Set(sessions.map((s: any) => s.id))
+                const relevantLogs = (observationLogsRes.data || []).filter((log: any) => sessionIds.has(log.testSessionId))
+                const detailedSessions = sessions.map((s: any) => ({
+                    ...s,
+                    observationLogs: relevantLogs.filter((log: any) => log.testSessionId === s.id)
+                }))
                 return {
-                    sessions: sessionsRes.data || [],
+                    sessions: detailedSessions,
+                    observationLogs: relevantLogs,
                     tasksCount: (tasksRes.data || []).length
                 }
             }
@@ -332,8 +341,36 @@ Presentación amigable con tips ergonómicos para el test.
                 return res.data || {}
             }
             if (path.includes('/backlog')) {
-                const res = await sprintBacklogApi.getByPlan(activePlanId)
-                return res.data || {}
+                const [findingsRes, scriptRes, sessionsRes, tasksRes, observationLogsRes] = await Promise.all([
+                    findingsApi.getByPlan(activePlanId).catch(() => ({ data: [] })),
+                    moderatorScriptsApi.getByPlan(activePlanId).catch(() => ({ data: null })),
+                    testSessionsApi.getAll(activePlanId).catch(() => ({ data: [] })),
+                    testTasksApi.getByPlan(activePlanId).catch(() => ({ data: [] })),
+                    observationLogsApi.getAll().catch(() => ({ data: [] }))
+                ])
+                const sessions = sessionsRes.data || []
+                const sessionIds = new Set(sessions.map((s: any) => s.id))
+                const relevantLogs = (observationLogsRes.data || []).filter((log: any) => sessionIds.has(log.testSessionId))
+                
+                // Build detailed sessions that include their observations/logs for Copilot context
+                const detailedSessions = sessions.map((s: any) => ({
+                    ...s,
+                    observationLogs: relevantLogs.filter((log: any) => log.testSessionId === s.id)
+                }))
+
+                return {
+                    projectName: activePlan?.projectName,
+                    product: activePlan?.product,
+                    evaluatedModule: activePlan?.evaluatedModule,
+                    objective: activePlan?.objective,
+                    userProfile: activePlan?.userProfile,
+                    scope: activePlan?.scope,
+                    script: scriptRes.data,
+                    tasks: tasksRes.data || [],
+                    sessions: detailedSessions,
+                    observationLogs: relevantLogs,
+                    findings: findingsRes.data || []
+                }
             }
             
             // Default: general plan stats
@@ -515,6 +552,7 @@ Presentación amigable con tips ergonómicos para el test.
             // 5. Mark as inserted in state
             setMessages(prev => prev.map(m => m.id === msgId ? { ...m, inserted: true } : m))
             addToast(`¡${newStories.length} Historia(s) integrada(s) con éxito al Backlog!`, 'success')
+            window.dispatchEvent(new CustomEvent('backlog-updated', { detail: { backlogData } }))
             refreshGates()
         } catch (err) {
             console.error(err)

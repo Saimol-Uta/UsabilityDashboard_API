@@ -61,9 +61,6 @@ export default function SprintBacklog() {
     const [sourcesData, setSourcesData] = useState<SourcesMetadata | null>(null)
     const [showSources, setShowSources] = useState(true)
 
-    // Setup panel toggle
-    const [showSetupPanel, setShowSetupPanel] = useState(true)
-
     // Traceability lists and active modal states
     const [findingsList, setFindingsList] = useState<any[]>([])
     const [selectedFinding, setSelectedFinding] = useState<any | null>(null)
@@ -91,6 +88,24 @@ export default function SprintBacklog() {
         } else {
             setLoading(false)
         }
+    }, [activePlanId])
+
+    // Listen to custom event to reload backlog when updated from Copilot
+    useEffect(() => {
+        const handleBacklogUpdate = (e: Event) => {
+            const customEvent = e as CustomEvent
+            if (customEvent.detail?.backlogData) {
+                setBacklogData(customEvent.detail.backlogData)
+                if (activePlanId) {
+                    loadSourcesMetadata(activePlanId)
+                }
+            } else if (activePlanId) {
+                loadBacklog(activePlanId)
+                loadSourcesMetadata(activePlanId)
+            }
+        }
+        window.addEventListener('backlog-updated', handleBacklogUpdate)
+        return () => window.removeEventListener('backlog-updated', handleBacklogUpdate)
     }, [activePlanId])
 
     /** Fetch counts from each data source to display in the Sources panel */
@@ -134,20 +149,17 @@ export default function SprintBacklog() {
                     const parsed = JSON.parse(res.data.contentJson) as BacklogData
                     setBacklogData(parsed)
                     setBacklogMeta({ createdAt: res.data.createdAt, updatedAt: res.data.updatedAt })
-                    setShowSetupPanel(false) // Hide setup panel if backlog already exists
                 } catch (e) {
                     console.error("Error parsing contentJson from DB", e)
                     addToast("El backlog guardado contiene un formato no válido. Puedes volver a generarlo.", "error")
                 }
             } else {
                 setBacklogData(null)
-                setShowSetupPanel(true)
             }
         } catch (err: any) {
             // 404 is expected if backlog does not exist yet
             if (err.response?.status === 404) {
                 setBacklogData(null)
-                setShowSetupPanel(true)
             } else {
                 addToast(extractErrorMessage(err, 'Error al cargar el Sprint Backlog'), 'error')
             }
@@ -221,7 +233,6 @@ export default function SprintBacklog() {
             if (res.data && res.data.contentJson) {
                 const parsed = JSON.parse(res.data.contentJson) as BacklogData
                 setBacklogData(parsed)
-                setShowSetupPanel(false)
                 addToast('¡Sprint Backlog generado exitosamente!', 'success')
 
                 // Auto-save the initial draft
@@ -664,66 +675,7 @@ export default function SprintBacklog() {
                             Consolida la información de Plan, Guía, Sesiones y Hallazgos para generar un Backlog de Sprint accionable.
                         </p>
                     </div>
-
-                    <button
-                        onClick={() => setShowSetupPanel(!showSetupPanel)}
-                        className={`btn btn-secondary ${showSetupPanel ? 'btn-secondary--active' : ''}`}
-                        style={{ fontSize: 'var(--font-size-xs)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}
-                    >
-                        <Cpu size={14} />
-                        Configurar Generador
-                    </button>
                 </div>
-
-                {/* AI Configuration and Generation Panel */}
-                {showSetupPanel && (
-                    <div className="sprint-setup-panel" style={{ maxWidth: '800px', margin: '0 auto var(--space-6)' }}>
-                        <div className="sprint-setup-panel-bg-icon">
-                            <Sparkles size={120} />
-                        </div>
-
-                        <h3 className="sprint-setup-title">
-                            <Cpu style={{ color: 'var(--color-primary)' }} size={16} />
-                            Generación de Historias asistida por IA
-                        </h3>
-
-                        <p className="sprint-setup-description" style={{ marginBottom: 'var(--space-6)' }}>
-                            El sistema procesará automáticamente toda la base de datos de tu plan de pruebas actual (los hallazgos de usabilidad y acciones de mejora) para modelar historias de usuario ("Como / Quiero / Para") detalladas y tareas técnicas estimadas utilizando el modelo de lenguaje Google Gemini de forma 100% segura y privada desde el servidor.
-                        </p>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                            <button
-                                type="button"
-                                onClick={() => handleGenerate(true)}
-                                disabled={isGenerating || isReadOnly}
-                                className="sprint-btn-generate sprint-btn-generate--ai"
-                                style={{ padding: 'var(--space-3) var(--space-4)', fontSize: 'var(--font-size-sm)', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)' }}
-                            >
-                                {isGenerating ? (
-                                    <>
-                                        <div className="sprint-loading-spinner" style={{ width: 16, height: 16, borderBottomColor: 'white', marginRight: 'var(--space-2)' }}></div>
-                                        Generando Sprint Backlog con IA...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Sparkles size={16} />
-                                        Generar Sprint Backlog con IA
-                                    </>
-                                )}
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => handleGenerate(false)}
-                                disabled={isGenerating || isReadOnly}
-                                className="sprint-btn-generate sprint-btn-generate--local"
-                                style={{ padding: 'var(--space-2) var(--space-4)', fontSize: 'var(--font-size-xs)' }}
-                            >
-                                Generar con Motor Local (Heurístico)
-                            </button>
-                        </div>
-                    </div>
-                )}
 
                 {/* Backlog Editor Board */}
                 {backlogData ? (
@@ -1215,20 +1167,41 @@ export default function SprintBacklog() {
                         <ClipboardList className="sprint-empty-state-icon" />
                         <h3 className="sprint-empty-state-title">Ningún borrador creado aún</h3>
                         <p className="sprint-empty-state-subtitle">
-                            El plan "{activePlan?.projectName}" no cuenta con un backlog de sprint. Genera de forma automática un borrador detallado asistido por Inteligencia Artificial analizando la base de datos de tu plan actual de forma segura.
+                            El plan "{activePlan?.projectName}" no cuenta con un backlog de sprint. Genera de forma automática un borrador detallado analizando la base de datos de tu plan actual de forma segura y ergonómica.
                         </p>
 
-                        <button
-                            onClick={() => {
-                                setShowSetupPanel(true);
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                            className="btn btn-primary"
-                            style={{ padding: 'var(--space-2) var(--space-5)', fontSize: 'var(--font-size-xs)', display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}
-                        >
-                            <Sparkles size={14} />
-                            Generar Borrador Asistido por IA
-                        </button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', width: '100%', maxWidth: '380px', margin: 'var(--space-4) auto 0' }}>
+                            <button
+                                type="button"
+                                onClick={() => handleGenerate(true)}
+                                disabled={isGenerating || isReadOnly}
+                                className="btn btn-primary"
+                                style={{ padding: 'var(--space-3) var(--space-5)', fontSize: 'var(--font-size-sm)', width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)' }}
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <div className="sprint-loading-spinner" style={{ width: 16, height: 16, borderBottomColor: 'white', marginRight: 'var(--space-2)' }}></div>
+                                        Generando con IA...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles size={16} />
+                                        Generar Borrador con IA
+                                    </>
+                                )}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => handleGenerate(false)}
+                                disabled={isGenerating || isReadOnly}
+                                className="btn btn-secondary"
+                                style={{ padding: 'var(--space-2) var(--space-4)', fontSize: 'var(--font-size-xs)', width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)' }}
+                            >
+                                <Cpu size={14} />
+                                Generar con Motor Local (Heurístico)
+                            </button>
+                        </div>
                     </div>
                 )}
 

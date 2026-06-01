@@ -22,6 +22,7 @@ interface ObservationForm {
     severity: string
     proposedImprovement: string
     submitted: boolean
+    completedWithoutIssues: boolean
 }
 
 export default function SessionRunner() {
@@ -74,10 +75,11 @@ export default function SessionRunner() {
                     timeSeconds: 0,
                     errorCount: 0,
                     comments: '',
-                    detectedProblem: '',
-                    severity: 'Medium',
+                    detectedProblem: 'Ninguno',
+                    severity: 'Low',
                     proposedImprovement: '',
                     submitted: false,
+                    completedWithoutIssues: true,
                 })))
 
                 if (scriptRes.data) {
@@ -127,10 +129,21 @@ export default function SessionRunner() {
             // Auto-fill time from timer
             updateObservation(index, 'timeSeconds', timerSeconds)
         }
-        if ((!obs.taskSuccess || obs.errorCount > 0) && !obs.detectedProblem.trim()) {
-            addToast('El problema detectado es obligatorio cuando hay errores o la tarea falló', 'error')
-            return
+
+        if (obs.completedWithoutIssues) {
+            // Ensure clean state values are saved
+            updateObservation(index, 'taskSuccess', true)
+            updateObservation(index, 'errorCount', 0)
+            updateObservation(index, 'detectedProblem', 'Ninguno')
+            updateObservation(index, 'severity', 'Low')
+            updateObservation(index, 'proposedImprovement', '')
+        } else {
+            if ((!obs.taskSuccess || obs.errorCount > 0) && (!obs.detectedProblem || !obs.detectedProblem.trim() || obs.detectedProblem === 'Ninguno')) {
+                addToast('El problema detectado es obligatorio cuando hay errores o la tarea falló', 'error')
+                return
+            }
         }
+
         updateObservation(index, 'submitted', true)
 
         // Move to next task or closing
@@ -153,13 +166,13 @@ export default function SessionRunner() {
                     await observationLogsApi.create({
                         testSessionId: sessionId,
                         testTaskId: obs.testTaskId,
-                        taskSuccess: obs.taskSuccess,
+                        taskSuccess: obs.completedWithoutIssues ? true : obs.taskSuccess,
                         timeSeconds: obs.timeSeconds > 0 ? obs.timeSeconds : 1,
-                        errorCount: obs.errorCount,
+                        errorCount: obs.completedWithoutIssues ? 0 : obs.errorCount,
                         comments: obs.comments,
-                        detectedProblem: obs.detectedProblem,
-                        severity: obs.severity,
-                        proposedImprovement: obs.proposedImprovement,
+                        detectedProblem: obs.completedWithoutIssues ? "Ninguno" : (obs.detectedProblem || "Ninguno"),
+                        severity: obs.completedWithoutIssues ? "Low" : obs.severity,
+                        proposedImprovement: obs.completedWithoutIssues ? "" : obs.proposedImprovement,
                     })
                 }
             }
@@ -433,7 +446,16 @@ export default function SessionRunner() {
                                                 <label className="form-label">¿Éxito?</label>
                                                 <select
                                                     value={currentObs.taskSuccess ? 'true' : 'false'}
-                                                    onChange={e => updateObservation(activeTaskIndex, 'taskSuccess', e.target.value === 'true')}
+                                                    onChange={e => {
+                                                        const success = e.target.value === 'true'
+                                                        updateObservation(activeTaskIndex, 'taskSuccess', success)
+                                                        if (!success) {
+                                                            updateObservation(activeTaskIndex, 'completedWithoutIssues', false)
+                                                            if (currentObs.detectedProblem === 'Ninguno') {
+                                                                updateObservation(activeTaskIndex, 'detectedProblem', '')
+                                                            }
+                                                        }
+                                                    }}
                                                     className="form-input"
                                                 >
                                                     <option value="true">✓ Sí</option>
@@ -467,7 +489,16 @@ export default function SessionRunner() {
                                                 <input
                                                     type="number"
                                                     value={currentObs.errorCount}
-                                                    onChange={e => updateObservation(activeTaskIndex, 'errorCount', Number(e.target.value))}
+                                                    onChange={e => {
+                                                        const val = Number(e.target.value)
+                                                        updateObservation(activeTaskIndex, 'errorCount', val)
+                                                        if (val > 0) {
+                                                            updateObservation(activeTaskIndex, 'completedWithoutIssues', false)
+                                                            if (currentObs.detectedProblem === 'Ninguno') {
+                                                                updateObservation(activeTaskIndex, 'detectedProblem', '')
+                                                            }
+                                                        }
+                                                    }}
                                                     className="form-input"
                                                     min={0}
                                                     required
@@ -475,45 +506,91 @@ export default function SessionRunner() {
                                             </div>
                                         </div>
 
-                                        <div>
-                                            <label className="form-label">Severidad</label>
-                                            <select
-                                                value={currentObs.severity}
-                                                onChange={e => updateObservation(activeTaskIndex, 'severity', e.target.value)}
-                                                className="form-input"
-                                            >
-                                                <option value="Critical">Crítica</option>
-                                                <option value="High">Alta</option>
-                                                <option value="Medium">Media</option>
-                                                <option value="Low">Baja</option>
-                                            </select>
-                                        </div>
-
-                                        <div>
-                                            <label className="form-label">
-                                                Problema detectado
-                                                {(!currentObs.taskSuccess || currentObs.errorCount > 0) && <span style={{ color: 'var(--color-error)' }}> *</span>}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                                            <input
+                                                id={`completedWithoutIssues-${activeTaskIndex}`}
+                                                type="checkbox"
+                                                checked={currentObs.completedWithoutIssues}
+                                                onChange={e => {
+                                                    const val = e.target.checked
+                                                    updateObservation(activeTaskIndex, 'completedWithoutIssues', val)
+                                                    if (val) {
+                                                        updateObservation(activeTaskIndex, 'taskSuccess', true)
+                                                        updateObservation(activeTaskIndex, 'errorCount', 0)
+                                                        updateObservation(activeTaskIndex, 'detectedProblem', 'Ninguno')
+                                                        updateObservation(activeTaskIndex, 'proposedImprovement', '')
+                                                        updateObservation(activeTaskIndex, 'severity', 'Low')
+                                                    } else {
+                                                        updateObservation(activeTaskIndex, 'detectedProblem', '')
+                                                        updateObservation(activeTaskIndex, 'severity', 'Medium')
+                                                    }
+                                                }}
+                                                style={{ width: 16, height: 16, cursor: 'pointer' }}
+                                            />
+                                            <label htmlFor={`completedWithoutIssues-${activeTaskIndex}`} className="form-label" style={{ margin: 0, cursor: 'pointer', fontWeight: 'var(--font-weight-semibold)' }}>
+                                                ✨ ¿La tarea se completó exitosamente sin ninguna anomalía o incomodidad?
                                             </label>
-                                            <textarea
-                                                value={currentObs.detectedProblem}
-                                                onChange={e => updateObservation(activeTaskIndex, 'detectedProblem', e.target.value)}
-                                                className={`form-input ${(!currentObs.taskSuccess || currentObs.errorCount > 0) && !currentObs.detectedProblem.trim() ? 'field-error' : ''}`}
-                                                rows={2}
-                                                placeholder="Describe el problema observado"
-                                                required={!currentObs.taskSuccess || currentObs.errorCount > 0}
-                                            />
                                         </div>
 
-                                        <div>
-                                            <label className="form-label">Mejora propuesta</label>
-                                            <textarea
-                                                value={currentObs.proposedImprovement}
-                                                onChange={e => updateObservation(activeTaskIndex, 'proposedImprovement', e.target.value)}
-                                                className="form-input"
-                                                rows={2}
-                                                placeholder="Sugerencia de mejora"
-                                            />
-                                        </div>
+                                        {!currentObs.completedWithoutIssues ? (
+                                            <>
+                                                <div>
+                                                    <label className="form-label">Severidad</label>
+                                                    <select
+                                                        value={currentObs.severity}
+                                                        onChange={e => updateObservation(activeTaskIndex, 'severity', e.target.value)}
+                                                        className="form-input"
+                                                    >
+                                                        <option value="Critical">Crítica</option>
+                                                        <option value="High">Alta</option>
+                                                        <option value="Medium">Media</option>
+                                                        <option value="Low">Baja</option>
+                                                    </select>
+                                                </div>
+
+                                                <div>
+                                                    <label className="form-label">
+                                                        Problema detectado
+                                                        {(!currentObs.taskSuccess || currentObs.errorCount > 0) && <span style={{ color: 'var(--color-error)' }}> *</span>}
+                                                    </label>
+                                                    <textarea
+                                                        value={currentObs.detectedProblem}
+                                                        onChange={e => updateObservation(activeTaskIndex, 'detectedProblem', e.target.value)}
+                                                        className={`form-input ${(!currentObs.taskSuccess || currentObs.errorCount > 0) && !currentObs.detectedProblem.trim() ? 'field-error' : ''}`}
+                                                        rows={2}
+                                                        placeholder="Describe el problema observado"
+                                                        required={!currentObs.taskSuccess || currentObs.errorCount > 0}
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="form-label">Mejora propuesta</label>
+                                                    <textarea
+                                                        value={currentObs.proposedImprovement}
+                                                        onChange={e => updateObservation(activeTaskIndex, 'proposedImprovement', e.target.value)}
+                                                        className="form-input"
+                                                        rows={2}
+                                                        placeholder="Sugerencia de mejora"
+                                                    />
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div style={{
+                                                padding: 'var(--space-4)',
+                                                borderRadius: 'var(--radius-md)',
+                                                background: 'rgba(16, 185, 129, 0.06)',
+                                                border: '1px dashed rgba(16, 185, 129, 0.3)',
+                                                color: 'var(--color-success-text)',
+                                                fontSize: 'var(--font-size-sm)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 'var(--space-2)',
+                                                margin: 'var(--space-3) 0'
+                                            }}>
+                                                <CheckCircle2 size={16} style={{ color: 'var(--color-success)' }} />
+                                                <span>✨ Tarea completada limpiamente. No se requiere reportar severidad, anomalías ni propuestas de mejora.</span>
+                                            </div>
+                                        )}
 
                                         <div>
                                             <label className="form-label">Comentarios del moderador</label>
