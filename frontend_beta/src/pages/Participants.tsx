@@ -36,7 +36,7 @@ export default function Participants() {
     }
 
     const handleEdit = (p: any) => {
-        setForm({ name: p.name, age: p.age, profile: p.profile })
+        setForm({ name: p.name, age: p.age.toString(), profile: p.profile || '' })
         setEditId(p.id)
         setShowForm(true)
     }
@@ -56,6 +56,14 @@ export default function Participants() {
             } else {
                 await participantsApi.create({ ...form, age: ageNum })
                 addToast('Participante registrado', 'success')
+                
+                // Programar el disparador automático del Copilot (IHC trigger)
+                window.dispatchEvent(new CustomEvent('copilot-trigger', {
+                    detail: {
+                        action: 'participant-saved',
+                        participantName: form.name
+                    }
+                }))
             }
             resetForm()
             fetchParticipants()
@@ -86,11 +94,11 @@ export default function Participants() {
     )
 
     return (
-        <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="page-container">
+            <div className="page-header">
                 <div>
-                    <h2 className="text-[22px] font-bold text-slate-900">Directorio de Participantes</h2>
-                    <p className="text-[13px] text-slate-500 mt-1">Registra y gestiona los participantes de las pruebas</p>
+                    <h2 className="page-header-title">Directorio de Participantes</h2>
+                    <p className="page-header-subtitle">Registra y gestiona los participantes de las pruebas</p>
                 </div>
                 <button
                     className="btn btn-primary"
@@ -101,13 +109,14 @@ export default function Participants() {
                 </button>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                 <input
                     type="text"
                     placeholder="Buscar por nombre o perfil..."
                     value={filter}
                     onChange={e => setFilter(e.target.value)}
-                    className="form-input max-w-sm"
+                    className="form-input"
+                    style={{ maxWidth: 384, width: '100%' }}
                     aria-label="Buscar participantes"
                 />
             </div>
@@ -119,9 +128,9 @@ export default function Participants() {
                 title={editId ? 'Editar Participante' : 'Nuevo Participante'}
                 maxWidth="480px"
             >
-                <form onSubmit={handleSubmit} className="p-5 space-y-4">
+                <form onSubmit={handleSubmit} className="form-layout" style={{ padding: 'var(--space-5)' }}>
                     <div>
-                        <label htmlFor="participantName" className="form-label">Nombre <span className="text-red-500">*</span></label>
+                        <label htmlFor="participantName" className="form-label">Nombre <span style={{ color: 'var(--color-error)' }}>*</span></label>
                         <input
                             id="participantName"
                             type="text"
@@ -133,7 +142,7 @@ export default function Participants() {
                         />
                     </div>
                     <div>
-                        <label htmlFor="participantAge" className="form-label">Edad <span className="text-red-500">*</span></label>
+                        <label htmlFor="participantAge" className="form-label">Edad <span style={{ color: 'var(--color-error)' }}>*</span></label>
                         <input
                             id="participantAge"
                             type="number"
@@ -157,7 +166,7 @@ export default function Participants() {
                             placeholder="Ej: Estudiante de ingeniería, usuario frecuente de apps móviles..."
                         />
                     </div>
-                    <div className="flex items-center gap-3 pt-3">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', paddingTop: 'var(--space-3)' }}>
                         <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
                             <Save size={16} aria-hidden="true" /> {isSubmitting ? 'Guardando...' : (editId ? 'Actualizar' : 'Guardar')}
                         </button>
@@ -169,44 +178,46 @@ export default function Participants() {
             </Modal>
 
             {loading ? (
-                <div className="flex justify-center py-12">
-                    <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+                <div className="dashboard-loader-container">
+                    <div className="dashboard-spinner" />
                 </div>
             ) : filtered.length === 0 ? (
-                <div className="bg-white rounded-2xl border-2 border-dashed border-slate-300 p-12 text-center">
-                    <Users size={40} className="text-slate-300 mx-auto" />
-                    <h3 className="mt-3 text-[15px] font-semibold text-slate-600">Sin participantes</h3>
-                    <p className="text-[13px] text-slate-400 mt-1">Registra participantes para asignarles sesiones de prueba</p>
+                <div className="empty-state-card">
+                    <Users size={40} className="empty-state-icon" aria-hidden="true" />
+                    <h3 className="empty-state-title">Sin participantes</h3>
+                    <p className="empty-state-subtitle">Registra participantes para asignarles sesiones de prueba</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="participants-grid">
                     {filtered.map((participant: any) => (
-                        <div key={participant.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col gap-3 animate-rise hover:shadow-md transition-shadow">
-                            <div className="flex items-start justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                        <div key={participant.id} className="participant-card">
+                            <div className="participant-card-header">
+                                <div className="participant-card-name-wrap">
+                                    <div className="participant-avatar">
                                         <User size={18} aria-hidden="true" />
                                     </div>
                                     <div>
-                                        <h3 className="text-[15px] font-semibold text-slate-900">{participant.name}</h3>
-                                        <p className="text-[12px] text-slate-500">{participant.age} años</p>
+                                        <h3 className="participant-card-title">{participant.name}</h3>
+                                        <p className="participant-card-subtitle">{participant.age} años</p>
                                     </div>
                                 </div>
                             </div>
-                            <div className="text-[13px] text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex-1">
+                            <div className="participant-profile-box">
                                 <strong>Perfil:</strong> {participant.profile || 'Sin especificar'}
                             </div>
-                            <div className="flex items-center gap-2 mt-auto pt-2 border-t border-slate-100">
+                            <div className="participant-card-footer">
                                 <button
                                     onClick={() => handleEdit(participant)}
-                                    className="btn btn-secondary text-[11px] py-1.5 px-3 flex-1 justify-center"
+                                    className="btn btn-secondary text-sm"
+                                    style={{ flex: 1, justifyContent: 'center', padding: 'var(--space-1.5) var(--space-3)' }}
                                     aria-label={`Editar participante ${participant.name}`}
                                 >
                                     Editar
                                 </button>
                                 <button
                                     onClick={() => setParticipantToDelete(participant)}
-                                    className="btn btn-danger text-[11px] py-1.5 px-3 flex-1 justify-center"
+                                    className="btn btn-danger text-sm"
+                                    style={{ flex: 1, justifyContent: 'center', padding: 'var(--space-1.5) var(--space-3)' }}
                                     aria-label={`Eliminar participante ${participant.name}`}
                                 >
                                     Eliminar
@@ -224,11 +235,11 @@ export default function Participants() {
                 title="Eliminar Participante"
                 maxWidth="480px"
             >
-                <div className="p-5 space-y-4">
-                    <p className="text-[14px] text-slate-600">
+                <div style={{ padding: 'var(--space-5)' }}>
+                    <p className="text-[14px]" style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-5)' }}>
                         ¿Estás seguro de que deseas eliminar al participante <strong>{participantToDelete?.name}</strong>? Esta acción no se puede deshacer.
                     </p>
-                    <div className="flex justify-end gap-3">
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
                         <button type="button" onClick={() => setParticipantToDelete(null)} className="btn btn-secondary">
                             Cancelar
                         </button>

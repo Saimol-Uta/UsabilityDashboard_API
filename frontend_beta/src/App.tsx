@@ -42,11 +42,9 @@ export default function App() {
   return (
     <PlanProvider>
       <ToastContext.Provider value={{ addToast }}>
-        {/* ACCESIBILIDAD: Skip link para navegación por teclado (WCAG 2.4.1) */}
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:bg-blue-700 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-semibold focus:shadow-lg"
-        >
+        {/* ACCESIBILIDAD: Skip link para navegación por teclado (WCAG 2.4.1)
+            Clase CSS nativa .skip-link — visible solo al recibir foco */}
+        <a href="#main-content" className="skip-link">
           Saltar al contenido principal
         </a>
 

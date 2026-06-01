@@ -56,5 +56,19 @@ namespace UsabilityDashboard_API.Controllers
                 return StatusCode(500, $"Error al guardar el backlog: {ex.Message}");
             }
         }
+
+        [HttpPost("chat")]
+        public async Task<IActionResult> Chat([FromBody] ChatRequestDto dto)
+        {
+            try
+            {
+                var reply = await _service.ChatAsync(dto.Prompt, dto.ActivePageName, dto.ContextJson);
+                return Ok(new { reply });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error en el asistente de IA: {ex.Message}");
+            }
+        }
     }
 }

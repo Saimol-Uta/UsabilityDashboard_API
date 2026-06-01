@@ -9,5 +9,6 @@ namespace Application.Interfaces
         Task<SprintBacklogDto?> GetByPlanIdAsync(Guid planId);
         Task<SprintBacklogDto> GenerateAsync(Guid planId, string? userApiKey);
         Task<SprintBacklogDto> SaveAsync(Guid planId, SaveSprintBacklogDto dto);
+        Task<string> ChatAsync(string prompt, string activePageName, string contextJson);
     }
 }

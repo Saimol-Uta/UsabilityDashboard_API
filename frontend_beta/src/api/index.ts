@@ -92,6 +92,7 @@ export const sprintBacklogApi = {
     getByPlan: (planId: Guid) => api.get(`/SprintBacklog/by-plan/${planId}`),
     generate: (data: { testPlanId: Guid; userApiKey?: string }) => api.post('/SprintBacklog/generate', data),
     save: (planId: Guid, data: { sprintName: string; sprintGoal: string; contentJson: string; rawMarkdown: string }) => api.post(`/SprintBacklog/save/${planId}`, data),
+    chat: (data: { prompt: string; activePageName: string; contextJson: string }) => api.post('/SprintBacklog/chat', data),
 };
 
 export default api;
