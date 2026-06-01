@@ -4,7 +4,7 @@ import { useToast } from '../App'
 import { usePlan } from '../context/PlanContext'
 import { extractErrorMessage } from '../hooks/useApiError'
 import Modal from '../components/Modal'
-import { Plus, Save, Trash2, Search, AlertCircle, AlertTriangle, ArrowRight, Filter, XCircle, CheckCircle2 } from 'lucide-react'
+import { Plus, Save, Trash2, Search, AlertCircle, AlertTriangle, ArrowRight, Filter, XCircle, CheckCircle2, Sparkles } from 'lucide-react'
 
 export default function Findings() {
     const [findings, setFindings] = useState<any[]>([])
@@ -37,6 +37,16 @@ export default function Findings() {
             setFindings([])
             setLoading(false)
         }
+    }, [activePlanId])
+
+    useEffect(() => {
+        const handleFindingsUpdate = () => {
+            if (activePlanId) {
+                fetchFindings(activePlanId)
+            }
+        }
+        window.addEventListener('findings-updated', handleFindingsUpdate)
+        return () => window.removeEventListener('findings-updated', handleFindingsUpdate)
     }, [activePlanId])
 
     const resetForm = () => {
@@ -121,12 +131,34 @@ export default function Findings() {
                     <h2 className="page-header-title">Síntesis de Hallazgos</h2>
                     <p className="page-header-subtitle">Problemas de usabilidad detectados con frecuencia, severidad y recomendaciones</p>
                 </div>
-                <button onClick={() => { setEditId(null); setForm({ ...emptyForm, testPlanId: activePlanId }); setShowForm(true) }}
-                    className="btn btn-primary"
-                    disabled={!activePlanId || isReadOnly}
-                    aria-label="Nuevo Hallazgo">
-                    <Plus size={18} aria-hidden="true" /> Nuevo Hallazgo
-                </button>
+                <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                    <button
+                        onClick={() => {
+                            window.dispatchEvent(new CustomEvent('copilot-trigger', {
+                                detail: {
+                                    action: 'suggest-findings',
+                                    projectName: activePlan?.projectName,
+                                    product: activePlan?.product,
+                                    evaluatedModule: activePlan?.evaluatedModule,
+                                    objective: activePlan?.objective
+                                }
+                            }))
+                        }}
+                        disabled={!activePlanId || isReadOnly}
+                        className="btn btn-secondary"
+                        style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}
+                        aria-label="Sugerir hallazgos con IA"
+                    >
+                        <Sparkles size={16} aria-hidden="true" style={{ color: 'var(--color-primary)' }} /> Sugerir hallazgos con IA
+                    </button>
+
+                    <button onClick={() => { setEditId(null); setForm({ ...emptyForm, testPlanId: activePlanId }); setShowForm(true) }}
+                        className="btn btn-primary"
+                        disabled={!activePlanId || isReadOnly}
+                        aria-label="Nuevo Hallazgo">
+                        <Plus size={18} aria-hidden="true" /> Nuevo Hallazgo
+                    </button>
+                </div>
             </div>
 
             {/* GLB-04: Read-only banner */}

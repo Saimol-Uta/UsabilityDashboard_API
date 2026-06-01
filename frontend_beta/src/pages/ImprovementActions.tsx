@@ -4,7 +4,7 @@ import { useToast } from '../App'
 import { usePlan } from '../context/PlanContext'
 import { extractErrorMessage } from '../hooks/useApiError'
 import Modal from '../components/Modal'
-import { Plus, Save, Trash2, Lightbulb, CheckCircle2, Clock, Circle, AlertTriangle, AlertCircle } from 'lucide-react'
+import { Plus, Save, Trash2, Lightbulb, CheckCircle2, Clock, Circle, AlertTriangle, AlertCircle, Sparkles } from 'lucide-react'
 
 const statusConfig: Record<string, { label: string; badge: string; icon: typeof CheckCircle2 }> = {
     Closed: { label: 'Cerrada', badge: 'badge-completada', icon: CheckCircle2 },
@@ -82,6 +82,16 @@ export default function ImprovementActions() {
 
     useEffect(() => {
         fetchData(activePlanId)
+    }, [activePlanId])
+
+    useEffect(() => {
+        const handleImprovementsUpdate = () => {
+            if (activePlanId) {
+                fetchData(activePlanId)
+            }
+        }
+        window.addEventListener('improvements-updated', handleImprovementsUpdate)
+        return () => window.removeEventListener('improvements-updated', handleImprovementsUpdate)
     }, [activePlanId])
 
     const resetForm = () => {
@@ -173,14 +183,36 @@ export default function ImprovementActions() {
                     <h2 className="page-header-title">Acciones de Mejora</h2>
                     <p className="page-header-subtitle">Seguimiento de las acciones correctivas derivadas de los hallazgos</p>
                 </div>
-                <button
-                    className="btn btn-primary"
-                    onClick={() => { setEditId(null); setForm({ ...emptyForm, findingId: findingsList[0]?.id ?? '' }); setShowForm(true) }}
-                    disabled={!activePlanId || isReadOnly || findingsList.length === 0}
-                    aria-label="Nueva Acción de Mejora"
-                >
-                    <Plus size={18} aria-hidden="true" /> Nueva Acción
-                </button>
+                <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                    <button
+                        onClick={() => {
+                            window.dispatchEvent(new CustomEvent('copilot-trigger', {
+                                detail: {
+                                    action: 'suggest-improvements',
+                                    projectName: activePlan?.projectName,
+                                    product: activePlan?.product,
+                                    evaluatedModule: activePlan?.evaluatedModule,
+                                    objective: activePlan?.objective
+                                }
+                            }))
+                        }}
+                        disabled={!activePlanId || isReadOnly}
+                        className="btn btn-secondary"
+                        style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}
+                        aria-label="Sugerir mejoras con IA"
+                    >
+                        <Sparkles size={16} aria-hidden="true" style={{ color: 'var(--color-primary)' }} /> Sugerir mejoras con IA
+                    </button>
+
+                    <button
+                        className="btn btn-primary"
+                        onClick={() => { setEditId(null); setForm({ ...emptyForm, findingId: findingsList[0]?.id ?? '' }); setShowForm(true) }}
+                        disabled={!activePlanId || isReadOnly || findingsList.length === 0}
+                        aria-label="Nueva Acción de Mejora"
+                    >
+                        <Plus size={18} aria-hidden="true" /> Nueva Acción
+                    </button>
+                </div>
             </div>
 
             {/* GLB-04: Read-only banner */}

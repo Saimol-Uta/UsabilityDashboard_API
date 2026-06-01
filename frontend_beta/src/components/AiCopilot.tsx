@@ -8,7 +8,8 @@ import { usePlan } from '../context/PlanContext'
 import { useToast } from '../App'
 import {
     findingsApi, testSessionsApi, moderatorScriptsApi,
-    sprintBacklogApi, testTasksApi, observationLogsApi
+    sprintBacklogApi, testTasksApi, observationLogsApi,
+    improvementActionsApi
 } from '../api'
 
 interface ChatMessage {
@@ -32,6 +33,9 @@ export default function AiCopilot() {
     const [loading, setLoading] = useState(false)
 
     const [selectedTasksState, setSelectedTasksState] = useState<Record<string, boolean>>({})
+    const [selectedFindingsState, setSelectedFindingsState] = useState<Record<string, boolean>>({})
+    const [selectedImprovementsState, setSelectedImprovementsState] = useState<Record<string, boolean>>({})
+    const [findingsList, setFindingsList] = useState<any[]>([])
 
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -143,6 +147,248 @@ Presentación amigable con tips ergonómicos para el test.
                 } finally {
                     setLoading(false)
                 }
+            } else if (detail.action === 'suggest-findings') {
+                if (!activePlanId) return
+                setLoading(true)
+
+                setMessages(prev => [
+                    ...prev,
+                    {
+                        id: Date.now() - 1,
+                        sender: 'user',
+                        text: '✨ Sugerir hallazgos de usabilidad con Inteligencia Artificial'
+                    }
+                ])
+
+                try {
+                    // Fetch observations client-side first
+                    const [sessionsRes, observationLogsRes] = await Promise.all([
+                        testSessionsApi.getAll(activePlanId).catch(() => ({ data: [] })),
+                        observationLogsApi.getAll().catch(() => ({ data: [] }))
+                    ])
+                    const sessions = sessionsRes.data || []
+                    const sessionIds = new Set(sessions.map((s: any) => s.id))
+                    const relevantLogs = (observationLogsRes.data || []).filter((log: any) => sessionIds.has(log.testSessionId))
+
+                    if (relevantLogs.length === 0) {
+                        setMessages(prev => [
+                            ...prev,
+                            {
+                                id: Date.now(),
+                                sender: 'ai',
+                                text: '⚠️ **Copiloto de Usabilidad:** No hay observaciones u incidentes registrados en las sesiones de los participantes para este plan de pruebas. Por favor, realiza la fase de ejecución de pruebas y registra observaciones primero para poder sugerir hallazgos de usabilidad.'
+                            }
+                        ])
+                        setLoading(false)
+                        return
+                    }
+
+                    const prompt = `Actúa como un experto en interacción humano-computador, diseño centrado en el usuario y accesibilidad.
+Analiza las siguientes observaciones y registros de incidentes recopilados durante las sesiones con participantes para el producto "${detail.projectName || activePlan?.projectName || 'N/A'}" (${detail.product || activePlan?.product || 'N/A'}):
+
+Observaciones / Incidentes registrados:
+${JSON.stringify(relevantLogs.map((log: any) => ({
+    tarea: log.taskScenario || `Tarea ${log.testTaskId}`,
+    severidad: log.severity,
+    dificultadDetectada: log.problemDetected,
+    mejoraPropuesta: log.proposedImprovement,
+    exitoso: log.completedSuccessfully ? "Sí" : "No"
+})), null, 2)}
+
+Sugiere exactamente hasta 3 hallazgos (findings) de usabilidad y accesibilidad realistas y críticos basados en estas observaciones.
+Para cada hallazgo, define:
+- description: Descripción clara y concisa del problema de usabilidad.
+- severity: Severidad del hallazgo (debe ser uno de: "Critical", "High", "Medium", "Low").
+- priority: Prioridad de corrección (debe ser uno de: "High", "Medium", "Low").
+- category: Categoría del problema (ej. "Formularios", "Navegación", "Diseño Visual", "Accesibilidad").
+- tool: Herramienta o método de detección (debe ser uno de: "WAVE", "Lighthouse", "Stark", "WAVE + Lighthouse", "Observación manual").
+- frequency: Frecuencia de aparición (ej. "2 de 3 participantes" o "66%").
+- recommendation: Recomendación ergonómica detallada y específica de Interacción Humano-Computador (IHC) para solucionar el problema.
+
+Debes responder amigablemente y incluir estrictamente un bloque [FINDING_ACTION] conteniendo únicamente un JSON con el array de hallazgos sugeridos para que el usuario pueda insertarlos con un solo clic.
+
+ESTRUCTURA DE RESPUESTA EXIGIDA:
+Breve introducción amigable y análisis ergonómico sintético.
+[FINDING_ACTION]
+{
+  "findings": [
+    {
+      "description": "[Descripción clara]",
+      "severity": "Critical",
+      "priority": "High",
+      "category": "Navegación",
+      "tool": "Observación manual",
+      "frequency": "2/3",
+      "recommendation": "[Recomendación IHC detallada]"
+    }
+  ]
+}
+[/FINDING_ACTION]
+`;
+
+                    const aiRawReply = await queryGemini(prompt, { action: 'suggest-findings' })
+
+                    let cleanText = aiRawReply
+                    let isAction = false
+                    let actionData = undefined
+
+                    if (aiRawReply.includes('[FINDING_ACTION]')) {
+                        const parts = aiRawReply.split('[FINDING_ACTION]')
+                        cleanText = parts[0]
+                        const actionPart = parts[1].split('[/FINDING_ACTION]')[0]
+                        try {
+                            actionData = JSON.parse(actionPart.trim())
+                            isAction = true
+                        } catch (err) {
+                            console.error('Error parsing suggest findings action JSON:', err)
+                        }
+                    }
+
+                    setMessages(prev => [
+                        ...prev,
+                        {
+                            id: Date.now(),
+                            sender: 'ai',
+                            text: cleanText,
+                            isAction,
+                            actionData
+                        }
+                    ])
+                } catch (err: any) {
+                    setMessages(prev => [
+                        ...prev,
+                        {
+                            id: Date.now(),
+                            sender: 'ai',
+                            text: `❌ **Error al sugerir hallazgos:** ${err.message || 'No se pudo conectar con el servidor de IA.'}`
+                        }
+                    ])
+                } finally {
+                    setLoading(false)
+                }
+            } else if (detail.action === 'suggest-improvements') {
+                if (!activePlanId) return
+                setLoading(true)
+
+                setMessages(prev => [
+                    ...prev,
+                    {
+                        id: Date.now() - 1,
+                        sender: 'user',
+                        text: '✨ Sugerir acciones de mejora ergonómicas con IA'
+                    }
+                ])
+
+                try {
+                    // Fetch findings list first
+                    const findingsRes = await findingsApi.getByPlan(activePlanId)
+                    const findingsListFetched = findingsRes.data || []
+                    setFindingsList(findingsListFetched)
+
+                    if (findingsListFetched.length === 0) {
+                        setMessages(prev => [
+                            ...prev,
+                            {
+                                id: Date.now(),
+                                sender: 'ai',
+                                text: '⚠️ **Copiloto de Usabilidad:** No hay hallazgos sintetizados en este plan. Registra al menos un hallazgo de usabilidad primero para que la IA pueda sugerir las acciones de mejora correspondientes.'
+                            }
+                        ])
+                        setLoading(false)
+                        return
+                    }
+
+                    const prompt = `Actúa como un experto en interacción humano-computador, ingeniería de usabilidad y optimización de software.
+Analiza los siguientes hallazgos sintetizados para el plan de prueba "${detail.projectName || activePlan?.projectName || 'N/A'}" (${detail.product || activePlan?.product || 'N/A'}):
+
+Hallazgos sintetizados:
+${JSON.stringify(findingsListFetched.map((f: any) => ({
+    id: f.id,
+    description: f.description,
+    severity: f.severity,
+    priority: f.priority,
+    category: f.category,
+    recommendation: f.recommendation
+})), null, 2)}
+
+Sugiere exactamente una acción de mejora priorizada y de alto impacto ergonómico para cada uno de los hallazgos anteriores.
+Para cada acción de mejora, define:
+- findingId: El ID del hallazgo correspondiente (¡debe coincidir exactamente con el ID provisto!).
+- description: Descripción clara, accionable y técnica de la mejora propuesta.
+- priority: Prioridad (debe ser uno de: "High", "Medium", "Low").
+
+Debes responder amigablemente y incluir estrictamente un bloque [IMPROVEMENT_ACTION] conteniendo únicamente un JSON con el array de acciones de mejora sugeridas para que el usuario pueda insertarlas con un solo clic.
+
+ESTRUCTURA DE RESPUESTA EXIGIDA:
+Breve explicación ergonómica de las mejoras.
+[IMPROVEMENT_ACTION]
+{
+  "improvements": [
+    {
+      "findingId": "[ID_DEL_HALLAZGO]",
+      "description": "[Descripción técnica y accionable]",
+      "priority": "High"
+    }
+  ]
+}
+[/IMPROVEMENT_ACTION]
+`;
+
+                    const aiRawReply = await queryGemini(prompt, { action: 'suggest-improvements' })
+
+                    let cleanText = aiRawReply
+                    let isAction = false
+                    let actionData = undefined
+
+                    if (aiRawReply.includes('[IMPROVEMENT_ACTION]')) {
+                        const parts = aiRawReply.split('[IMPROVEMENT_ACTION]')
+                        cleanText = parts[0]
+                        const actionPart = parts[1].split('[/IMPROVEMENT_ACTION]')[0]
+                        try {
+                            actionData = JSON.parse(actionPart.trim())
+                            isAction = true
+                            if (actionData && Array.isArray(actionData.improvements)) {
+                                actionData.improvements = actionData.improvements.map((imp: any, idx: number) => {
+                                    let realFindingId = imp.findingId;
+                                    const isValidGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(realFindingId);
+                                    const existsInList = findingsListFetched.some((f: any) => f.id === realFindingId);
+                                    if (!isValidGuid || !existsInList) {
+                                        const matchedFinding = findingsListFetched[idx % findingsListFetched.length];
+                                        realFindingId = matchedFinding?.id;
+                                    }
+                                    return {
+                                        ...imp,
+                                        findingId: realFindingId
+                                    };
+                                });
+                            }
+                        } catch (err) {
+                            console.error('Error parsing suggest improvements action JSON:', err)
+                        }
+                    }
+
+                    setMessages(prev => [
+                        ...prev,
+                        {
+                            id: Date.now(),
+                            sender: 'ai',
+                            text: cleanText,
+                            isAction,
+                            actionData
+                        }
+                    ])
+                } catch (err: any) {
+                    setMessages(prev => [
+                        ...prev,
+                        {
+                            id: Date.now(),
+                            sender: 'ai',
+                            text: `❌ **Error al sugerir acciones de mejora:** ${err.message || 'No se pudo conectar con el servidor de IA.'}`
+                        }
+                    ])
+                } finally {
+                    setLoading(false)
+                }
             } else if (detail.action === 'participant-saved') {
                 setMessages(prev => [
                     ...prev,
@@ -204,6 +450,99 @@ Presentación amigable con tips ergonómicos para el test.
         } catch (err) {
             console.error(err)
             addToast('Error al agregar tareas al plan', 'error')
+        }
+    }
+
+    const handleInsertFindings = async (msgId: number, findings: any[]) => {
+        if (!activePlanId) return
+
+        try {
+            addToast('Agregando hallazgos seleccionados al plan...', 'success')
+            
+            const selected = findings.filter((_, idx) => {
+                const uniqueKey = `finding-sug-${msgId}-${idx}`
+                return selectedFindingsState[uniqueKey] !== false // Default is checked
+            })
+
+            if (selected.length === 0) {
+                addToast('No seleccionaste ningún hallazgo', 'error')
+                return
+            }
+
+            await Promise.all(selected.map(f => {
+                return findingsApi.create({
+                    testPlanId: activePlanId,
+                    description: f.description,
+                    frequency: f.frequency || 'N/A',
+                    severity: f.severity || 'Medium',
+                    priority: f.priority || 'Medium',
+                    recommendation: f.recommendation || '',
+                    category: f.category || 'General',
+                    tool: f.tool || 'Observación manual',
+                    status: 'Open'
+                })
+            }))
+
+            setMessages(prev => prev.map(m => m.id === msgId ? { ...m, inserted: true } : m))
+            addToast(`¡${selected.length} hallazgo(s) agregado(s) con éxito!`, 'success')
+            
+            window.dispatchEvent(new CustomEvent('findings-updated'))
+            refreshGates()
+        } catch (err) {
+            console.error(err)
+            addToast('Error al agregar hallazgos al plan', 'error')
+        }
+    }
+
+    const handleInsertImprovements = async (msgId: number, improvements: any[]) => {
+        if (!activePlanId) return
+
+        try {
+            addToast('Agregando acciones de mejora al plan...', 'success')
+            
+            const selected = improvements.filter((_, idx) => {
+                const uniqueKey = `improvement-sug-${msgId}-${idx}`
+                return selectedImprovementsState[uniqueKey] !== false // Default is checked
+            })
+
+            if (selected.length === 0) {
+                addToast('No seleccionaste ninguna acción de mejora', 'error')
+                return
+            }
+
+            // Fetch latest findings list from database to resolve GUIDs reliably
+            const findingsRes = await findingsApi.getByPlan(activePlanId)
+            const currentFindings = findingsRes.data || []
+
+            await Promise.all(selected.map((imp, idx) => {
+                let realFindingId = imp.findingId;
+                const isValidGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(realFindingId);
+                const existsInList = currentFindings.some((f: any) => f.id === realFindingId);
+                
+                if (!isValidGuid || !existsInList) {
+                    const matchedFinding = currentFindings[idx % currentFindings.length];
+                    realFindingId = matchedFinding?.id;
+                }
+
+                if (!realFindingId) {
+                    throw new Error('No se pudo encontrar un hallazgo asociado para esta acción.');
+                }
+
+                return improvementActionsApi.create({
+                    findingId: realFindingId,
+                    description: imp.description,
+                    priority: imp.priority || 'Medium'
+                })
+            }))
+
+            setMessages(prev => prev.map(m => m.id === msgId ? { ...m, inserted: true } : m))
+            addToast(`¡${selected.length} acción(es) de mejora agregada(s) con éxito!`, 'success')
+            
+            window.dispatchEvent(new CustomEvent('improvements-updated'))
+            refreshGates()
+        } catch (err) {
+            console.error(err)
+            addToast('Error al agregar acciones de mejora al plan', 'error')
         }
     }
 
@@ -443,6 +782,36 @@ Presentación amigable con tips ergonómicos para el test.
                     isAction = true
                 } catch (e) {
                     console.error('Error parsing backlog action JSON:', e)
+                }
+            } else if (aiRawText.includes('[TASK_ACTION]')) {
+                const parts = aiRawText.split('[TASK_ACTION]')
+                cleanText = parts[0]
+                const actionPart = parts[1].split('[/TASK_ACTION]')[0]
+                try {
+                    actionData = JSON.parse(actionPart.trim())
+                    isAction = true
+                } catch (err) {
+                    console.error('Error parsing task action JSON:', err)
+                }
+            } else if (aiRawText.includes('[FINDING_ACTION]')) {
+                const parts = aiRawText.split('[FINDING_ACTION]')
+                cleanText = parts[0]
+                const actionPart = parts[1].split('[/FINDING_ACTION]')[0]
+                try {
+                    actionData = JSON.parse(actionPart.trim())
+                    isAction = true
+                } catch (err) {
+                    console.error('Error parsing finding action JSON:', err)
+                }
+            } else if (aiRawText.includes('[IMPROVEMENT_ACTION]')) {
+                const parts = aiRawText.split('[IMPROVEMENT_ACTION]')
+                cleanText = parts[0]
+                const actionPart = parts[1].split('[/IMPROVEMENT_ACTION]')[0]
+                try {
+                    actionData = JSON.parse(actionPart.trim())
+                    isAction = true
+                } catch (err) {
+                    console.error('Error parsing improvement action JSON:', err)
                 }
             }
 
@@ -725,6 +1094,117 @@ Presentación amigable con tips ergonómicos para el test.
                                                     >
                                                         <PlusCircle size={12} />
                                                         <span>Agregar Tareas Seleccionadas</span>
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Actionable checkbox findings suggestion block */}
+                                    {msg.isAction && msg.actionData?.findings && (
+                                        <div style={{ marginTop: 'var(--space-3)', background: 'rgba(255,255,255,0.05)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                            {msg.inserted ? (
+                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#10b981', fontWeight: 'bold' }}>
+                                                    <CheckCircle2 size={12} />
+                                                    <span>¡Hallazgos agregados exitosamente!</span>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <p style={{ fontSize: '11px', color: 'var(--neutral-300)', marginBottom: 'var(--space-2)', fontWeight: 'var(--font-weight-semibold)' }}>Selecciona los hallazgos que deseas sintetizar:</p>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                                                        {msg.actionData.findings.map((finding: any, idx: number) => {
+                                                            const uniqueKey = `finding-sug-${msg.id}-${idx}`
+                                                            const isChecked = selectedFindingsState[uniqueKey] !== false
+                                                            return (
+                                                                <label key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)', fontSize: '11px', color: 'white', cursor: 'pointer' }}>
+                                                                    <input 
+                                                                        type="checkbox" 
+                                                                        checked={isChecked}
+                                                                        onChange={(e) => {
+                                                                            setSelectedFindingsState(prev => ({
+                                                                                ...prev,
+                                                                                [uniqueKey]: e.target.checked
+                                                                            }))
+                                                                        }}
+                                                                        style={{ marginTop: '3px', cursor: 'pointer' }}
+                                                                    />
+                                                                    <div style={{ flex: 1 }}>
+                                                                        <strong>H{idx+1}: {finding.description}</strong>
+                                                                        <div style={{ color: 'var(--neutral-400)', fontSize: '10px', marginTop: '1px' }}>
+                                                                            ⚠️ {finding.severity === 'Critical' ? 'Crítica' : finding.severity === 'High' ? 'Alta' : finding.severity === 'Medium' ? 'Media' : 'Baja'} | 🏷️ {finding.category} | ⏱️ Frecuencia: {finding.frequency}
+                                                                        </div>
+                                                                        <div style={{ color: '#93c5fd', fontSize: '10px', marginTop: '2px', fontStyle: 'italic' }}>
+                                                                            💡 Recomendación: {finding.recommendation}
+                                                                        </div>
+                                                                    </div>
+                                                                </label>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleInsertFindings(msg.id, msg.actionData.findings)}
+                                                        className="copilot-msg-insert-btn"
+                                                        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-1)' }}
+                                                    >
+                                                        <PlusCircle size={12} />
+                                                        <span>Sintetizar Hallazgos Seleccionados</span>
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Actionable checkbox improvements suggestion block */}
+                                    {msg.isAction && msg.actionData?.improvements && (
+                                        <div style={{ marginTop: 'var(--space-3)', background: 'rgba(255,255,255,0.05)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                            {msg.inserted ? (
+                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#10b981', fontWeight: 'bold' }}>
+                                                    <CheckCircle2 size={12} />
+                                                    <span>¡Acciones de mejora agregadas exitosamente!</span>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <p style={{ fontSize: '11px', color: 'var(--neutral-300)', marginBottom: 'var(--space-2)', fontWeight: 'var(--font-weight-semibold)' }}>Selecciona las acciones de mejora que deseas registrar:</p>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                                                        {msg.actionData.improvements.map((imp: any, idx: number) => {
+                                                            const uniqueKey = `improvement-sug-${msg.id}-${idx}`
+                                                            const isChecked = selectedImprovementsState[uniqueKey] !== false
+                                                            const associatedFinding = findingsList.find((f: any) => f.id === imp.findingId);
+                                                            return (
+                                                                <label key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)', fontSize: '11px', color: 'white', cursor: 'pointer' }}>
+                                                                    <input 
+                                                                        type="checkbox" 
+                                                                        checked={isChecked}
+                                                                        onChange={(e) => {
+                                                                            setSelectedImprovementsState(prev => ({
+                                                                                ...prev,
+                                                                                [uniqueKey]: e.target.checked
+                                                                            }))
+                                                                        }}
+                                                                        style={{ marginTop: '3px', cursor: 'pointer' }}
+                                                                    />
+                                                                    <div style={{ flex: 1 }}>
+                                                                        <strong>M{idx+1}: {imp.description}</strong>
+                                                                        <div style={{ color: 'var(--neutral-400)', fontSize: '10px', marginTop: '1px' }}>
+                                                                            Prioridad: {imp.priority === 'High' ? 'Alta' : imp.priority === 'Medium' ? 'Media' : 'Baja'}
+                                                                        </div>
+                                                                        {associatedFinding && (
+                                                                            <div style={{ color: 'var(--neutral-500)', fontSize: '10px', marginTop: '2px' }}>
+                                                                                🔍 Hallazgo: {associatedFinding.description.substring(0, 60)}...
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </label>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleInsertImprovements(msg.id, msg.actionData.improvements)}
+                                                        className="copilot-msg-insert-btn"
+                                                        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-1)' }}
+                                                    >
+                                                        <PlusCircle size={12} />
+                                                        <span>Registrar Mejoras Seleccionadas</span>
                                                     </button>
                                                 </>
                                             )}
