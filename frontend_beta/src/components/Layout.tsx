@@ -97,6 +97,9 @@ export default function Layout() {
 
     return (
         <div className="layout-shell">
+            {/* ACCESIBILIDAD: Skip Link (WCAG 2.4.1) */}
+            <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
+
             {/* ── Header ── */}
             <header className="layout-header glass-panel" role="banner">
                 <div className="layout-header-bar">

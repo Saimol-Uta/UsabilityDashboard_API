@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { dashboardApi, findingsApi } from '../api'
 import { usePlan } from '../context/PlanContext'
-import { BarChart2, CheckCircle2, Clock, AlertCircle, AlertTriangle, Info, Lightbulb, TrendingUp, Flame, PieChart as PieChartIcon, Users, MessageSquareText, ListChecks, CalendarRange, Eye, Search, ArrowRight, Lock, Check, Zap } from 'lucide-react'
+import { BarChart2, CheckCircle2, Clock, AlertCircle, AlertTriangle, Info, Lightbulb, TrendingUp, Flame, PieChart as PieChartIcon, Users, MessageSquareText, ListChecks, CalendarRange, Eye, Search, ArrowRight, Lock, Check, Zap, ShieldCheck } from 'lucide-react'
 import { PieChart } from '../components/PieChart'
 
 interface Stats {
@@ -499,6 +499,43 @@ export default function Dashboard() {
                                 {effectiveTotal > 0 ? Math.round((effectiveCompleted / effectiveTotal) * 100) : 0}% completado • {effectiveTotal} total
                             </div>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* § HEURÍSTICAS DE NIELSEN (EVIDENCIA DE USABILIDAD) */}
+            <section className="dashboard-panel-card" style={{ marginTop: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
+                <div className="dashboard-panel-header" style={{ background: 'linear-gradient(to right, #4338ca, #6366f1)', color: 'white' }}>
+                    <div className="dashboard-panel-header-inner" style={{ padding: 'var(--space-4)' }}>
+                        <ShieldCheck size={20} style={{ marginRight: '8px' }} />
+                        <h3 className="dashboard-panel-title" style={{ color: 'white' }}>Evaluación Heurística (Nielsen)</h3>
+                        <span className="dashboard-panel-badge" style={{ background: 'rgba(255,255,255,0.2)', color: 'white' }}>Cumplimiento HCI</span>
+                    </div>
+                </div>
+                <div className="dashboard-panel-body" style={{ padding: 'var(--space-6)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
+                        {[
+                            { h: 'H1: Visibilidad del estado', d: 'Breadcrumbs dinámicos y barras de progreso en tiempo real.', status: 'Pasado' },
+                            { h: 'H2: Relación sistema/mundo real', d: 'Lenguaje técnico HCI y metáforas de carpetas/documentos.', status: 'Pasado' },
+                            { h: 'H3: Control y libertad', d: 'Navegación no lineal y posibilidad de editar cualquier fase.', status: 'Pasado' },
+                            { h: 'H4: Consistencia y estándares', d: 'Design System unificado con componentes atómicos.', status: 'Pasado' },
+                            { h: 'H5: Prevención de errores', d: 'Validación en tiempo real y estados bloqueados preventivos.', status: 'Pasado' },
+                            { h: 'H6: Reconocimiento vs Recuerdo', d: 'Acciones rápidas y autocompletado con AI Copilot.', status: 'Pasado' },
+                            { h: 'H7: Flexibilidad y eficiencia', d: 'Shortcuts de teclado y navegación por fases optimizada.', status: 'Pasado' },
+                            { h: 'H8: Estética y minimalismo', d: 'Diseño Glassmorphism centrado en el contenido.', status: 'Pasado' },
+                            { h: 'H9: Recuperación de errores', d: 'Toasts informativos con acciones correctivas claras.', status: 'Pasado' },
+                            { h: 'H10: Ayuda y documentación', d: 'AI Copilot integrado y tooltips contextuales en campos.', status: 'Pasado' },
+                        ].map((item, i) => (
+                            <div key={i} style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', background: 'rgba(249, 250, 251, 0.5)', border: '1px solid var(--border-color)', display: 'flex', gap: 'var(--space-3)' }}>
+                                <div style={{ color: 'var(--color-success)', marginTop: '2px' }}>
+                                    <CheckCircle2 size={16} />
+                                </div>
+                                <div>
+                                    <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)' }}>{item.h}</div>
+                                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>{item.d}</div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </section>

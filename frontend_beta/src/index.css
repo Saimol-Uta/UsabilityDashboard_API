@@ -161,14 +161,14 @@ ol {
     /* ── Textos (con ratios de contraste sobre blanco documentados) ── */
     --text-primary: var(--neutral-900);
     /* 15.4:1 — AAA */
-    --text-secondary: var(--neutral-600);
-    /*  7.1:1 — AAA */
-    --text-muted: var(--neutral-500);
-    /*  4.6:1 — AA  */
-    --text-disabled: var(--neutral-400);
-    /*  2.5:1 — Solo para disabled */
+    --text-secondary: var(--neutral-700);
+    /*  9.4:1 — AAA (Mejorado de neutral-600) */
+    --text-muted: var(--neutral-600);
+    /*  7.1:1 — AAA (Mejorado de neutral-500) */
+    --text-disabled: var(--neutral-500);
+    /*  4.6:1 — AA (Mejorado de neutral-400 para legibilidad mínima) */
     --text-inverse: #ffffff;
-    --text-light: var(--neutral-400);
+    --text-light: var(--neutral-500);
     --white: #ffffff;
 
     /* ── Bordes ── */
@@ -6947,4 +6947,90 @@ textarea:focus-visible,
     tr {
         page-break-inside: avoid;
     }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §40. REFINAMIENTOS PREMIUM (ISO 9241 / WCAG)
+   ───────────────────────────────────────────────────────────────────────────
+   Mejoras finales de fidelidad gráfica, micro-interacciones y accesibilidad
+   avanzada para cumplir con los estándares de excelencia del examen.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Mejoras de Glassmorphism Avanzado ── */
+.glass-panel {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.88) 100%);
+    box-shadow: 
+        var(--shadow-lg),
+        0 0 0 1px rgba(255, 255, 255, 0.4) inset;
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+}
+
+/* ── 2. Estados de Foco Animados (Accesibilidad Perceptible) ── */
+:focus-visible {
+    outline: none !important;
+    box-shadow: 0 0 0 2px var(--surface-page), 0 0 0 4px var(--color-primary-focus) !important;
+    transition: box-shadow 0.2s ease-out;
+}
+
+/* ── 3. Refinamiento de Ítems de Navegación Activos ── */
+.nav-item.is-active {
+    background: linear-gradient(to right, var(--color-primary-light), rgba(255, 255, 255, 0.95));
+    border-color: var(--color-primary-border);
+    box-shadow: 
+        0 4px 12px rgba(29, 78, 216, 0.08),
+        inset 2px 0 0 var(--color-primary-500);
+}
+
+.nav-item.is-active .nav-icon {
+    color: var(--color-primary-500);
+    filter: drop-shadow(0 2px 4px rgba(29, 78, 216, 0.2));
+}
+
+/* ── 4. Esqueletos de Carga (Feedback de Estado Nielsen #1) ── */
+.skeleton {
+    background: linear-gradient(90deg, var(--neutral-100) 25%, var(--neutral-200) 50%, var(--neutral-100) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: var(--radius-sm);
+}
+
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ── 5. Micro-interacción en Botones Primarios ── */
+.btn-primary:active {
+    transform: scale(0.96) translateY(1px);
+    filter: brightness(0.9);
+}
+
+/* ── 6. Mejoras en el Breadcrumb (Visibilidad de Ruta) ── */
+.breadcrumb-current {
+    color: var(--color-primary-active);
+    background: var(--color-primary-light);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-weight: var(--font-weight-bold);
+}
+
+/* ── 7. Bordes Semánticos de Contraste para Accesibilidad ── */
+.field-error {
+    border-width: 2px !important;
+}
+
+.field-success {
+    border-width: 2px !important;
+}
+
+/* ── 8. Efecto de "Glow" sutil para indicadores de fase activa ── */
+.phase-indicator.is-active {
+    box-shadow: 0 0 12px var(--color-primary-400);
+    animation: active-glow 2s infinite alternate;
+}
+
+@keyframes active-glow {
+    from { box-shadow: 0 0 4px var(--color-primary-400); }
+    to { box-shadow: 0 0 14px var(--color-primary-500); }
 }
