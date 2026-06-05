@@ -1895,6 +1895,8 @@ textarea:focus-visible,
     overflow-y: auto;
     padding: var(--space-4);
     background: rgba(248, 250, 252, 0.3);
+    display: flex;
+    flex-direction: column;
 }
 
 
@@ -2861,6 +2863,7 @@ textarea:focus-visible,
     display: flex;
     flex-direction: column;
     gap: var(--space-6);
+    min-height: 100%;
 }
 
 .page-header {
@@ -5327,7 +5330,7 @@ textarea:focus-visible,
 .sprint-def-title {
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-bold);
-    color: var(--text-light);
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: var(--space-4);
@@ -5489,7 +5492,7 @@ textarea:focus-visible,
     font-weight: var(--font-weight-bold);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--text-light);
+    color: var(--text-secondary);
 }
 
 .sprint-priority-select {
@@ -5533,7 +5536,7 @@ textarea:focus-visible,
     font-weight: var(--font-weight-bold);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--text-light);
+    color: var(--text-secondary);
 }
 
 .sprint-story-desc-textarea {
@@ -5607,7 +5610,7 @@ textarea:focus-visible,
 }
 
 .sprint-col-btn-add:hover {
-    color: var(--color-primary-border);
+    color: var(--color-primary-hover);
 }
 
 .sprint-items-list {
@@ -5623,7 +5626,7 @@ textarea:focus-visible,
 }
 
 .sprint-crit-number {
-    color: var(--text-light);
+    color: var(--text-secondary);
     font-family: monospace;
     font-size: var(--font-size-xs);
     min-width: 14px;
@@ -5646,7 +5649,7 @@ textarea:focus-visible,
 }
 
 .sprint-crit-delete-btn {
-    color: var(--text-light);
+    color: var(--text-secondary);
     background: transparent;
     border: none;
     padding: var(--space-1);
@@ -5722,7 +5725,7 @@ textarea:focus-visible,
 .sprint-task-hours-label {
     font-size: 10px;
     font-weight: var(--font-weight-bold);
-    color: var(--text-light);
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
@@ -5862,7 +5865,7 @@ textarea:focus-visible,
 .sprint-empty-state-icon {
     width: 64px;
     height: 64px;
-    color: var(--text-light);
+    color: var(--text-secondary);
     margin: 0 auto var(--space-4);
 }
 
@@ -5920,7 +5923,7 @@ textarea:focus-visible,
 }
 
 .sprint-sources-chevron {
-    color: var(--text-light);
+    color: var(--text-secondary);
     transition: transform var(--transition-fast);
 }
 
@@ -5996,7 +5999,7 @@ textarea:focus-visible,
 .sprint-source-label {
     font-size: 10px;
     font-weight: var(--font-weight-bold);
-    color: var(--text-light);
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
@@ -6124,7 +6127,7 @@ textarea:focus-visible,
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
     background: var(--white);
-    color: var(--text-light);
+    color: var(--text-secondary);
     cursor: pointer;
     transition: all var(--transition-fast);
     padding: 0;

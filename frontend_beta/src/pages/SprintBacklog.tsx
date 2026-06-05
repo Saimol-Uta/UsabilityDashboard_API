@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { sprintBacklogApi, testTasksApi, moderatorScriptsApi, testSessionsApi, findingsApi } from '../api'
 import { useToast } from '../App'
 import { usePlan } from '../context/PlanContext'
+import type { UserStory, BacklogData, TechnicalTask } from '../context/PlanContext'
 import { extractErrorMessage } from '../hooks/useApiError'
 import {
     Sparkles, Save, FileText, Printer, Plus, Trash2,
@@ -9,31 +10,10 @@ import {
     Hourglass, ClipboardList, ChevronDown,
     Database, BookOpen, Users, Search,
     ArrowUp, ArrowDown, Clock, CheckCircle2,
-    Timer, TrendingUp, TrendingDown, Minus
+    Timer, TrendingUp, TrendingDown, Minus, BarChart2
 } from 'lucide-react'
 import Modal from '../components/Modal'
-
-interface TechnicalTask {
-    id: string
-    title: string
-    estimatedHours: number
-}
-
-interface UserStory {
-    id: string
-    title: string
-    description: string
-    priority: string // 'Alta' | 'Media' | 'Baja'
-    acceptanceCriteria: string[]
-    technicalTasks: TechnicalTask[]
-    origen_hallazgo?: string
-}
-
-interface BacklogData {
-    sprintName: string
-    sprintGoal: string
-    userStories: UserStory[]
-}
+import InsightsIHC from '../components/InsightsIHC'
 
 /** Metadata about the data sources consumed during generation */
 interface SourcesMetadata {
@@ -47,14 +27,30 @@ interface SourcesMetadata {
 }
 
 export default function SprintBacklog() {
-    const { activePlanId, activePlan, isReadOnly, refreshGates } = usePlan()
+    const {
+        activePlanId,
+        activePlan,
+        isReadOnly,
+        refreshGates,
+        processedIds,
+        setProcessedIds,
+        backlogData,
+        setBacklogData,
+        userStories,
+        setUserStories,
+        currentView,
+        setCurrentView,
+        setHasGenerated,
+        observations,
+        archiveCurrentSprintDraft
+    } = usePlan()
+
     const { addToast } = useToast()
 
     const [loading, setLoading] = useState(true)
     const [isGenerating, setIsGenerating] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
     const [saveSuccess, setSaveSuccess] = useState(false)
-    const [backlogData, setBacklogData] = useState<BacklogData | null>(null)
     const [backlogMeta, setBacklogMeta] = useState<{ createdAt?: string; updatedAt?: string }>({})
 
     // Sources panel
@@ -97,6 +93,7 @@ export default function SprintBacklog() {
             const customEvent = e as CustomEvent
             if (customEvent.detail?.backlogData) {
                 setBacklogData(customEvent.detail.backlogData)
+                setUserStories(customEvent.detail.backlogData.userStories || [])
                 if (activePlanId) {
                     loadSourcesMetadata(activePlanId)
                 }
@@ -137,7 +134,7 @@ export default function SprintBacklog() {
                 findingsMinor: findingsArr.filter((f: any) => f.severity === 'Minor' || f.severity === 'Menor' || f.priority === 'Low').length,
             })
         } catch {
-            // Silently fail — the panel just won't show data
+            // Silently fail
         }
     }
 
@@ -149,18 +146,27 @@ export default function SprintBacklog() {
                 try {
                     const parsed = JSON.parse(res.data.contentJson) as BacklogData
                     setBacklogData(parsed)
+                    setUserStories(parsed.userStories || [])
                     setBacklogMeta({ createdAt: res.data.createdAt, updatedAt: res.data.updatedAt })
+                    setHasGenerated(true)
+                    setCurrentView('board')
                 } catch (e) {
                     console.error("Error parsing contentJson from DB", e)
                     addToast("El backlog guardado contiene un formato no válido. Puedes volver a generarlo.", "error")
                 }
             } else {
                 setBacklogData(null)
+                setUserStories([])
+                setHasGenerated(false)
+                setCurrentView('empty')
             }
         } catch (err: any) {
             // 404 is expected if backlog does not exist yet
             if (err.response?.status === 404) {
                 setBacklogData(null)
+                setUserStories([])
+                setHasGenerated(false)
+                setCurrentView('empty')
             } else {
                 addToast(extractErrorMessage(err, 'Error al cargar el Sprint Backlog'), 'error')
             }
@@ -214,7 +220,7 @@ export default function SprintBacklog() {
         }
     }
 
-    const handleGenerate = async (useAI: boolean) => {
+    const handleGenerate = async () => {
         if (!activePlanId) {
             addToast('Debes seleccionar un plan de prueba activo', 'error')
             return
@@ -222,23 +228,69 @@ export default function SprintBacklog() {
 
         setIsGenerating(true)
         try {
-            addToast(useAI ? 'Analizando datos y generando con IA (Gemini 2.5 Flash)...' : 'Generando backlog estructurado con el Motor Local...', 'success')
-
             const reqData = {
                 testPlanId: activePlanId,
-                userApiKey: undefined // Proxy handles environment key securely at server side
+                userApiKey: undefined
             }
 
             const res = await sprintBacklogApi.generate(reqData)
 
             if (res.data && res.data.contentJson) {
                 const parsed = JSON.parse(res.data.contentJson) as BacklogData
-                setBacklogData(parsed)
-                addToast('¡Sprint Backlog generado exitosamente!', 'success')
+                
+                // Add heuristics if missing to parsed user stories
+                const mappedStories = (parsed.userStories || []).map((story: any) => {
+                    let heuristic = story.heuristic
+                    if (!heuristic) {
+                        const text = `${story.title} ${story.description}`.toLowerCase()
+                        if (text.includes('visibilidad') || text.includes('estado')) {
+                            heuristic = 'Visibilidad del estado del sistema'
+                        } else if (text.includes('coincidencia') || text.includes('mundo real')) {
+                            heuristic = 'Coincidencia entre el sistema y el mundo real'
+                        } else if (text.includes('control') || text.includes('libertad')) {
+                            heuristic = 'Control y libertad del usuario'
+                        } else if (text.includes('consistencia') || text.includes('estándar')) {
+                            heuristic = 'Consistencia y estándares'
+                        } else if (text.includes('prevención') || text.includes('error')) {
+                            heuristic = 'Prevención de errores'
+                        } else if (text.includes('reconocimiento') || text.includes('recuerdo')) {
+                            heuristic = 'Reconocimiento antes que recuerdo'
+                        } else if (text.includes('flexibilidad') || text.includes('eficiencia')) {
+                            heuristic = 'Flexibilidad y eficiencia de uso'
+                        } else if (text.includes('estética') || text.includes('minimalista')) {
+                            heuristic = 'Estética y diseño minimalista'
+                        } else if (text.includes('recuperar') || text.includes('diagnosticar')) {
+                            heuristic = 'Ayuda a los usuarios a reconocer, diagnosticar y recuperarse de los errores'
+                        } else if (text.includes('ayuda') || text.includes('documentación')) {
+                            heuristic = 'Ayuda y documentación'
+                        } else {
+                            heuristic = 'Prevención de errores'
+                        }
+                    }
+                    return {
+                        ...story,
+                        estimatedHours: story.estimatedHours || (story.technicalTasks || []).reduce((sum: number, t: any) => sum + (t.estimatedHours || 0), 0),
+                        heuristic
+                    }
+                })
 
-                // Auto-save the initial draft
-                await handleSaveDraft(parsed)
-                refreshGates()
+                const updatedBacklog = {
+                    ...parsed,
+                    userStories: mappedStories
+                }
+
+                setBacklogData(updatedBacklog)
+                setUserStories(mappedStories)
+                
+                // Register all processed IDs on first run
+                const allObsIds = observations.map((o: any) => o.id)
+                setProcessedIds(new Set(allObsIds))
+                setHasGenerated(true)
+                
+                addToast('¡Sprint Backlog generado exitosamente!', 'success')
+                
+                // Redirect to intermediate insights screen
+                setCurrentView('insights')
             } else {
                 throw new Error('La respuesta del servidor no tiene un formato válido.')
             }
@@ -254,12 +306,18 @@ export default function SprintBacklog() {
         setIsSaving(true)
         setSaveSuccess(false)
         try {
-            const markdown = generateMarkdownContent(dataToSave)
-            const contentJson = JSON.stringify(dataToSave)
-
-            const res = await sprintBacklogApi.save(activePlanId, {
+            const saveObject = {
                 sprintName: dataToSave.sprintName,
                 sprintGoal: dataToSave.sprintGoal,
+                userStories: userStories // Use state global user stories
+            }
+
+            const markdown = generateMarkdownContent(saveObject)
+            const contentJson = JSON.stringify(saveObject)
+
+            const res = await sprintBacklogApi.save(activePlanId, {
+                sprintName: saveObject.sprintName,
+                sprintGoal: saveObject.sprintGoal,
                 contentJson,
                 rawMarkdown: markdown
             })
@@ -282,6 +340,20 @@ export default function SprintBacklog() {
         }
     }
 
+    const handleConfirmInsights = async () => {
+        setCurrentView('board')
+        if (backlogData) {
+            await handleSaveDraft(backlogData)
+        }
+    }
+
+    const handleArchiveInsights = () => {
+        if (backlogData) {
+            archiveCurrentSprintDraft(backlogData)
+            addToast('Borrador archivado correctamente', 'success')
+        }
+    }
+
     // --- Inline Editors ---
     const handleUpdateSprintField = (field: 'sprintName' | 'sprintGoal', value: string) => {
         if (!backlogData) return
@@ -293,11 +365,18 @@ export default function SprintBacklog() {
 
     const handleUpdateStoryField = (storyIndex: number, field: keyof UserStory, value: any) => {
         if (!backlogData) return
-        const updatedStories = [...backlogData.userStories]
+        const updatedStories = [...userStories]
         updatedStories[storyIndex] = {
             ...updatedStories[storyIndex],
             [field]: value
         }
+        
+        // Recalculate estimatedHours if technicalTasks were modified
+        if (field === 'technicalTasks') {
+            updatedStories[storyIndex].estimatedHours = updatedStories[storyIndex].technicalTasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0)
+        }
+
+        setUserStories(updatedStories)
         setBacklogData({
             ...backlogData,
             userStories: updatedStories
@@ -307,29 +386,32 @@ export default function SprintBacklog() {
     // Acceptance Criteria operations
     const handleAddCriterion = (storyIndex: number) => {
         if (!backlogData) return
-        const updatedStories = [...backlogData.userStories]
+        const updatedStories = [...userStories]
         updatedStories[storyIndex].acceptanceCriteria.push('')
+        setUserStories(updatedStories)
         setBacklogData({ ...backlogData, userStories: updatedStories })
     }
 
     const handleUpdateCriterion = (storyIndex: number, criterionIndex: number, value: string) => {
         if (!backlogData) return
-        const updatedStories = [...backlogData.userStories]
+        const updatedStories = [...userStories]
         updatedStories[storyIndex].acceptanceCriteria[criterionIndex] = value
+        setUserStories(updatedStories)
         setBacklogData({ ...backlogData, userStories: updatedStories })
     }
 
     const handleDeleteCriterion = (storyIndex: number, criterionIndex: number) => {
         if (!backlogData) return
-        const updatedStories = [...backlogData.userStories]
+        const updatedStories = [...userStories]
         updatedStories[storyIndex].acceptanceCriteria.splice(criterionIndex, 1)
+        setUserStories(updatedStories)
         setBacklogData({ ...backlogData, userStories: updatedStories })
     }
 
     // Technical Tasks operations
     const handleAddTask = (storyIndex: number) => {
         if (!backlogData) return
-        const updatedStories = [...backlogData.userStories]
+        const updatedStories = [...userStories]
         const storyId = updatedStories[storyIndex].id
         const taskNum = updatedStories[storyIndex].technicalTasks.length + 1
 
@@ -338,22 +420,30 @@ export default function SprintBacklog() {
             title: '',
             estimatedHours: 4
         })
+        
+        updatedStories[storyIndex].estimatedHours = updatedStories[storyIndex].technicalTasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0)
+
+        setUserStories(updatedStories)
         setBacklogData({ ...backlogData, userStories: updatedStories })
     }
 
     const handleUpdateTaskField = (storyIndex: number, taskIndex: number, field: keyof TechnicalTask, value: any) => {
         if (!backlogData) return
-        const updatedStories = [...backlogData.userStories]
+        const updatedStories = [...userStories]
         updatedStories[storyIndex].technicalTasks[taskIndex] = {
             ...updatedStories[storyIndex].technicalTasks[taskIndex],
             [field]: value
         }
+        
+        updatedStories[storyIndex].estimatedHours = updatedStories[storyIndex].technicalTasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0)
+
+        setUserStories(updatedStories)
         setBacklogData({ ...backlogData, userStories: updatedStories })
     }
 
     const handleDeleteTask = (storyIndex: number, taskIndex: number) => {
         if (!backlogData) return
-        const updatedStories = [...backlogData.userStories]
+        const updatedStories = [...userStories]
         updatedStories[storyIndex].technicalTasks.splice(taskIndex, 1)
 
         // Re-index tasks for clean output IDs
@@ -362,14 +452,17 @@ export default function SprintBacklog() {
             ...t,
             id: `TA-${storyId.split('-')[1] || storyIndex + 1}.${idx + 1}`
         }))
+        
+        updatedStories[storyIndex].estimatedHours = updatedStories[storyIndex].technicalTasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0)
 
+        setUserStories(updatedStories)
         setBacklogData({ ...backlogData, userStories: updatedStories })
     }
 
     // Global Story operations
     const handleAddStory = () => {
         if (!backlogData) return
-        const nextIndex = backlogData.userStories.length + 1
+        const nextIndex = userStories.length + 1
         const newStory: UserStory = {
             id: `US-${nextIndex}`,
             title: 'Nueva Historia de Usuario',
@@ -379,11 +472,16 @@ export default function SprintBacklog() {
             technicalTasks: [
                 { id: `TA-${nextIndex}.1`, title: 'Rediseñar interfaz siguiendo criterios IHC', estimatedHours: 4 },
                 { id: `TA-${nextIndex}.2`, title: 'Implementar código frontend y backend', estimatedHours: 6 }
-            ]
+            ],
+            heuristic: 'Prevención de errores'
         }
+        newStory.estimatedHours = newStory.technicalTasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0)
+
+        const updated = [...userStories, newStory]
+        setUserStories(updated)
         setBacklogData({
             ...backlogData,
-            userStories: [...backlogData.userStories, newStory]
+            userStories: updated
         })
         addToast('Nueva Historia de Usuario agregada al borrador', 'success')
     }
@@ -395,7 +493,7 @@ export default function SprintBacklog() {
     const confirmDeleteStory = (storyIndex: number) => {
         if (!backlogData) return
 
-        const updatedStories = backlogData.userStories.filter((_, idx) => idx !== storyIndex)
+        const updatedStories = userStories.filter((_, idx) => idx !== storyIndex)
             // Re-index stories for clean serial IDs
             .map((us, idx) => {
                 const nextId = `US-${idx + 1}`
@@ -409,6 +507,7 @@ export default function SprintBacklog() {
                 }
             })
 
+        setUserStories(updatedStories)
         setBacklogData({
             ...backlogData,
             userStories: updatedStories
@@ -419,7 +518,7 @@ export default function SprintBacklog() {
     // Reorder stories
     const handleMoveStory = (storyIndex: number, direction: 'up' | 'down') => {
         if (!backlogData) return
-        const stories = [...backlogData.userStories]
+        const stories = [...userStories]
         const targetIndex = direction === 'up' ? storyIndex - 1 : storyIndex + 1
         if (targetIndex < 0 || targetIndex >= stories.length) return
 
@@ -436,6 +535,7 @@ export default function SprintBacklog() {
             }))
         }))
 
+        setUserStories(reindexed)
         setBacklogData({ ...backlogData, userStories: reindexed })
     }
 
@@ -462,7 +562,11 @@ export default function SprintBacklog() {
             md += `### 📋 [${us.id}] ${us.title}\n\n`
             md += `**Descripción:**\n`
             md += `\`${us.description}\`\n\n`
-            md += `* **Prioridad:** ${us.priority}\n\n`
+            md += `* **Prioridad:** ${us.priority}\n`
+            if (us.heuristic) {
+                md += `* **Heurística de Nielsen:** ${us.heuristic}\n`
+            }
+            md += `\n`
 
             md += `**Criterios de Aceptación:**\n`
             us.acceptanceCriteria.forEach(ac => {
@@ -489,7 +593,6 @@ export default function SprintBacklog() {
         const url = URL.createObjectURL(blob)
         const link = document.createElement('a')
 
-        // Clean filename
         const sanitizedName = backlogData.sprintName.replace(/[^a-z0-9]/gi, '_').toLowerCase()
         link.href = url
         link.setAttribute('download', `Sprint_Backlog_${sanitizedName || 'Plan'}.md`)
@@ -525,15 +628,13 @@ export default function SprintBacklog() {
         )
     }
 
-    const totalHours = backlogData?.userStories.reduce(
-        (total, us) => total + us.technicalTasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0),
-        0
-    ) || 0
+    const totalHours = userStories.reduce((sum, s) => sum + (s.estimatedHours || 0), 0)
+    const totalStories = userStories.length
 
     return (
-        <div className="page-container" style={{ paddingBottom: 'var(--space-10)' }}>
+        <div className="page-container" style={{ paddingBottom: 'var(--space-10)', flex: 1, display: 'flex', flexDirection: 'column' }}>
 
-            {/* PRINT-ONLY VIEWPORT: Renders absolutely beautiful clean tables with academic headers for PDF */}
+            {/* PRINT-ONLY VIEWPORT: Renders clean tables for PDF */}
             <div className="sprint-print-preview">
                 <div className="sprint-print-header">
                     <p className="sprint-print-institution">
@@ -572,11 +673,16 @@ export default function SprintBacklog() {
 
                 <h2 className="sprint-print-section-title">Incremento y Planificación Ágil</h2>
 
-                {backlogData?.userStories.map((us) => (
+                {userStories.map((us) => (
                     <div key={us.id} className="sprint-print-story">
                         <h3 className="sprint-print-story-title">
                             📋 [{us.id}] {us.title} <span className="sprint-print-priority-label">({us.priority === 'Alta' ? 'Prioridad Alta' : us.priority === 'Media' ? 'Prioridad Media' : 'Prioridad Baja'})</span>
                         </h3>
+                        {us.heuristic && (
+                            <p style={{ fontSize: 'var(--font-size-xs)', margin: 'var(--space-1) 0', color: 'var(--color-primary)' }}>
+                                <strong>Heurística:</strong> {us.heuristic}
+                            </p>
+                        )}
                         <p className="sprint-print-story-desc">
                             {us.description}
                         </p>
@@ -617,8 +723,8 @@ export default function SprintBacklog() {
                 ))}
             </div>
 
-            {/* WEB VIEWPORT (Visible on screen, hidden on print) */}
-            <div className="print:hidden sprint-editor-board" style={{ position: 'relative' }}>
+            {/* WEB VIEWPORT */}
+            <div className="print:hidden sprint-editor-board" style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column' }}>
 
                 {/* Unified AI cascading loader screen */}
                 {isGenerating && (
@@ -652,7 +758,7 @@ export default function SprintBacklog() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', width: '100%', maxWidth: '340px', background: 'rgba(255, 255, 255, 0.03)', padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
                             <div className={`cascading-step ${generatingStep === 0 ? 'cascading-step--active' : generatingStep > 0 ? 'cascading-step--done' : 'cascading-step--pending'}`}>
                                 <div className={`cascading-dot ${generatingStep === 0 ? 'cascading-dot--active' : generatingStep > 0 ? 'cascading-dot--done' : 'cascading-dot--pending'}`} />
-                                <span>{generatingStep > 0 ? '✓ Sesiones analizadas con éxito' : '🔍 Analizando sesiones de prueba y métricas...'}</span>
+                                <span>{generatingStep > 0 ? '✓ Sesiones analizadas con éxito' : '🔍 Analizando sesiones de prueba...'}</span>
                             </div>
 
                             <div className={`cascading-step ${generatingStep === 1 ? 'cascading-step--active' : generatingStep > 1 ? 'cascading-step--done' : 'cascading-step--pending'}`}>
@@ -681,8 +787,50 @@ export default function SprintBacklog() {
                     </div>
                 </div>
 
-                {/* Backlog Editor Board */}
-                {backlogData ? (
+                {/* Conditional View Rendering */}
+                {currentView === 'empty' && (
+                    <div className="sprint-empty-state">
+                        <ClipboardList className="sprint-empty-state-icon" />
+                        <h3 className="sprint-empty-state-title">Ningún borrador creado aún</h3>
+                        <p className="sprint-empty-state-subtitle">
+                            El plan "{activePlan?.projectName}" no cuenta con un backlog de sprint. Genera de forma automática un borrador detallado analizando la base de datos de tu plan actual de forma segura y ergonómica.
+                        </p>
+
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 'var(--space-4)' }}>
+                            <button
+                                type="button"
+                                onClick={() => handleGenerate()}
+                                disabled={isGenerating || isReadOnly}
+                                className="btn btn-primary"
+                                style={{ padding: 'var(--space-3) var(--space-6)', fontSize: 'var(--font-size-sm)', display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <div className="sprint-loading-spinner" style={{ width: 16, height: 16, borderBottomColor: 'white', marginRight: 'var(--space-2)' }}></div>
+                                        Generando con IA...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles size={16} />
+                                        Generar Borrador con IA
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {currentView === 'insights' && (
+                    <InsightsIHC
+                        userStories={userStories}
+                        observationsCount={observations.length}
+                        processedCount={processedIds.size}
+                        onConfirm={handleConfirmInsights}
+                        onArchive={handleArchiveInsights}
+                    />
+                )}
+
+                {currentView === 'board' && backlogData && (
                     <div style={{ marginTop: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
                         {/* Timestamps */}
@@ -783,7 +931,7 @@ export default function SprintBacklog() {
                                     <Layers size={18} />
                                 </div>
                                 <div className="sprint-kpi-content">
-                                    <span className="sprint-kpi-value">{backlogData.userStories.length}</span>
+                                    <span className="sprint-kpi-value">{totalStories}</span>
                                     <span className="sprint-kpi-label">Historias</span>
                                 </div>
                             </div>
@@ -801,7 +949,7 @@ export default function SprintBacklog() {
                                     <TrendingUp size={18} />
                                 </div>
                                 <div className="sprint-kpi-content">
-                                    <span className="sprint-kpi-value">{backlogData.userStories.filter(s => s.priority === 'Alta').length}</span>
+                                    <span className="sprint-kpi-value">{userStories.filter(s => s.priority === 'Alta').length}</span>
                                     <span className="sprint-kpi-label">Prioridad Alta</span>
                                 </div>
                             </div>
@@ -810,7 +958,7 @@ export default function SprintBacklog() {
                                     <Minus size={18} />
                                 </div>
                                 <div className="sprint-kpi-content">
-                                    <span className="sprint-kpi-value">{backlogData.userStories.filter(s => s.priority === 'Media').length}</span>
+                                    <span className="sprint-kpi-value">{userStories.filter(s => s.priority === 'Media').length}</span>
                                     <span className="sprint-kpi-label">Prioridad Media</span>
                                 </div>
                             </div>
@@ -819,7 +967,7 @@ export default function SprintBacklog() {
                                     <TrendingDown size={18} />
                                 </div>
                                 <div className="sprint-kpi-content">
-                                    <span className="sprint-kpi-value">{backlogData.userStories.filter(s => s.priority === 'Baja').length}</span>
+                                    <span className="sprint-kpi-value">{userStories.filter(s => s.priority === 'Baja').length}</span>
                                     <span className="sprint-kpi-label">Prioridad Baja</span>
                                 </div>
                             </div>
@@ -867,7 +1015,7 @@ export default function SprintBacklog() {
                         <div className="sprint-stories-header">
                             <h3 className="sprint-stories-title">
                                 <Layers size={16} style={{ color: 'var(--color-primary)' }} />
-                                Historias de Usuario e Incremento ({backlogData.userStories.length})
+                                Historias de Usuario e Incremento ({totalStories})
                             </h3>
 
                             {!isReadOnly && (
@@ -885,7 +1033,7 @@ export default function SprintBacklog() {
 
                         {/* Stories Loop */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-                            {backlogData.userStories.map((story, storyIdx) => (
+                            {userStories.map((story, storyIdx) => (
                                 <div
                                     key={story.id}
                                     className="sprint-story-card"
@@ -910,7 +1058,7 @@ export default function SprintBacklog() {
                                                     type="button"
                                                     className="sprint-reorder-btn"
                                                     onClick={() => handleMoveStory(storyIdx, 'down')}
-                                                    disabled={storyIdx === backlogData.userStories.length - 1}
+                                                    disabled={storyIdx === totalStories - 1}
                                                     title="Mover abajo"
                                                     aria-label={`Mover ${story.id} hacia abajo`}
                                                 >
@@ -987,7 +1135,33 @@ export default function SprintBacklog() {
                                         />
                                     </div>
 
-                                    <div className="sprint-columns-grid">
+                                    {/* Heuristic selection */}
+                                    <div className="sprint-story-desc-field" style={{ marginTop: 'var(--space-3)' }}>
+                                        <label className="sprint-story-desc-label">
+                                            Heurística de Nielsen Mitigada
+                                        </label>
+                                        <select
+                                            value={story.heuristic || ''}
+                                            onChange={(e) => handleUpdateStoryField(storyIdx, 'heuristic', e.target.value)}
+                                            className="sprint-def-input"
+                                            style={{ background: 'var(--neutral-900)', color: 'var(--white)', border: '1px solid var(--border-color)' }}
+                                            disabled={isReadOnly}
+                                        >
+                                            <option value="">-- Seleccionar Heurística --</option>
+                                            <option value="Visibilidad del estado del sistema">1. Visibilidad del estado del sistema</option>
+                                            <option value="Coincidencia entre el sistema y el mundo real">2. Coincidencia entre el sistema y el mundo real</option>
+                                            <option value="Control y libertad del usuario">3. Control y libertad del usuario</option>
+                                            <option value="Consistencia y estándares">4. Consistencia y estándares</option>
+                                            <option value="Prevención de errores">5. Prevención de errores</option>
+                                            <option value="Reconocimiento antes que recuerdo">6. Reconocimiento antes que recuerdo</option>
+                                            <option value="Flexibilidad y eficiencia de uso">7. Flexibilidad y eficiencia de uso</option>
+                                            <option value="Estética y diseño minimalista">8. Estética y diseño minimalista</option>
+                                            <option value="Ayuda a los usuarios a reconocer, diagnosticar y recuperarse de los errores">9. Ayuda a los usuarios a reconocer, diagnosticar y recuperarse de los errores</option>
+                                            <option value="Ayuda y documentación">10. Ayuda y documentación</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="sprint-columns-grid" style={{ marginTop: 'var(--space-4)' }}>
 
                                         {/* Column 1: Acceptance Criteria */}
                                         <div className="sprint-col-section">
@@ -1114,11 +1288,23 @@ export default function SprintBacklog() {
                                     Backlog del Sprint: <span className="sprint-summary-highlight">{backlogData.sprintName}</span>
                                 </h4>
                                 <p className="sprint-summary-desc">
-                                    Se estimaron <strong style={{ color: 'var(--white)' }}>{totalHours} horas</strong> de esfuerzo técnico distribuidas en <strong style={{ color: 'var(--white)' }}>{backlogData.userStories.length} historias</strong>.
+                                    Se estimaron <strong style={{ color: 'var(--white)' }}>{totalHours} horas</strong> de esfuerzo técnico distribuidas en <strong style={{ color: 'var(--white)' }}>{totalStories} historias</strong>.
                                 </p>
                             </div>
 
                             <div className="sprint-summary-actions">
+                                {/* Button to review the InsightsIHC intermediate screen from board view */}
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentView('insights')}
+                                    className="sprint-summary-actions-btn"
+                                    style={{ background: 'rgba(99,102,241,0.18)', border: '1px solid rgba(99,102,241,0.45)', color: '#a5b4fc' }}
+                                    title="Ver métricas e insights de Usabilidad IHC"
+                                >
+                                    <BarChart2 size={14} />
+                                    Ver Análisis IHC
+                                </button>
+
                                 {!isReadOnly && (
                                     <button
                                         type="button"
@@ -1166,36 +1352,7 @@ export default function SprintBacklog() {
                         </div>
 
                     </div>
-                ) : (
-                    <div className="sprint-empty-state">
-                        <ClipboardList className="sprint-empty-state-icon" />
-                        <h3 className="sprint-empty-state-title">Ningún borrador creado aún</h3>
-                        <p className="sprint-empty-state-subtitle">
-                            El plan "{activePlan?.projectName}" no cuenta con un backlog de sprint. Genera de forma automática un borrador detallado analizando la base de datos de tu plan actual de forma segura y ergonómica.
-                        </p>
-
-                        <button
-                            type="button"
-                            onClick={() => handleGenerate(true)}
-                            disabled={isGenerating || isReadOnly}
-                            className="btn btn-primary"
-                            style={{ padding: 'var(--space-3) var(--space-6)', fontSize: 'var(--font-size-sm)', display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-4)' }}
-                        >
-                            {isGenerating ? (
-                                <>
-                                    <div className="sprint-loading-spinner" style={{ width: 16, height: 16, borderBottomColor: 'white', marginRight: 'var(--space-2)' }}></div>
-                                    Generando con IA...
-                                </>
-                            ) : (
-                                <>
-                                    <Sparkles size={16} />
-                                    Generar Borrador con IA
-                                </>
-                            )}
-                        </button>
-                    </div>
                 )}
-
             </div>
 
             {/* Traceability Details Popover Modal */}
@@ -1265,7 +1422,7 @@ export default function SprintBacklog() {
                 )}
             </Modal>
 
-            {/* Custom confirmation Modal for User Story deletion (avoid default browser alerts) */}
+            {/* Custom confirmation Modal for User Story deletion */}
             <Modal
                 isOpen={storyToDeleteIndex !== null}
                 onClose={() => setStoryToDeleteIndex(null)}

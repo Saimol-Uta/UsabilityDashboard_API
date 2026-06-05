@@ -24,8 +24,23 @@ interface ChatMessage {
 export default function AiCopilot() {
     const location = useLocation()
     const navigate = useNavigate()
-    const { activePlanId, activePlan, refreshGates } = usePlan()
+    const {
+        activePlanId,
+        activePlan,
+        refreshGates,
+        processedIds,
+        setProcessedIds,
+        userStories,
+        setUserStories,
+        setBacklogData,
+        setHasGenerated,
+        setCurrentView,
+        calculateDataDelta,
+        findings,
+        sessions
+    } = usePlan()
     const { addToast } = useToast()
+    const latestDeltaRef = useRef<string[]>([])
 
     const [isOpen, setIsOpen] = useState(false)
     const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -724,6 +739,8 @@ Breve explicación ergonómica de las mejoras.
         }
     }
 
+
+
     // Handle sending a message
     const handleSendMessage = async (text: string) => {
         if (!text.trim() || loading) return
@@ -740,33 +757,68 @@ Breve explicación ergonómica de las mejoras.
 
         try {
             // 1. Fetch relevant page context data
-            const contextData = await fetchContextData()
+            let fetchedContext = await fetchContextData()
 
-            // Interceptor del lado del cliente para no gastar tokens si no hay datos de usabilidad suficientes
-            const findingsArr = (contextData as any).findings || []
-            const obsLogsArr = (contextData as any).observationLogs || []
-            const hasUsabilityData = findingsArr.length > 0 || obsLogsArr.length > 0
+            // Bug 1 — Contexto vacío fallback
+            const hallazgos = findings
+            const isFetchedEmpty = !fetchedContext || 
+                (Array.isArray(fetchedContext) && fetchedContext.length === 0) || 
+                (typeof fetchedContext === 'object' && Object.keys(fetchedContext).length === 0)
 
-            const isRequestingBacklog = location.pathname.includes('/backlog') || 
-                                         text.toLowerCase().includes('backlog') || 
-                                         text.toLowerCase().includes('historia') ||
-                                         text.toLowerCase().includes('generar')
+            if (isFetchedEmpty) {
+                fetchedContext = hallazgos?.length > 0
+                  ? hallazgos
+                  : sessions.flatMap((s: any) => s.observations ?? s.observationLogs ?? [])
+            }
 
-            if (isRequestingBacklog && !hasUsabilityData) {
+            const isFinalEmpty = !fetchedContext || 
+                (Array.isArray(fetchedContext) && fetchedContext.length === 0) || 
+                (typeof fetchedContext === 'object' && Object.keys(fetchedContext).length === 0)
+
+            if (isFinalEmpty) {
                 setMessages(prev => [
                     ...prev,
                     {
                         id: Date.now(),
                         sender: 'ai',
-                        text: '⚠️ **Copiloto de Usabilidad:** No hay información de usabilidad suficiente registrada en este plan. Se requiere registrar al menos una observación incidental en las sesiones de prueba o un hallazgo sintetizado para poder estructurar el Sprint Backlog. Por favor, registra observaciones para los participantes en sus sesiones primero.'
+                        text: '⚠️ No hay datos de sesiones disponibles para analizar.'
                     }
                 ])
                 setLoading(false)
                 return
             }
 
+            const isRequestingBacklog = location.pathname.includes('/backlog') || 
+                                         text.toLowerCase().includes('backlog') || 
+                                         text.toLowerCase().includes('historia') ||
+                                         text.toLowerCase().includes('generar')
+
+            let finalContextData = fetchedContext
+            let promptText = text
+
+            if (isRequestingBacklog) {
+                // FASE 4 — calculateDataDelta
+                const { hasNew, delta } = calculateDataDelta()
+                if (!hasNew) {
+                    setMessages(prev => [
+                        ...prev,
+                        {
+                            id: Date.now(),
+                            sender: 'ai',
+                            text: '✅ El Sprint Backlog ya está al día con los datos existentes. No se encontraron observaciones nuevas.'
+                        }
+                    ])
+                    setLoading(false)
+                    return
+                }
+
+                finalContextData = delta
+                latestDeltaRef.current = delta.map((o: any) => o.id)
+                promptText = `${text}\n\nNo dupliques requerimientos ya existentes en el backlog actual: ${userStories.map((s: any) => s.title).join(', ')}`
+            }
+
             // 2. Query Gemini through backend secure proxy
-            const aiRawText = await queryGemini(text, contextData)
+            const aiRawText = await queryGemini(promptText, finalContextData)
 
             // 3. Parse BACKLOG_ACTION if any
             let cleanText = aiRawText
@@ -892,6 +944,37 @@ Breve explicación ergonómica de las mejoras.
                     estimatedHours: t.estimatedHours || 4
                 }))
 
+                const storyHours = technicalTasks.reduce((sum: number, t: any) => sum + (t.estimatedHours || 0), 0)
+
+                // Map heuristics
+                let heuristic = story.heuristic
+                if (!heuristic) {
+                    const text = `${story.title} ${story.description}`.toLowerCase()
+                    if (text.includes('visibilidad') || text.includes('estado')) {
+                        heuristic = 'Visibilidad del estado del sistema'
+                    } else if (text.includes('coincidencia') || text.includes('mundo real')) {
+                        heuristic = 'Coincidencia entre el sistema y el mundo real'
+                    } else if (text.includes('control') || text.includes('libertad')) {
+                        heuristic = 'Control y libertad del usuario'
+                    } else if (text.includes('consistencia') || text.includes('estandar') || text.includes('estándar') || text.includes('consistente')) {
+                        heuristic = 'Consistencia y estándares'
+                    } else if (text.includes('prevención') || text.includes('error') || text.includes('prevenir')) {
+                        heuristic = 'Prevención de errores'
+                    } else if (text.includes('reconocimiento') || text.includes('recuerdo')) {
+                        heuristic = 'Reconocimiento antes que recuerdo'
+                    } else if (text.includes('flexibilidad') || text.includes('eficiencia')) {
+                        heuristic = 'Flexibilidad y eficiencia de uso'
+                    } else if (text.includes('estética') || text.includes('minimalista') || text.includes('estético')) {
+                        heuristic = 'Estética y diseño minimalista'
+                    } else if (text.includes('recuperar') || text.includes('diagnosticar')) {
+                        heuristic = 'Ayuda a los usuarios a reconocer, diagnosticar y recuperarse de los errores'
+                    } else if (text.includes('ayuda') || text.includes('documentación')) {
+                        heuristic = 'Ayuda y documentación'
+                    } else {
+                        heuristic = 'Prevención de errores'
+                    }
+                }
+
                 return {
                     id: usId,
                     title: story.title || `Historia de Usabilidad ${usId}`,
@@ -899,11 +982,22 @@ Breve explicación ergonómica de las mejoras.
                     priority: story.priority || 'Alta',
                     origen_hallazgo: story.origen_hallazgo || 'Copiloto IA - Sugerencia Contextual',
                     acceptanceCriteria: story.acceptanceCriteria || [],
-                    technicalTasks
+                    technicalTasks,
+                    estimatedHours: storyHours,
+                    heuristic
                 }
             })
 
+            // Append new stories
             backlogData.userStories = [...backlogData.userStories, ...newStories]
+
+            const usedObservationIds = [...processedIds, ...latestDeltaRef.current]
+
+            const parsedBacklog = {
+                sprintName: backlogData.sprintName,
+                sprintGoal: backlogData.sprintGoal,
+                userStories: backlogData.userStories
+            }
 
             // 3. Construct markdown
             const generateMarkdown = (data: any) => {
@@ -914,6 +1008,9 @@ Breve explicación ergonómica de las mejoras.
                     md += `### 📋 [${us.id}] ${us.title}\n`;
                     if (us.origen_hallazgo) {
                         md += `* **Origen:** 🔍 ${us.origen_hallazgo}\n`;
+                    }
+                    if (us.heuristic) {
+                        md += `* **Heurística de Nielsen:** ${us.heuristic}\n`;
                     }
                     md += `**Descripción:** ${us.description}\n`;
                     md += `**Prioridad:** ${us.priority}\n\n`;
@@ -941,10 +1038,17 @@ Breve explicación ergonómica de las mejoras.
                 rawMarkdown: markdown
             })
 
-            // 5. Mark as inserted in state
+            // 5. Trigger exactly the Bug 2 callbacks
+            setBacklogData(parsedBacklog)
+            setUserStories(parsedBacklog.userStories)
+            setProcessedIds(new Set(usedObservationIds))
+            setHasGenerated(true)
+            setCurrentView('insights')  // redirige a pantalla intermedia, no al board directamente
+
+            // 6. Mark as inserted in state
             setMessages(prev => prev.map(m => m.id === msgId ? { ...m, inserted: true } : m))
             addToast(`¡${newStories.length} Historia(s) integrada(s) con éxito al Backlog!`, 'success')
-            window.dispatchEvent(new CustomEvent('backlog-updated', { detail: { backlogData } }))
+            window.dispatchEvent(new CustomEvent('backlog-updated', { detail: { backlogData: parsedBacklog } }))
             refreshGates()
         } catch (err) {
             console.error(err)
