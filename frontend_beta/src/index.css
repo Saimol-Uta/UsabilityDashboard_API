@@ -6718,6 +6718,10 @@ textarea:focus-visible,
 }
 
 @media print {
+    @page {
+        size: A4 portrait;
+        margin: 15mm;
+    }
 
     /* Hide layout and controls */
     header,
@@ -6734,7 +6738,9 @@ textarea:focus-visible,
     }
 
     /* Unset web app shell rules for perfect academic output paper printing */
+    html,
     body,
+    #root,
     .min-h-screen,
     .flex,
     main,
@@ -6742,12 +6748,15 @@ textarea:focus-visible,
     .layout-shell,
     .layout-body,
     .layout-main,
-    .layout-content {
+    .layout-content,
+    .page-container {
         background: white !important;
         color: black !important;
         padding: 0 !important;
         margin: 0 !important;
         width: 100% !important;
+        height: auto !important;
+        min-height: auto !important;
         display: block !important;
         overflow: visible !important;
         box-shadow: none !important;
@@ -6759,7 +6768,7 @@ textarea:focus-visible,
         font-family: Georgia, serif;
         color: #111827;
         background: white;
-        padding: var(--space-8);
+        padding: 0 !important; /* Managed by @page margin */
     }
 
     .sprint-print-header {
@@ -6767,6 +6776,8 @@ textarea:focus-visible,
         border-bottom: 4px double #1f2937;
         padding-bottom: var(--space-4);
         margin-bottom: var(--space-6);
+        page-break-after: avoid;
+        break-after: avoid;
     }
 
     .sprint-print-institution {
@@ -6814,6 +6825,8 @@ textarea:focus-visible,
         padding: var(--space-3);
         border: 1px solid #e5e7eb;
         border-radius: var(--radius-lg);
+        page-break-inside: avoid;
+        break-inside: avoid;
     }
 
     .sprint-print-meta-col-right {
@@ -6828,6 +6841,8 @@ textarea:focus-visible,
         padding-bottom: 2px;
         margin-top: var(--space-6);
         margin-bottom: var(--space-3);
+        page-break-after: avoid;
+        break-after: avoid;
     }
 
     .sprint-print-goal-blockquote {
@@ -6839,12 +6854,14 @@ textarea:focus-visible,
         border-left: 4px solid #6366f1;
         border-radius: 0 var(--radius-md) var(--radius-md) 0;
         margin: 0 0 var(--space-6) 0;
+        page-break-inside: avoid;
+        break-inside: avoid;
     }
 
     .sprint-print-story {
         margin-bottom: var(--space-8);
-        page-break-inside: avoid;
-        break-inside: avoid;
+        page-break-inside: auto;
+        break-inside: auto;
     }
 
     .sprint-print-story-title {
@@ -6853,6 +6870,8 @@ textarea:focus-visible,
         color: #111827;
         margin-top: 0;
         margin-bottom: var(--space-1);
+        page-break-after: avoid;
+        break-after: avoid;
     }
 
     .sprint-print-priority-label {
@@ -6872,13 +6891,25 @@ textarea:focus-visible,
         color: #374151;
         margin: var(--space-2) 0 var(--space-3) 0;
         line-height: 1.5;
+        page-break-inside: avoid;
+        break-inside: avoid;
     }
 
     .sprint-print-story-columns {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
         gap: var(--space-6);
         margin-top: var(--space-3);
+        page-break-inside: auto;
+        break-inside: auto;
+    }
+
+    .sprint-print-story-columns > div {
+        flex: 1;
+        min-width: 0;
+        page-break-inside: avoid;
+        break-inside: avoid;
     }
 
     .sprint-print-sub-header {
@@ -6890,6 +6921,8 @@ textarea:focus-visible,
         letter-spacing: 0.05em;
         margin-top: 0;
         margin-bottom: var(--space-2);
+        page-break-after: avoid;
+        break-after: avoid;
     }
 
     .sprint-print-crit-list {
@@ -6941,6 +6974,8 @@ textarea:focus-visible,
         border-bottom: 1px dashed #e5e7eb;
         margin-top: var(--space-6);
         padding-bottom: 2px;
+        page-break-inside: avoid;
+        break-inside: avoid;
     }
 
     thead {

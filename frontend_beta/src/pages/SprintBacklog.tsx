@@ -638,19 +638,20 @@ export default function SprintBacklog() {
             <div className="sprint-print-preview">
                 <div className="sprint-print-header">
                     <p className="sprint-print-institution">
-                        Universidad - Ingeniería de Software
+                        Universidad Técnica de Ambato — Ingeniería de Software
                     </p>
                     <p className="sprint-print-course">
-                        Asignatura: Interacción Humano Computador (IHC) - Quinto Semestre
+                        Asignatura: Interacción Humano Computador (IHC) · Quinto Semestre
                     </p>
                     <h1 className="sprint-print-doc-title">
                         Reporte de Sprint Backlog de Usabilidad
                     </h1>
                     <p className="sprint-print-metadata">
-                        Generado automáticamente asistido por IA - Caso: {activePlan?.projectName}
+                        Generado automáticamente con asistencia de IA · Caso: {activePlan?.projectName}
                     </p>
                 </div>
 
+                {/* Metadatos del plan */}
                 <div className="sprint-print-meta-grid">
                     <div>
                         <p><strong>Proyecto Evaluado:</strong> {activePlan?.projectName}</p>
@@ -664,63 +665,128 @@ export default function SprintBacklog() {
                     </div>
                 </div>
 
-                <div style={{ marginBottom: 'var(--space-6)' }}>
+                {/* Resumen ejecutivo */}
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'Arial, sans-serif', fontSize: '9.5pt', marginBottom: '14pt', border: '1px solid #d1d5db' }}>
+                    <thead>
+                        <tr style={{ background: '#1f2937', color: 'white' }}>
+                            <th style={{ padding: '5pt 8pt', textAlign: 'center', fontWeight: 700 }}>Historias de Usuario</th>
+                            <th style={{ padding: '5pt 8pt', textAlign: 'center', fontWeight: 700 }}>Tareas Técnicas</th>
+                            <th style={{ padding: '5pt 8pt', textAlign: 'center', fontWeight: 700 }}>Esfuerzo Total</th>
+                            <th style={{ padding: '5pt 8pt', textAlign: 'center', fontWeight: 700 }}>Alta Prioridad</th>
+                            <th style={{ padding: '5pt 8pt', textAlign: 'center', fontWeight: 700 }}>Heurísticas Mitigadas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style={{ background: '#f9fafb', textAlign: 'center' }}>
+                            <td style={{ padding: '6pt 8pt', fontWeight: 700, fontSize: '14pt', color: '#6366f1' }}>{totalStories}</td>
+                            <td style={{ padding: '6pt 8pt', fontWeight: 700, fontSize: '14pt', color: '#a855f7' }}>
+                                {userStories.reduce((s, us) => s + us.technicalTasks.length, 0)}
+                            </td>
+                            <td style={{ padding: '6pt 8pt', fontWeight: 700, fontSize: '14pt', color: '#0ea5e9' }}>{totalHours}h</td>
+                            <td style={{ padding: '6pt 8pt', fontWeight: 700, fontSize: '14pt', color: '#dc2626' }}>
+                                {userStories.filter(s => s.priority === 'Alta').length}
+                            </td>
+                            <td style={{ padding: '6pt 8pt', fontWeight: 700, fontSize: '14pt', color: '#10b981' }}>
+                                {userStories.filter(s => !!s.heuristic).length}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                {/* Meta del sprint */}
+                <div style={{ marginBottom: '0' }}>
                     <h2 className="sprint-print-section-title">Meta del Sprint (Sprint Goal)</h2>
                     <p className="sprint-print-goal-blockquote">
                         "{backlogData?.sprintGoal}"
                     </p>
                 </div>
 
-                <h2 className="sprint-print-section-title">Incremento y Planificación Ágil</h2>
+                {/* Historias */}
+                <h2 className="sprint-print-section-title">
+                    Incremento y Planificación Ágil ({totalStories} historias · {totalHours}h)
+                </h2>
 
-                {userStories.map((us) => (
-                    <div key={us.id} className="sprint-print-story">
-                        <h3 className="sprint-print-story-title">
-                            📋 [{us.id}] {us.title} <span className="sprint-print-priority-label">({us.priority === 'Alta' ? 'Prioridad Alta' : us.priority === 'Media' ? 'Prioridad Media' : 'Prioridad Baja'})</span>
-                        </h3>
-                        {us.heuristic && (
-                            <p style={{ fontSize: 'var(--font-size-xs)', margin: 'var(--space-1) 0', color: 'var(--color-primary)' }}>
-                                <strong>Heurística:</strong> {us.heuristic}
+                {userStories.map((us, usIdx) => {
+                    const storyHours = us.estimatedHours || us.technicalTasks.reduce((t, tk) => t + (tk.estimatedHours || 0), 0)
+                    return (
+                        <div key={us.id} className="sprint-print-story">
+                            <h3 className="sprint-print-story-title">
+                                [{us.id}] {us.title}
+                                <span className="sprint-print-priority-label"> — Prioridad {us.priority} · {storyHours}h</span>
+                            </h3>
+                            {us.heuristic && (
+                                <p style={{ fontFamily: 'Arial, sans-serif', fontSize: '9pt', margin: '2pt 0 4pt 0', color: '#4f46e5', fontStyle: 'italic' }}>
+                                    Heurística Nielsen: {us.heuristic}
+                                </p>
+                            )}
+                            {us.origen_hallazgo && (
+                                <p style={{ fontFamily: 'Arial, sans-serif', fontSize: '9pt', margin: '0 0 4pt 0', color: '#6b7280' }}>
+                                    Origen: {us.origen_hallazgo}
+                                </p>
+                            )}
+                            <p className="sprint-print-story-desc">
+                                {us.description}
                             </p>
-                        )}
-                        <p className="sprint-print-story-desc">
-                            {us.description}
-                        </p>
 
-                        <div className="sprint-print-story-columns">
-                            <div>
-                                <h4 className="sprint-print-sub-header">Criterios de Aceptación</h4>
-                                <ul className="sprint-print-crit-list">
-                                    {us.acceptanceCriteria.map((ac, idx) => (
-                                        <li key={idx}>{ac}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                            <div>
-                                <h4 className="sprint-print-sub-header">Tareas Técnicas</h4>
-                                <table className="sprint-print-table">
-                                    <thead>
-                                        <tr>
-                                            <th className="sprint-print-table-id">ID</th>
-                                            <th>Descripción</th>
-                                            <th className="sprint-print-table-hours">Esfuerzo</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {us.technicalTasks.map((task) => (
-                                            <tr key={task.id}>
-                                                <td className="sprint-print-table-id">{task.id}</td>
-                                                <td>{task.title}</td>
-                                                <td className="sprint-print-table-hours">{task.estimatedHours} horas</td>
-                                            </tr>
+                            <div className="sprint-print-story-columns">
+                                <div>
+                                    <h4 className="sprint-print-sub-header">Criterios de Aceptación ({us.acceptanceCriteria.length})</h4>
+                                    <ul className="sprint-print-crit-list">
+                                        {us.acceptanceCriteria.map((ac, idx) => (
+                                            <li key={idx}>{ac}</li>
                                         ))}
-                                    </tbody>
-                                </table>
+                                        {us.acceptanceCriteria.length === 0 && (
+                                            <li style={{ fontStyle: 'italic', color: '#9ca3af' }}>Sin criterios definidos.</li>
+                                        )}
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h4 className="sprint-print-sub-header">Tareas Técnicas ({us.technicalTasks.length})</h4>
+                                    <table className="sprint-print-table">
+                                        <thead>
+                                            <tr>
+                                                <th className="sprint-print-table-id">ID</th>
+                                                <th>Descripción</th>
+                                                <th className="sprint-print-table-hours">Esfuerzo</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {us.technicalTasks.map((task) => (
+                                                <tr key={task.id}>
+                                                    <td className="sprint-print-table-id">{task.id}</td>
+                                                    <td>{task.title}</td>
+                                                    <td className="sprint-print-table-hours">{task.estimatedHours}h</td>
+                                                </tr>
+                                            ))}
+                                            {us.technicalTasks.length === 0 && (
+                                                <tr>
+                                                    <td colSpan={3} style={{ fontStyle: 'italic', color: '#9ca3af', padding: '3pt 4pt' }}>Sin tareas definidas.</td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                        {us.technicalTasks.length > 0 && (
+                                            <tfoot>
+                                                <tr style={{ borderTop: '1px solid #d1d5db' }}>
+                                                    <td colSpan={2} style={{ padding: '2pt 4pt', fontFamily: 'Arial, sans-serif', fontSize: '8.5pt', color: '#6b7280' }}>Subtotal historia</td>
+                                                    <td className="sprint-print-table-hours" style={{ fontWeight: 700, color: '#374151' }}>{storyHours}h</td>
+                                                </tr>
+                                            </tfoot>
+                                        )}
+                                    </table>
+                                </div>
                             </div>
+                            {usIdx < userStories.length - 1 && <div className="sprint-print-story-divider" />}
                         </div>
-                        <div className="sprint-print-story-divider" />
-                    </div>
-                ))}
+                    )
+                })}
+
+                {/* Pie de totales */}
+                <div style={{ marginTop: '16pt', borderTop: '2px solid #1f2937', paddingTop: '8pt', fontFamily: 'Arial, sans-serif', fontSize: '9pt', color: '#374151', display: 'flex', justifyContent: 'space-between' }}>
+                    <span><strong>Total de historias:</strong> {totalStories}</span>
+                    <span><strong>Total de tareas:</strong> {userStories.reduce((s, us) => s + us.technicalTasks.length, 0)}</span>
+                    <span><strong>Esfuerzo total del sprint:</strong> {totalHours} horas</span>
+                    <span style={{ color: '#6b7280', fontStyle: 'italic' }}>Usability Test Dashboard — IHC UTA</span>
+                </div>
             </div>
 
             {/* WEB VIEWPORT */}
