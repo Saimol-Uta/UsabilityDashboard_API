@@ -19,7 +19,9 @@ namespace Application.DTOs
     string Scope,
     string Status,
     string WorkflowState,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    ICollection<TestTaskDto>? Tasks = null,
+    ICollection<FindingDto>? Findings = null
 );
 
     public record CreateTestPlanDto(

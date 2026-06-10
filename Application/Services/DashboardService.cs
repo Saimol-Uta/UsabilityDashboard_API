@@ -93,6 +93,7 @@ namespace Application.Services
                 CompletedActions: actions.Count(a => a.Status == ActionStatus.Resolved),
                 PendingActions: actions.Count(a => a.Status == ActionStatus.Open),
                 InProgressActions: actions.Count(a => a.Status == ActionStatus.InProgress),
+                ClosedActions: actions.Count(a => a.Status == ActionStatus.Closed),
                 ErrorsBySeverity: errorsBySeverity,
                 SuccessByTask: successByTask,
                 StatsByPlatform: statsByPlatform  

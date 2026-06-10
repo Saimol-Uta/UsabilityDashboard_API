@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -16,6 +16,7 @@ namespace Application.DTOs
      int CompletedActions,
      int PendingActions,
      int InProgressActions,
+     int ClosedActions,
      IEnumerable<ErrorsBySeverityDto> ErrorsBySeverity,
      IEnumerable<SuccessByTaskDto> SuccessByTask,
      IEnumerable<PlatformStatsDto> StatsByPlatform  

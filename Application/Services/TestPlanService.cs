@@ -30,7 +30,10 @@ namespace Application.Services
 
         public async Task<IEnumerable<TestPlanDto>> GetAllAsync()
         {
-            var plans = await _repository.GetAllAsync();
+            var plans = await _repository.GetAllWithIncludesAsync(
+                x => x.Tasks,
+                x => x.Findings
+            );
             return _mapper.Map<IEnumerable<TestPlanDto>>(plans);
         }
 
@@ -60,8 +63,11 @@ namespace Application.Services
 
         public async Task<TestPlanDto> UpdateAsync(Guid id, UpdateTestPlanDto dto)
         {
-            var plan = await _repository.GetByIdAsync(id)
-                ?? throw new KeyNotFoundException($"TestPlan {id} not found");
+            var plan = await _repository.GetByIdWithIncludesAsync(
+                id,
+                x => x.Tasks,
+                x => x.Findings
+            ) ?? throw new KeyNotFoundException($"TestPlan {id} not found");
 
             var oldState = plan.WorkflowState;
             _mapper.Map(dto, plan);
@@ -81,8 +87,11 @@ namespace Application.Services
 
         public async Task<TestPlanDto> UpdateStatusAsync(Guid id, string status)
         {
-            var plan = await _repository.GetByIdAsync(id)
-                ?? throw new KeyNotFoundException($"TestPlan {id} not found");
+            var plan = await _repository.GetByIdWithIncludesAsync(
+                id,
+                x => x.Tasks,
+                x => x.Findings
+            ) ?? throw new KeyNotFoundException($"TestPlan {id} not found");
 
             if (Enum.TryParse<TestPlanStatus>(status, ignoreCase: true, out var newStatus))
             {
