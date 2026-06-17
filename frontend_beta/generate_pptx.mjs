@@ -29,7 +29,7 @@ function addAccentBar(slide) {
 
 // Helper: add footer
 function addFooter(slide, slideNum) {
-    slide.addText(`Usability Test Plan Dashboard  •  HCI 2026  •  ${slideNum}/10`, {
+    slide.addText(`Usability Test Plan Dashboard  •  HCI 2026  •  ${slideNum}/11`, {
         x: 0.5, y: 5.2, w: 9, h: 0.3,
         fontSize: 8, color: '999999', fontFace: 'Calibri',
         align: 'center'
@@ -378,12 +378,58 @@ slide7.addText('💡 Corrección principal: El Modo Guía de Sesión integra el 
 addFooter(slide7, 7);
 
 // ══════════════════════════════════════════════════════════════
-// SLIDE 8 — DEMO / CAPTURAS
+// SLIDE 8 — COPILOTO DE IA (GEMINI)
 // ══════════════════════════════════════════════════════════════
 const slide8 = pptx.addSlide();
 slide8.background = { fill: LIGHT_BG };
 addAccentBar(slide8);
-addSectionHeader(slide8, '📸', 'Demo / Capturas de Pantalla');
+addSectionHeader(slide8, '🧠', 'Copiloto de IA y Asistente de Usabilidad');
+
+const iaFeatures = [
+    { icon: '💬', title: 'Chat Contextual', desc: 'Panel lateral integrado (Layout.tsx) que asiste según la pantalla donde navega el evaluador.', color: '3B82F6' },
+    { icon: '✨', title: 'Sugerencias en Vivo', desc: 'Sugerencias proactivas de tareas, hallazgos y mejoras mediante eventos de sistema.', color: EMERALD },
+    { icon: '📋', title: 'Generador de Backlog', desc: 'Estructuración automática de historias Scrum (Como/Quiero/Para) a partir de evidencias.', color: '8B5CF6' },
+    { icon: '♿', title: 'Inclusión Web', desc: 'Asistencia para identificar errores de accesibilidad WAVE/Stark y guiar en pautas WCAG.', color: AMBER },
+];
+
+iaFeatures.forEach((feat, i) => {
+    const x = 0.4 + i * 2.35;
+    
+    slide8.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
+        x, y: 1.5, w: 2.15, h: 3.0,
+        fill: { color: WHITE },
+        shadow: { type: 'outer', blur: 6, offset: 2, color: '00000015' },
+        rectRadius: 0.15
+    });
+    
+    slide8.addShape(pptx.shapes.RECTANGLE, {
+        x, y: 1.5, w: 2.15, h: 0.06,
+        fill: { color: feat.color }
+    });
+
+    slide8.addText(feat.icon, { x, y: 1.7, w: 2.15, h: 0.5, fontSize: 28, align: 'center' });
+    slide8.addText(feat.title, { x, y: 2.2, w: 2.15, h: 0.4, fontSize: 13, bold: true, color: TEXT_DARK, fontFace: 'Calibri', align: 'center' });
+    
+    slide8.addShape(pptx.shapes.RECTANGLE, {
+        x: x + 0.5, y: 2.65, w: 1.15, h: 0.03,
+        fill: { color: feat.color, transparency: 60 }
+    });
+
+    slide8.addText(feat.desc, {
+        x: x + 0.15, y: 2.8, w: 1.85, h: 1.5,
+        fontSize: 9.5, color: '555555', fontFace: 'Calibri', align: 'center', lineSpacing: 14
+    });
+});
+
+addFooter(slide8, 8);
+
+// ══════════════════════════════════════════════════════════════
+// SLIDE 9 — DEMO / CAPTURAS
+// ══════════════════════════════════════════════════════════════
+const slide9 = pptx.addSlide();
+slide9.background = { fill: LIGHT_BG };
+addAccentBar(slide9);
+addSectionHeader(slide9, '📸', 'Demo / Capturas de Pantalla');
 
 const screenshots = [
     { title: 'Dashboard Principal', desc: 'KPIs, gráficos y métricas de usabilidad' },
@@ -398,7 +444,7 @@ screenshots.forEach((ss, i) => {
     const x = 0.5 + col * 4.7;
     const y = 1.5 + row * 1.8;
 
-    slide8.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
+    slide9.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
         x, y, w: 4.3, h: 1.5,
         fill: { color: WHITE },
         shadow: { type: 'outer', blur: 4, offset: 2, color: '00000012' },
@@ -406,35 +452,35 @@ screenshots.forEach((ss, i) => {
     });
 
     // Placeholder area
-    slide8.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
+    slide9.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
         x: x + 0.15, y: y + 0.12, w: 4.0, h: 0.85,
         fill: { color: 'E8ECF1' },
         rectRadius: 0.08
     });
-    slide8.addText('[ SCREENSHOT ]', {
+    slide9.addText('[ SCREENSHOT ]', {
         x: x + 0.15, y: y + 0.12, w: 4.0, h: 0.85,
         fontSize: 14, color: '999999', fontFace: 'Calibri', align: 'center', valign: 'middle'
     });
 
-    slide8.addText(ss.title, {
+    slide9.addText(ss.title, {
         x: x + 0.15, y: y + 1.0, w: 4.0, h: 0.25,
         fontSize: 12, bold: true, color: TEXT_DARK, fontFace: 'Calibri'
     });
-    slide8.addText(ss.desc, {
+    slide9.addText(ss.desc, {
         x: x + 0.15, y: y + 1.2, w: 4.0, h: 0.22,
         fontSize: 9, color: '888888', fontFace: 'Calibri'
     });
 });
 
-addFooter(slide8, 8);
+addFooter(slide9, 9);
 
 // ══════════════════════════════════════════════════════════════
-// SLIDE 9 — CONCLUSIONES
+// SLIDE 10 — CONCLUSIONES
 // ══════════════════════════════════════════════════════════════
-const slide9 = pptx.addSlide();
-slide9.background = { fill: LIGHT_BG };
-addAccentBar(slide9);
-addSectionHeader(slide9, '✅', 'Conclusiones');
+const slide10 = pptx.addSlide();
+slide10.background = { fill: LIGHT_BG };
+addAccentBar(slide10);
+addSectionHeader(slide10, '✅', 'Conclusiones');
 
 const conclusions = [
     { icon: '🏆', title: 'Ciclo completo de usabilidad', desc: 'El sistema cubre desde la planificación hasta el seguimiento de mejoras en una sola plataforma.' },
@@ -446,7 +492,7 @@ const conclusions = [
 conclusions.forEach((c, i) => {
     const y = 1.5 + i * 0.9;
 
-    slide9.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
+    slide10.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
         x: 0.5, y, w: 9, h: 0.75,
         fill: { color: WHITE },
         shadow: { type: 'outer', blur: 4, offset: 2, color: '00000012' },
@@ -454,54 +500,54 @@ conclusions.forEach((c, i) => {
     });
 
     // Left accent bar
-    slide9.addShape(pptx.shapes.RECTANGLE, {
+    slide10.addShape(pptx.shapes.RECTANGLE, {
         x: 0.5, y, w: 0.05, h: 0.75,
         fill: { color: i === 3 ? AMBER : ACCENT }
     });
 
-    slide9.addText(c.icon, { x: 0.7, y, w: 0.5, h: 0.75, fontSize: 22, valign: 'middle' });
-    slide9.addText(c.title, { x: 1.3, y: y + 0.05, w: 8, h: 0.3, fontSize: 14, bold: true, color: TEXT_DARK, fontFace: 'Calibri' });
-    slide9.addText(c.desc, { x: 1.3, y: y + 0.35, w: 8, h: 0.35, fontSize: 11, color: '666666', fontFace: 'Calibri' });
+    slide10.addText(c.icon, { x: 0.7, y, w: 0.5, h: 0.75, fontSize: 22, valign: 'middle' });
+    slide10.addText(c.title, { x: 1.3, y: y + 0.05, w: 8, h: 0.3, fontSize: 14, bold: true, color: TEXT_DARK, fontFace: 'Calibri' });
+    slide10.addText(c.desc, { x: 1.3, y: y + 0.35, w: 8, h: 0.35, fontSize: 11, color: '666666', fontFace: 'Calibri' });
 });
 
-addFooter(slide9, 9);
+addFooter(slide10, 10);
 
 // ══════════════════════════════════════════════════════════════
-// SLIDE 10 — PREGUNTAS
+// SLIDE 11 — PREGUNTAS
 // ══════════════════════════════════════════════════════════════
-const slide10 = pptx.addSlide();
-slide10.background = { fill: NAVY };
+const slide11 = pptx.addSlide();
+slide11.background = { fill: NAVY };
 
 // Decorative shapes
-slide10.addShape(pptx.shapes.OVAL, {
+slide11.addShape(pptx.shapes.OVAL, {
     x: 8, y: -1, w: 3, h: 3,
     fill: { color: ACCENT, transparency: 85 }
 });
-slide10.addShape(pptx.shapes.OVAL, {
+slide11.addShape(pptx.shapes.OVAL, {
     x: -1.5, y: 4, w: 4, h: 4,
     fill: { color: ACCENT, transparency: 90 }
 });
 
-slide10.addText('❓', { x: 3.5, y: 1.2, w: 3, h: 1, fontSize: 64, align: 'center' });
+slide11.addText('❓', { x: 3.5, y: 1.2, w: 3, h: 1, fontSize: 64, align: 'center' });
 
-slide10.addText('¿Preguntas?', {
+slide11.addText('¿Preguntas?', {
     x: 1, y: 2.3, w: 8, h: 1,
     fontSize: 44, bold: true, color: WHITE, fontFace: 'Calibri',
     align: 'center'
 });
 
-slide10.addShape(pptx.shapes.RECTANGLE, {
+slide11.addShape(pptx.shapes.RECTANGLE, {
     x: 3.5, y: 3.4, w: 3, h: 0.04,
     fill: { color: ACCENT }
 });
 
-slide10.addText('Gracias por su atención', {
+slide11.addText('Gracias por su atención', {
     x: 1, y: 3.7, w: 8, h: 0.5,
     fontSize: 18, color: ACCENT, fontFace: 'Calibri',
     align: 'center'
 });
 
-slide10.addText('Usability Test Plan Dashboard — HCI 2026', {
+slide11.addText('Usability Test Plan Dashboard — HCI 2026', {
     x: 1, y: 4.4, w: 8, h: 0.4,
     fontSize: 12, color: '8899BB', fontFace: 'Calibri',
     align: 'center'
